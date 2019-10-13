@@ -1,0 +1,17 @@
+﻿@page
+@{
+    ViewData["Title"] = "Collaborative Prototype";
+}
+@section Scripts {
+    <script src="@Url.Content("~/lib/signalr/signalr.min.js")"></script>
+    <script src="@Url.Content("~/js/texteditor.js")"></script>
+}
+
+
+<div>
+    <br />
+    <input id="group" />
+    <input type="button" value="Join Group" onclick="join()" />
+    <br /><br />
+    <textarea style="width:100%;height:300px;" id="editor" onkeyup="change()"></textarea>
+</div>
