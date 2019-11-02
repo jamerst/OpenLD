@@ -1,0 +1,22 @@
+version: "3.3"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - db
+    volumes:
+      - ./:/app
+  db:
+    image: "mysql:latest"
+    environment:
+        MYSQL_DATABASE: openld_db
+        MYSQL_ROOT_PASSWORD: openld
+    ports:
+      - "3306:3306"
