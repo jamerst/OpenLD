@@ -7,16 +7,17 @@ services:
       dockerfile: Dockerfile.prod
     ports:
       - "5000:5000"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
       - db
     volumes:
       - ./:/app
   db:
-    image: "mysql:latest"
+    image: "kartoza/postgis:11.0-2.5"
     environment:
-        MYSQL_DATABASE: openld_db
-        MYSQL_ROOT_PASSWORD: openld
+        POSTGRES_DB: openld_db
+        POSTGRES_USER: openld
+        POSTGRES_PASSWORD: openld
     ports:
-      - "3306:3306"
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
