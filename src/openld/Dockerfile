@@ -1,5 +1,7 @@
 FROM mcr.microsoft.com/dotnet/core/sdk:3.0 AS build-env
 WORKDIR /app
+RUN dotnet tool install -g dotnet-ef
+ENV PATH "$PATH:/root/.dotnet/tools"
 
 RUN curl -sL https://deb.nodesource.com/setup_13.x |  bash -
 RUN apt-get install -y nodejs
