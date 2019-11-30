@@ -1,7 +1,9 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using NetTopologySuite.Geometries;
 
 namespace openld.Models {
     public class RiggedFixture {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public string Id { get; set; }
         public Fixture Fixture { get; set; }
         public Structure Structure { get; set; }
