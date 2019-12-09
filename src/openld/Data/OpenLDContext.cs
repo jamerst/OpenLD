@@ -1,10 +1,12 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.ApiAuthorization.IdentityServer;
+using IdentityServer4.EntityFramework.Options;
+using Microsoft.Extensions.Options;
 using openld.Models;
 
 namespace openld.Data {
-    public class OpenLDContext : DbContext {
-        public OpenLDContext(DbContextOptions<OpenLDContext> options) : base(options) {}
+    public class OpenLDContext : ApiAuthorizationDbContext<User> {
+        public OpenLDContext(DbContextOptions<OpenLDContext> options, IOptions<OperationalStoreOptions> operationalStoreOptions) : base(options, operationalStoreOptions) {}
 
         protected override void OnConfiguring(DbContextOptionsBuilder builder) {
             builder.UseNpgsql("Host=db; Database=openld_db; Username=openld; Password=openld",
@@ -12,6 +14,7 @@ namespace openld.Data {
         }
 
         protected override void OnModelCreating(ModelBuilder builder) {
+            base.OnModelCreating(builder);
             builder.HasPostgresExtension("postgis");
         }
 

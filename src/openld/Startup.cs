@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -26,6 +27,17 @@ namespace openld {
             NpgsqlConnection.GlobalTypeMapper.UseNetTopologySuite();
             services.AddDbContext<Data.OpenLDContext>();
 
+            services.AddDefaultIdentity<Models.User>()
+                .AddEntityFrameworkStores<Data.OpenLDContext>();
+
+            services.AddIdentityServer()
+                .AddApiAuthorization<Models.User, Data.OpenLDContext>();
+
+            services.AddAuthentication()
+                .AddIdentityServerJwt();
+
+            services.AddControllersWithViews();
+            services.AddRazorPages();
 
             // In production, the React files will be served from this directory
             services.AddSpaStaticFiles(configuration => {
@@ -63,10 +75,15 @@ namespace openld {
 
             app.UseRouting();
 
+            app.UseAuthentication();
+            app.UseIdentityServer();
+            app.UseAuthorization();
+
             app.UseEndpoints(endpoints => {
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller}/{action=Index}/{id?}");
+                endpoints.MapRazorPages();
             });
 
             app.UseSpa(spa => {

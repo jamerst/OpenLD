@@ -1,0 +1,12 @@
+﻿a.navbar-brand img {
+  height: 5em;
+}
+
+a.navbar-brand img:hover {
+  filter: brightness(110%);
+  transition: .25s;
+}
+
+.box-shadow {
+  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
+}
