@@ -9,6 +9,7 @@ import ApiAuthorizationRoutes from './components/api-authorization/ApiAuthorizat
 import { ApplicationPaths } from './components/api-authorization/ApiAuthorizationConstants';
 
 import './custom.css'
+import './bootstrap-darkly.min.css'
 import { FixtureLibrary } from './components/FixtureLibrary';
 
 export default class App extends Component {
