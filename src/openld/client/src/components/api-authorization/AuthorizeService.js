@@ -200,6 +200,11 @@ export class AuthorizeService {
     }
 
     static get instance() { return authService }
+
+    generateAuthHeader() {
+        const token = this.getAccessToken();
+        return !token ? { } : { 'Authorization': `Bearer ${token}` };
+    }
 }
 
 const authService = new AuthorizeService();

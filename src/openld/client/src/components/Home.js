@@ -4,6 +4,10 @@ import { Container } from 'reactstrap';
 export class Home extends Component {
   static displayName = Home.name;
 
+  componentDidMount() {
+    document.title = "OpenLD";
+  }
+
   render () {
     return (
       <Container>
