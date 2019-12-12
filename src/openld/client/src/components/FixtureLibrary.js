@@ -1,9 +1,13 @@
-import React, { Component } from 'react';
+import React, { Component, Fragment } from 'react';
 import authService from './api-authorization/AuthorizeService';
-import { Button, Collapse } from 'reactstrap';
+import { Collapse,
+  Col, Container, Row,
+  Button, CustomInput, Form, FormGroup, Input, Label,
+  Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import { FixtureResults } from './fixture-library/FixtureResults';
+import { NewFixture } from './fixture-library/NewFixture';
 import { SearchParams } from './fixture-library/SearchParams';
 
 export class FixtureLibrary extends Component {
@@ -16,20 +20,25 @@ export class FixtureLibrary extends Component {
       types: [],
       searchParams: new SearchParams(),
       advancedSearch: false,
+      addModalOpen: false,
+      newFixture: new NewFixture(),
       loading: true,
       loadingTypes: true
     };
 
-    this.handleName = this.handleName.bind(this);
-    this.handleManf = this.handleManf.bind(this);
-    this.handleType = this.handleType.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
     this.fetchFixtures = this.fetchFixtures.bind(this);
+
+    this.handleSearchChange = this.handleSearchChange.bind(this);
+    this.handleSearchSubmit = this.handleSearchSubmit.bind(this);
+
+    this.handleAddToggle = this.handleAddToggle.bind(this);
+    this.handleAddChange = this.handleAddChange.bind(this);
+    this.handleAddSubmit = this.handleAddSubmit.bind(this);
+    this.handleImageChange = this.handleImageChange.bind(this);
   }
 
   componentDidMount() {
     const params = this.props.location.search;
-    console.log("PARAMS:" + params);
     this.setState({ searchParams: new SearchParams(params) });
     document.title = "OpenLD Fixture Library";
     if (this.props.match.params.term) {
@@ -46,80 +55,170 @@ export class FixtureLibrary extends Component {
 
     let contents = this.state.loading
       ? <p className="text-center"><em>Loading results..</em></p>
-      : FixtureResults.renderResults(this.state.results);
+      : FixtureResults.renderResults(this.state.results, this.handleClick);
 
     let types = this.renderTypes();
 
     return (
-      <div>
-        <div className="container">
-          <div className="row justify-content-between align-items-center">
-            <div className="col">
+      <Fragment>
+        <Container>
+          <Row className="justify-content-between align-items-center">
+            <Col>
               <h1>Fixture Library</h1>
-            </div>
+            </Col>
 
-            <div className="col-auto">
-              <button className="btn btn-secondary">Add Fixture</button>
-            </div>
-          </div>
-        </div>
+            <Col xs="auto">
+              <Button color="secondary" onClick={this.handleAddToggle}>Add Fixture</Button>
+            </Col>
+          </Row>
+        </Container>
 
-        <form onSubmit={this.handleSubmit}>
-          <div className="form-row">
-            <div className="col-11">
-              <input type="text" className="form-control" value={this.state.searchParams.name} onChange={this.handleName} placeholder="Name" />
-            </div>
+        <Form onSubmit={this.handleSearchSubmit} onChange={this.handleSearchChange} >
+          <FormGroup row>
+            <Col>
+              <Input type="text" value={this.state.searchParams.name} name="name" placeholder="Name" />
+            </Col>
 
-            <div className="col">
-              <button type="submit" className="btn btn-primary">Search</button>
-            </div>
-          </div>
+            <Col xs="auto">
+              <Button type="submit" color="primary">Search</Button>
+            </Col>
+          </FormGroup>
 
           <Button color="link" size="sm" onClick={toggle}>More Options <FontAwesomeIcon icon="chevron-down" /></Button>
 
           <Collapse isOpen={this.state.advancedSearch}>
-            <div className="form-row">
-              <div className="col">
-                <input type="text" className="form-control form-control-sm" value={this.state.searchParams.manufacturer} onChange={this.handleManf} placeholder="Manufacturer" />
-              </div>
+            <FormGroup row>
+              <Col xs="6">
+                <Input type="text" size="sm" value={this.state.searchParams.manufacturer} name="manufacturer" placeholder="Manufacturer" />
+              </Col>
 
-              <div className="col form-group">
-                <label htmlFor="searchType" className="col-auto col-form-label form-control-sm">Fixture Type</label>
-                <select name="type" id="searchType" value={this.state.searchParams.type} onChange={this.handleType} className="custom-select col-9 custom-select-sm">
+              <Label for="searchType" size="sm">Fixture Type</Label>
+              <Col>
+                <CustomInput type="select" name="type" id="searchType" bsSize="sm" value={this.state.searchParams.type} name="type">
+                  <option value="">Any</option>
                   {types}
-                </select>
-              </div>
-            </div>
+                </CustomInput>
+              </Col>
+            </FormGroup>
           </Collapse>
-        </form>
+        </Form>
 
         {contents}
-      </div>
+        <p className="text-center"><em>Fixture information is not verified and may contain inaccuracies. No responsibility taken for data.</em></p>
+        <Modal isOpen={this.state.addModalOpen}>
+          <ModalHeader>Add New Fixture</ModalHeader>
+          <Form onSubmit={this.handleAddSubmit} onChange={this.handleAddChange}>
+            <ModalBody>
+              <FormGroup>
+                <Input type="text" value={this.state.newFixture.name} name="name" placeholder="Name"/>
+              </FormGroup>
+
+              <FormGroup>
+                <Input type="text" value={this.state.newFixture.manufacturer} name="manufacturer" placeholder="Manufacturer"/>
+              </FormGroup>
+
+              <FormGroup>
+                <Label for="addType">Fixture Type</Label>
+                <CustomInput type="select" name="type" id="addType" value={this.state.newFixture.type.id} name="type">
+                    {types}
+                  </CustomInput>
+              </FormGroup>
+
+              <FormGroup row>
+                <Col xs="6">
+                  <Label for="addPower">Power (W)</Label>
+                  <Input type="number" id="addPower" value={this.state.newFixture.power} name="power" min="0"/>
+                </Col>
+                <Col xs="6">
+                  <Label for="addWeight">Weight (kg)</Label>
+                  <Input type="number" id="addWeight" value={this.state.newFixture.weight} name="weight" step="0.1" min="0"/>
+                </Col>
+              </FormGroup>
+
+              <FormGroup>
+                <Label for="addImage">Fixture Image</Label>
+                <Input type="file" id="addImage" name="image" onChange={this.handleImageChange}/>
+              </FormGroup>
+            </ModalBody>
+            <ModalFooter>
+              <Button type="submit"color="primary">Add</Button>
+              <Button color="secondary" onClick={this.handleAddToggle}>Cancel</Button>
+            </ModalFooter>
+          </Form>
+        </Modal>
+      </Fragment>
+
     );
   }
 
-  handleName(event) {
+  handleClick(id) {
+    console.log(id);
+  }
+
+  handleSearchChange(event) {
     let params = this.state.searchParams;
-    params.setName(event.target.value);
+    params[event.target.name] = event.target.value;
     this.setState({ searchParams: params });
   }
 
-  handleManf(event) {
-    let params = this.state.searchParams;
-    params.setManf(event.target.value);
-    this.setState({ searchParams: params });
-  }
-
-  handleType(event) {
-    let params = this.state.searchParams;
-    params.setType(event.target.value);
-    this.setState({ searchParams: params });
-  }
-
-  handleSubmit(event) {
+  handleSearchSubmit(event) {
     event.preventDefault();
     this.fetchFixtures(this.state.searchTerm);
     this.props.history.push("/library" + this.state.searchParams.getQueryString());
+  }
+
+  handleAddChange(event) {
+    if (event.target.name !== "image") {
+      let values = this.state.newFixture;
+
+      if (event.target.name === "type") {
+        values.type.id = event.target.value;
+      } else {
+        values[event.target.name] = event.target.value;
+      }
+      this.setState({ newFixture: values });
+    }
+  }
+
+  handleAddToggle() {
+    this.setState({ addModalOpen: !this.state.addModalOpen });
+  }
+
+  async handleImageChange(event) {
+    let formData = new FormData();
+    formData.append("file", event.target.files[0]);
+
+    const response = await fetch('api/library/UploadFixtureImage', {
+      method: "POST",
+      headers: authService.generateAuthHeader(),
+      body: formData
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      let fixtureData = this.state.newFixture;
+      fixtureData.image.id = data.data;
+      this.setState({ newFixture: fixtureData });
+    } else {
+      alert("ERROR: " + data.msg);
+    }
+  }
+
+  async handleAddSubmit(event) {
+    event.preventDefault();
+    const response = await fetch('api/library/CreateFixture', {
+      method: "POST",
+      headers: { ...authService.generateAuthHeader(), ...{ 'Content-Type': 'application/json' } },
+      body: JSON.stringify(this.state.newFixture)
+    });
+
+    const data = await response.json();
+    if (data.success === true) {
+      this.setState({ addModalOpen: false, newFixture: new NewFixture() });
+      this.fetchFixtures();
+    } else {
+      alert("ERROR: " + data.msg);
+    }
   }
 
   async fetchFixtures() {
@@ -135,12 +234,11 @@ export class FixtureLibrary extends Component {
 
   renderTypes() {
     return (
-      <React.Fragment>
-        <option value="">Any</option>
+      <Fragment>
         {this.state.types.map(type =>
           <option value={type.id}>{type.name}</option>
         )}
-      </React.Fragment>
+      </Fragment>
     );
   }
 

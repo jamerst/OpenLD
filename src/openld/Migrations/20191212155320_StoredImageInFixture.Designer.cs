@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -10,9 +11,10 @@ using openld.Data;
 namespace openld.Migrations
 {
     [DbContext(typeof(OpenLDContext))]
-    partial class OpenLDContextModelSnapshot : ModelSnapshot
+    [Migration("20191212155320_StoredImageInFixture")]
+    partial class StoredImageInFixture
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -376,9 +378,6 @@ namespace openld.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Hash")
                         .HasColumnType("text");
 
                     b.Property<string>("Path")

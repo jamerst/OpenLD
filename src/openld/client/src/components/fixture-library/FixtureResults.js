@@ -1,31 +1,29 @@
 import React from 'react';
+import { Card, CardImg, CardText, CardBody, CardColumns, CardDeck, CardTitle } from 'reactstrap';
 
 export class FixtureResults {
-  static renderResults(results) {
+  static renderResults(results, clickHandler) {
     if (results.length > 0) {
       return (
-         <table className='table table-striped' aria-labelledby="tabelLabel">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Manufacturer</th>
-              <th>Type</th>
-              <th>Power</th>
-              <th>Weight</th>
-            </tr>
-          </thead>
-          <tbody>
-            {results.map(result =>
-              <tr key={result.name}>
-                <td>{result.name}</td>
-                <td>{result.manufacturer}</td>
-                <td>{result.type.name}</td>
-                <td>{result.power}W</td>
-                <td>{result.weight}kg</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <CardColumns>
+          {results.map(result =>
+            <Card color="light" onClick={() => clickHandler(result.id)}>
+              <CardImg src={ "/api/fixture/GetImage/" + result.id }></CardImg>
+              <CardBody>
+                <CardTitle className="h3">{result.name}</CardTitle>
+                <CardText>
+                  <dl>
+                    <dd>{result.manufacturer}</dd>
+                    <dd>{result.type.name}</dd>
+
+                    <dt>Power</dt>
+                    <dd>{result.power}W</dd>
+                  </dl>
+                </CardText>
+              </CardBody>
+            </Card>
+          )}
+        </CardColumns>
       );
     } else {
       return (
