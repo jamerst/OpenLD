@@ -10,11 +10,14 @@
        "request": "attach",
        "processId": "${command:pickRemoteProcess}",
        "pipeTransport": {
-           "pipeCwd": "${workspaceFolder}",
+           "pipeCwd": "${workspaceFolder}/openld",
            "pipeProgram": "/usr/bin/docker",
            "pipeArgs": [ "exec", "-i", "openld_web_1"],
            "debuggerPath": "/vsdbg/vsdbg",
            "quoteArgs": false
+       },
+       "sourceFileMap": {
+           "/app": "${workspaceFolder}/openld"
        }
    },
         {
