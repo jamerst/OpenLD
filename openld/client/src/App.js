@@ -6,7 +6,6 @@ import { Home } from './components/Home';
 import { Drawing } from './components/Drawing';
 import { FixtureLibrary } from './components/FixtureLibrary';
 import { Token } from './components/Token';
-import AuthorizeRoute from './components/api-authorization/AuthorizeRoute';
 import ApiAuthorizationRoutes from './components/api-authorization/ApiAuthorizationRoutes';
 import { ApplicationPaths } from './components/api-authorization/ApiAuthorizationConstants';
 

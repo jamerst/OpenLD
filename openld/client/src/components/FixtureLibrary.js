@@ -106,7 +106,7 @@ export class FixtureLibrary extends Component {
 
               <Col xs="12" md="6" className="form-inline d-flex pl-md-0">
                 <Label for="searchType" size="sm" className="mb-0 mr-2">Fixture Type</Label>
-                <CustomInput type="select" name="type" id="searchType" bsSize="sm" value={this.state.searchParams.type} name="type" className="flex-grow-1">
+                <CustomInput type="select" name="type" id="searchType" bsSize="sm" value={this.state.searchParams.type} className="flex-grow-1">
                   <option value="">Any</option>
                   {types}
                 </CustomInput>
@@ -144,7 +144,7 @@ export class FixtureLibrary extends Component {
 
               <FormGroup>
                 <Label for="addType">Fixture Type</Label>
-                <CustomInput type="select" name="type" id="addType" value={this.state.newFixture.type.id} name="type">
+                <CustomInput type="select" name="type" id="addType" value={this.state.newFixture.type.id}>
                     {types}
                   </CustomInput>
               </FormGroup>
@@ -226,8 +226,7 @@ export class FixtureLibrary extends Component {
       uploading: true,
       uploadAlertColor: "secondary",
       uploadAlertIcon: <Spinner size="sm"/>,
-      uploadAlertTitle: "Uploading file..",
-      uploadAlertIcon: ""
+      uploadAlertTitle: "Uploading file.."
     });
 
     let formData = new FormData();
@@ -279,8 +278,7 @@ export class FixtureLibrary extends Component {
         uploading: false,
         uploadAlertColor: "secondary",
         uploadAlertIcon: <Spinner size="sm"/>,
-        uploadAlertTitle: "Uploading file..",
-        uploadAlertIcon: ""
+        uploadAlertTitle: "Uploading file.."
       });
 
       this.fetchFixtures();
@@ -307,7 +305,7 @@ export class FixtureLibrary extends Component {
     return (
       <Fragment>
         {this.state.types.map((type, index) => {
-          return <option value={type.id} selected={index == 0}>{type.name}</option>
+          return <option value={type.id} selected={index === 0}>{type.name}</option>
         }
         )}
       </Fragment>

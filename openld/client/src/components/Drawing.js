@@ -1,10 +1,10 @@
-import React, { Component, Fragment } from 'react';
+import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Button,
   Container, Row, Col,
   Navbar, NavbarBrand, NavLink } from 'reactstrap';
-import { Layer, Line, Stage } from 'react-konva';
+import { Layer, Line, Stage, Text } from 'react-konva';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 export class Drawing extends Component {
@@ -12,12 +12,14 @@ export class Drawing extends Component {
     super(props);
     this.state = {
       grid: [],
+      gridSize: 50,
       stageWidth: 0,
       stageHeight: 0
     }
 
     this.renderGrid = this.renderGrid.bind(this);
     this.sizeStage = this.sizeStage.bind(this);
+    this.handleDrag = this.handleDrag.bind(this);
   }
 
   componentDidMount() {
@@ -60,6 +62,33 @@ export class Drawing extends Component {
                     );
                   })}
                 </Layer>
+                <Layer>
+                  <Line
+                    key = "test"
+                    points = {[0, 0, 100, 100]}
+                    stroke = "#000"
+                    strokeWidth = {5}
+                    draggable = {true}
+                    onDragEnd = {this.handleDrag}
+                  />
+                </Layer>
+                <Layer>
+                  <Line
+                    key = "scale"
+                    points = {[
+                      (Math.floor(this.state.stageWidth / 50) - 1) * 50, Math.floor(this.state.stageHeight / 50) * 50,
+                      Math.floor(this.state.stageWidth / 50) * 50, Math.floor(this.state.stageHeight / 50) * 50
+                    ]}
+                    stroke = "#000"
+                  />
+                  <Text
+                    key = "scaleLabel"
+                    x = {(Math.floor(this.state.stageWidth / 50) - 1) * 50}
+                    y = {(Math.floor(this.state.stageHeight / 50) - 0.25) * 50}
+                    text = "1m"
+                  />
+
+                </Layer>
               </Stage>
             </Col>
             <Col xs="1" style={{backgroundColor: "green"}}>
@@ -82,14 +111,21 @@ export class Drawing extends Component {
 
   }
 
+  handleDrag(event) {
+    const pos = event.target.position();
+    event.target.position({x: Math.round(pos.x / this.state.gridSize) * this.state.gridSize,
+      y: Math.round(pos.y / this.state.gridSize) * this.state.gridSize});
+    event.target.getLayer().draw();
+  }
+
   renderGrid() {
     let grid = [];
-    for (let x = 0; x < this.state.stageWidth; x+=50) {
-      grid.push([x, 0, x, this.state.stageHeight]);
+    for (let x = 0; x < 2 * this.state.stageWidth; x+=this.state.gridSize) {
+      grid.push([x, 0, x, 2 * this.state.stageHeight]);
     }
 
-    for (let y = 0; y < this.state.stageHeight; y+=50) {
-      grid.push([0, y, this.state.stageWidth, y]);
+    for (let y = 0; y < 2 * this.state.stageHeight; y+=this.state.gridSize) {
+      grid.push([0, y, 2 * this.state.stageWidth, y]);
     }
     this.setState({grid: grid});
   }

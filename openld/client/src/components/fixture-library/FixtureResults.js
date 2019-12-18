@@ -1,5 +1,5 @@
 import React, { Fragment } from 'react';
-import { Card, CardImg, CardText, CardBody, CardTitle, Col, Container, Row, CardSubtitle } from 'reactstrap';
+import { Card, CardImg, CardText, CardBody, CardTitle, Col, Container, Row } from 'reactstrap';
 
 export class FixtureResults {
   static renderResults(results, clickHandler) {

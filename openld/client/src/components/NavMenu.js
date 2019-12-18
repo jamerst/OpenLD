@@ -28,7 +28,7 @@ export class NavMenu extends Component {
       <header>
         <Navbar className="navbar-expand-sm navbar-toggleable-sm border-bottom box-shadow mb-3" light>
           <Container>
-            <NavbarBrand tag={Link} to="/"><img src={logo} /></NavbarBrand>
+            <NavbarBrand tag={Link} to="/"><img src={logo} alt="OpenLD Logo"/></NavbarBrand>
             <NavbarToggler onClick={this.toggleNavbar} className="mr-2" />
             <Collapse className="d-sm-inline-flex" isOpen={!this.state.collapsed} navbar>
               <ul className="navbar-nav flex-grow mr-auto h4">
