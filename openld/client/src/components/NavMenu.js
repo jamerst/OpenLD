@@ -35,6 +35,12 @@ export class NavMenu extends Component {
                 <NavItem>
                   <NavLink tag={Link} to="/library">Fixture Library</NavLink>
                 </NavItem>
+                <NavItem>
+                  <NavLink tag={Link} to="/drawing">Drawing</NavLink>
+                </NavItem>
+                <NavItem>
+                  <NavLink tag={Link} to="/token">Token</NavLink>
+                </NavItem>
               </ul>
               <ul className="navbar-nav h5">
                 <LoginMenu>

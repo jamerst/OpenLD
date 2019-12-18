@@ -79,7 +79,7 @@ export class FixtureLibrary extends Component {
               <h1>Fixture Library</h1>
             </Col>
 
-            <Col xs="auto" className="p-0">
+            <Col xs="12" md="auto" className="p-0 mb-1 mb-md-0">
               {this.state.addButton}
             </Col>
           </Row>
@@ -91,8 +91,8 @@ export class FixtureLibrary extends Component {
               <Input type="text" value={this.state.searchParams.name} name="name" placeholder="Name" />
             </Col>
 
-            <Col xs="auto">
-              <Button type="submit" color="primary">Search</Button>
+            <Col xs="auto" className="pl-0">
+              <Button type="submit" color="primary" >Search</Button>
             </Col>
           </FormGroup>
 
@@ -100,13 +100,13 @@ export class FixtureLibrary extends Component {
 
           <Collapse isOpen={this.state.advancedSearch}>
             <FormGroup row>
-              <Col xs="6">
+              <Col xs="12" md="6">
                 <Input type="text" size="sm" value={this.state.searchParams.manufacturer} name="manufacturer" placeholder="Manufacturer" />
               </Col>
 
-              <Label for="searchType" size="sm">Fixture Type</Label>
-              <Col>
-                <CustomInput type="select" name="type" id="searchType" bsSize="sm" value={this.state.searchParams.type} name="type">
+              <Col xs="12" md="6" className="form-inline d-flex pl-md-0">
+                <Label for="searchType" size="sm" className="mb-0 mr-2">Fixture Type</Label>
+                <CustomInput type="select" name="type" id="searchType" bsSize="sm" value={this.state.searchParams.type} name="type" className="flex-grow-1">
                   <option value="">Any</option>
                   {types}
                 </CustomInput>

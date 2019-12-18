@@ -1,18 +1,30 @@
-import React, { Component } from 'react';
+import React, { Component, Fragment } from 'react';
 import { Container } from 'reactstrap';
 import { NavMenu } from './NavMenu';
 
-export class Layout extends Component {
-  static displayName = Layout.name;
+export class PageLayout extends Component {
+  static displayName = PageLayout.name;
 
   render () {
     return (
-      <div>
+      <Fragment>
         <NavMenu />
         <Container>
           {this.props.children}
         </Container>
-      </div>
+      </Fragment>
+    );
+  }
+}
+
+export class DrawingLayout extends Component {
+  static displayName = DrawingLayout.name;
+
+  render () {
+    return (
+      <Container fluid className="p-0 h-100">
+        {this.props.children}
+      </Container>
     );
   }
 }

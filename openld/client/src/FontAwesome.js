@@ -1,6 +1,8 @@
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { faChevronDown, faCheck, faExclamation } from '@fortawesome/free-solid-svg-icons'
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faCheck, faChevronDown, faDrawPolygon, faEraser, faExclamation } from '@fortawesome/free-solid-svg-icons';
 
-library.add(faChevronDown);
 library.add(faCheck);
+library.add(faChevronDown);
+library.add(faDrawPolygon);
+library.add(faEraser);
 library.add(faExclamation);
