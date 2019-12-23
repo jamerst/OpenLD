@@ -31,7 +31,7 @@ export default class App extends Component {
           <RouteLayout path='/library/:term?' component={FixtureLibrary} layout={PageLayout} />
           <RouteLayout path='/token' component={Token} layout={PageLayout} />
           <RouteLayout path={ApplicationPaths.ApiAuthorizationPrefix} component={ApiAuthorizationRoutes} layout={PageLayout} />
-          <RouteLayout path='/drawing' component={Drawing} layout={DrawingLayout} />
+          <RouteLayout path='/drawing/:id' component={Drawing} layout={DrawingLayout} />
       </Switch>
     );
   }

@@ -11,6 +11,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using NetTopologySuite.Geometries;
+using Newtonsoft.Json;
 
 using openld.Services;
 
@@ -48,6 +49,7 @@ namespace openld {
 
             services.AddTransient<IFixtureService, FixtureService>();
             services.AddTransient<IFixtureTypeService, FixtureTypeService>();
+            services.AddTransient<IDrawingService, DrawingService>();
 
             services.AddControllers(options => {
                 // Prevent the following exception: 'This method does not support GeometryCollection arguments'
@@ -61,6 +63,7 @@ namespace openld {
                 foreach (var converter in NetTopologySuite.IO.GeoJsonSerializer.Create(new GeometryFactory()).Converters) {
                     options.SerializerSettings.Converters.Add(converter);
                 }
+                options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
             }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
         }
 

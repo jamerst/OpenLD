@@ -1,19 +1,23 @@
 import React, { Component } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import {
   Button, ButtonGroup,
+  Card, CardHeader, CardBody,
   Container, Row, Col,
-  Navbar, NavbarBrand, NavLink } from 'reactstrap';
+  Navbar, NavbarBrand, NavLink,
+  Spinner } from 'reactstrap';
 import { Layer, Line, Stage } from 'react-konva';
 import { Text } from './drawing/KonvaNodes';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import { DrawingUtils } from './drawing/DrawingUtils';
+import authService from './api-authorization/AuthorizeService';
 
 export class Drawing extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      loading: true,
       grid: [],
       gridSize: 1,
       snapGridSize: 0.1,
@@ -26,9 +30,15 @@ export class Drawing extends Component {
       tooltipVisible: false,
       tooltipText: "",
       selectedTool: "none",
-      isDrawing: false
+      isDrawing: false,
+      newLinePoints: [0, 0],
+      newLinePos: {x: 0, y: 0},
+      lastLinePoint: [],
+      nextLinePoint: [],
+      drawingData: {}
     }
 
+    this.fetchDrawing = this.fetchDrawing.bind(this);
     this.renderGrid = this.renderGrid.bind(this);
     this.sizeStage = this.sizeStage.bind(this);
     this.handleDrag = this.handleDrag.bind(this);
@@ -36,11 +46,12 @@ export class Drawing extends Component {
     this.handleToolSelect = this.handleToolSelect.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleStageClick = this.handleStageClick.bind(this);
+    this.handleStageDblClick = this.handleStageDblClick.bind(this);
     this.zoom = this.zoom.bind(this);
   }
 
   componentDidMount() {
-    this.sizeStage();
+    this.fetchDrawing();
 
     window.addEventListener("resize", this.sizeStage);
   }
@@ -50,10 +61,22 @@ export class Drawing extends Component {
   }
 
   render() {
+    if (this.state.loading === true) {
+      return (
+      <Container className="h-100">
+        <Col className="h-100">
+          <Row className="align-items-center justify-content-center h-100">
+            <Spinner style={{width: "10rem", height: "10rem"}}/>
+          </Row>
+        </Col>
+      </Container>
+      );
+    }
+
     return (
       <div className="d-flex flex-column h-100">
         <Navbar color="light">
-          <NavbarBrand>[drawing title]</NavbarBrand>
+          <NavbarBrand>{this.state.drawingData.title}</NavbarBrand>
           <NavLink tag={Link} to="/"><Button close/></NavLink>
         </Navbar>
         <Container fluid className="pl-0 d-flex flex-grow-1">
@@ -81,8 +104,9 @@ export class Drawing extends Component {
                 onWheel = {this.zoom}
                 onMouseMove = {this.handleMouseMove}
                 onClick = {this.handleStageClick}
+                onDblClick = {this.handleStageDblClick}
               >
-                <Layer ref="grid">
+                <Layer>
                   {this.state.grid.map((line, index) => {
                     return (
                       <Line
@@ -113,17 +137,6 @@ export class Drawing extends Component {
                   />
                 </Layer>
                 <Layer>
-                  <Line
-                    key = "test"
-                    points = {[0, 0, 1, 1]}
-                    stroke = "#000"
-                    strokeWidth = {0.25}
-                    draggable
-                    onDragEnd = {this.handleDragEnd}
-                    onDragMove = {this.handleDrag}
-                  />
-                </Layer>
-                <Layer>
                   <Text
                     key = "tooltip"
                     position = {this.state.tooltipPos}
@@ -132,10 +145,31 @@ export class Drawing extends Component {
                     textScale = {1 / this.state.stageScale}
                   />
                 </Layer>
+                <Layer>
+                    <Line
+                      key = "new-line"
+                      points = {this.state.newLinePoints}
+                      position = {this.state.newLinePos}
+                      stroke = "#000"
+                      strokeWidth = {0.05}
+                      draggable
+                      onDragEnd = {this.handleDragEnd}
+                      onDragMove = {this.handleDrag}
+                    />
+                    <Line
+                      key = "line-preview"
+                      points = {[...this.state.lastLinePoint, ...this.state.nextLinePoint]}
+                      stroke = "#ddd"
+                      strokeWidth = {0.05}
+                    />
+                </Layer>
               </Stage>
             </Col>
-            <Col xs="1" style={{backgroundColor: "green"}}>
-            hello
+            <Col xs="1" className="p-0">
+              <Card>
+                <CardHeader>Testing</CardHeader>
+                <CardBody>Hello</CardBody>
+              </Card>
             </Col>
           </Row>
         </Container>
@@ -143,16 +177,62 @@ export class Drawing extends Component {
     );
   }
 
+  async fetchDrawing() {
+    const response = await fetch("api/drawing/GetDrawing/" + this.props.match.params.id, {
+      headers: await authService.generateHeader()
+    });
+    const data = await response.json();
+    this.setState({
+      drawingData: data.data,
+      loading: false
+    }, () => {
+      this.sizeStage();
+    });
+
+  }
+
   handleStageClick(event) {
-    if (this.state.selectedTool !== "none") {
-      this.setState({isDrawing: true});
+    if (this.state.selectedTool === "polygon") {
+      const stage = event.target.getStage();
+      const point = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.state.snapGridSize);
+      if (this.state.isDrawing === true) {
+        this.setState({
+          newLinePoints: [...this.state.newLinePoints, ...[point.x, point.y]],
+          lastLinePoint: [point.x, point.y]
+        });
+      } else {
+        this.setState({
+          isDrawing: true,
+          newLinePoints: [point.x, point.y],
+          newLinePos: [point.x, point.y],
+          lastLinePoint: [point.x, point.y]
+        });
+      }
+    }
+  }
+
+  handleStageDblClick(event) {
+    if (this.state.selectedTool === "polygon") {
+      this.setState({
+        isDrawing: false,
+        selectedTool: "none",
+        lastLinePoint: [],
+        nextLinePoint: [],
+        tooltipVisible: false
+      })
     }
   }
 
   handleMouseMove(event) {
-    if (this.state.isDrawing) {
-      let stage = event.target.getStage();
-      console.log(DrawingUtils.getRelativePointerPos(stage));
+    if (this.state.selectedTool === "polygon") {
+      const stage = event.target.getStage();
+      const snapPos = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.state.snapGridSize);
+      this.setState({
+        tooltipPos: {x: snapPos.x - 0.5, y: snapPos.y - 0.5},
+        tooltipText: "(" + snapPos.x.toFixed(1) + "," + snapPos.y.toFixed(1) + ")",
+        tooltipVisible: true,
+        nextLinePoint: [snapPos.x, snapPos.y]
+      });
     }
   }
 
