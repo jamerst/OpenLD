@@ -20,7 +20,7 @@ namespace openld.Services {
         }
 
         public async Task<List<Fixture>> SearchAllFixtures(SearchParams search) {
-            var query = _context.Fixture.AsNoTracking()
+            var query = _context.Fixtures.AsNoTracking()
                     .Where(f => EF.Functions.ILike(f.Name, $"%{search.name}%"))
                     .Where(f => EF.Functions.ILike(f.Manufacturer, $"%{search.manufacturer}%"));
 
@@ -36,7 +36,7 @@ namespace openld.Services {
         }
 
         public async Task CreateFixture(Fixture fixture) {
-            fixture.Type = await _context.FixtureType.FirstOrDefaultAsync(t => t.Id == fixture.Type.Id);
+            fixture.Type = await _context.FixtureTypes.FirstOrDefaultAsync(t => t.Id == fixture.Type.Id);
             fixture.Image = await _context.StoredImages.FirstOrDefaultAsync(i => i.Id == fixture.Image.Id);
 
             if (fixture.Type == default(FixtureType)) {
@@ -45,7 +45,7 @@ namespace openld.Services {
                 throw new KeyNotFoundException("Image not found");
             }
 
-            await _context.Fixture.AddAsync(fixture);
+            await _context.Fixtures.AddAsync(fixture);
             await _context.SaveChangesAsync();
         }
 

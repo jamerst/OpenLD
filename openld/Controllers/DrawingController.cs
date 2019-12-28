@@ -49,5 +49,18 @@ namespace openld.Controllers {
 
             return new JsonResponse<Drawing> { success = true, data = drawing };
         }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<ActionResult<JsonResponse<Structure>>> AddStructure(Structure structure) {
+            Structure newStructure;
+            try {
+                newStructure = await _drawingService.addStructure(structure);
+            } catch (Exception) {
+                return new JsonResponse<Structure> { success = false, msg = "Unknown error adding structure" };
+            }
+
+            return new JsonResponse<Structure> { success = true, data = newStructure };
+        }
     }
 }

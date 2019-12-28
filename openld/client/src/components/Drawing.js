@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Button, ButtonGroup,
   Card, CardHeader, CardBody,
@@ -11,6 +11,7 @@ import { Text } from './drawing/KonvaNodes';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import { DrawingUtils } from './drawing/DrawingUtils';
+import { View } from "./drawing/DrawingComponents";
 import authService from './api-authorization/AuthorizeService';
 
 export class Drawing extends Component {
@@ -35,7 +36,9 @@ export class Drawing extends Component {
       newLinePos: {x: 0, y: 0},
       lastLinePoint: [],
       nextLinePoint: [],
-      drawingData: {}
+      drawingData: {},
+      currentView: "",
+      views: new Map()
     }
 
     this.fetchDrawing = this.fetchDrawing.bind(this);
@@ -47,6 +50,7 @@ export class Drawing extends Component {
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleStageClick = this.handleStageClick.bind(this);
     this.handleStageDblClick = this.handleStageDblClick.bind(this);
+    this.addStructure = this.addStructure.bind(this);
     this.zoom = this.zoom.bind(this);
   }
 
@@ -163,10 +167,15 @@ export class Drawing extends Component {
                       strokeWidth = {0.05}
                     />
                 </Layer>
+                <View
+                    data={this.state.views.get(this.state.currentView)}
+                    onDragEnd = {this.handleDragEnd}
+                    onDragMove = {this.handleDrag}
+                />
               </Stage>
             </Col>
             <Col xs="1" className="p-0">
-              <Card>
+              <Card className="rounded-0">
                 <CardHeader>Testing</CardHeader>
                 <CardBody>Hello</CardBody>
               </Card>
@@ -184,11 +193,14 @@ export class Drawing extends Component {
     const data = await response.json();
     this.setState({
       drawingData: data.data,
-      loading: false
+      loading: false,
+      currentView: data.data.views[0].id,
+      views: new Map(data.data.views.map(view => {return [view.id, view]}))
     }, () => {
       this.sizeStage();
+      console.log(this.state.drawingData);
+      console.log(this.state.views);
     });
-
   }
 
   handleStageClick(event) {
@@ -220,6 +232,41 @@ export class Drawing extends Component {
         nextLinePoint: [],
         tooltipVisible: false
       })
+      this.addStructure();
+    }
+  }
+
+  async addStructure() {
+    let points = [];
+    for (let i = 0; i < this.state.newLinePoints.length; i+=2) {
+      points.push({x: this.state.newLinePoints[i], y: this.state.newLinePoints[i+1]})
+    }
+
+    const response = await fetch("api/drawing/AddStructure", {
+      method: "POST",
+      headers: await authService.generateHeader({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        view: {id: this.state.currentView},
+        geometry: {points: points}
+      })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      this.setState((prevState) => {
+        const nextViews = new Map(prevState.views);
+        const curView = nextViews.get(data.data.view.id)
+
+        const newView = {
+          ...curView,
+          structures: [...curView.structures, data.data]
+        };
+
+        return {
+          views: nextViews.set(data.data.view.id, newView),
+          newLinePoints: []
+        };
+      });
     }
   }
 
@@ -259,6 +306,7 @@ export class Drawing extends Component {
   }
 
   handleDrag(event) {
+    console.log("DRAGGING");
     const pos = event.target.position();
     const snapPos = DrawingUtils.getNearestSnapPos(pos, this.state.snapGridSize);
     this.setState({

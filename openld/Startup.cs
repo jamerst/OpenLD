@@ -1,16 +1,11 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using NetTopologySuite.Geometries;
 using Newtonsoft.Json;
 
 using openld.Services;
@@ -27,7 +22,6 @@ namespace openld {
         public void ConfigureServices(IServiceCollection services) {
             services.AddControllersWithViews();
 
-            NpgsqlConnection.GlobalTypeMapper.UseNetTopologySuite();
             services.AddDbContext<Data.OpenLDContext>();
 
             services.AddDefaultIdentity<Models.User>()
@@ -51,18 +45,8 @@ namespace openld {
             services.AddTransient<IFixtureTypeService, FixtureTypeService>();
             services.AddTransient<IDrawingService, DrawingService>();
 
-            services.AddControllers(options => {
-                // Prevent the following exception: 'This method does not support GeometryCollection arguments'
-                // See: https://github.com/npgsql/Npgsql.EntityFrameworkCore.PostgreSQL/issues/585
-                options.ModelMetadataDetailsProviders.Add(new SuppressChildValidationMetadataProvider(typeof(Point)));
-                options.ModelMetadataDetailsProviders.Add(new SuppressChildValidationMetadataProvider(typeof(Coordinate)));
-                options.ModelMetadataDetailsProviders.Add(new SuppressChildValidationMetadataProvider(typeof(LineString)));
-                options.ModelMetadataDetailsProviders.Add(new SuppressChildValidationMetadataProvider(typeof(MultiLineString)));
-            }).AddNewtonsoftJson(options => {
-                // add custom converters for geometry objects
-                foreach (var converter in NetTopologySuite.IO.GeoJsonSerializer.Create(new GeometryFactory()).Converters) {
-                    options.SerializerSettings.Converters.Add(converter);
-                }
+            services.AddControllers().AddNewtonsoftJson(options => {
+                // ignore loops when serialising
                 options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
             }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
         }

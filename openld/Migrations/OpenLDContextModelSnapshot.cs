@@ -3,9 +3,9 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using openld.Data;
+using openld.Models;
 
 namespace openld.Migrations
 {
@@ -16,9 +16,8 @@ namespace openld.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("Npgsql:PostgresExtension:postgis", ",,")
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn)
-                .HasAnnotation("ProductVersion", "3.0.0")
+                .HasAnnotation("ProductVersion", "3.1.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             modelBuilder.Entity("IdentityServer4.EntityFramework.Entities.DeviceFlowCodes", b =>
@@ -256,7 +255,7 @@ namespace openld.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("Drawing");
+                    b.ToTable("Drawings");
                 });
 
             modelBuilder.Entity("openld.Models.Fixture", b =>
@@ -295,7 +294,7 @@ namespace openld.Migrations
 
                     b.HasIndex("TypeId");
 
-                    b.ToTable("Fixture");
+                    b.ToTable("Fixtures");
                 });
 
             modelBuilder.Entity("openld.Models.FixtureMode", b =>
@@ -317,7 +316,7 @@ namespace openld.Migrations
 
                     b.HasIndex("FixtureId");
 
-                    b.ToTable("FixtureMode");
+                    b.ToTable("FixtureModes");
                 });
 
             modelBuilder.Entity("openld.Models.FixtureType", b =>
@@ -331,7 +330,7 @@ namespace openld.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("FixtureType");
+                    b.ToTable("FixtureTypes");
                 });
 
             modelBuilder.Entity("openld.Models.RiggedFixture", b =>
@@ -353,7 +352,7 @@ namespace openld.Migrations
                         .HasColumnType("text");
 
                     b.Property<Point>("Position")
-                        .HasColumnType("geometry");
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("StructureId")
                         .HasColumnType("text");
@@ -369,7 +368,7 @@ namespace openld.Migrations
 
                     b.HasIndex("StructureId");
 
-                    b.ToTable("RiggedFixture");
+                    b.ToTable("RiggedFixtures");
                 });
 
             modelBuilder.Entity("openld.Models.StoredImage", b =>
@@ -396,7 +395,7 @@ namespace openld.Migrations
                         .HasColumnType("text");
 
                     b.Property<Geometry>("Geometry")
-                        .HasColumnType("geometry");
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("Name")
                         .HasColumnType("text");
@@ -419,7 +418,7 @@ namespace openld.Migrations
 
                     b.HasIndex("ViewId");
 
-                    b.ToTable("Structure");
+                    b.ToTable("Structures");
                 });
 
             modelBuilder.Entity("openld.Models.StructureType", b =>
@@ -433,7 +432,7 @@ namespace openld.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("StructureType");
+                    b.ToTable("StructureTypes");
                 });
 
             modelBuilder.Entity("openld.Models.User", b =>
@@ -540,7 +539,7 @@ namespace openld.Migrations
 
                     b.HasIndex("DrawingId");
 
-                    b.ToTable("View");
+                    b.ToTable("Views");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

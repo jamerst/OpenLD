@@ -18,7 +18,7 @@ namespace openld.Services {
             Drawing drawing = new Drawing();
 
             try {
-                drawing.Owner = await _context.User.FirstAsync(u => u.Id == userId);
+                drawing.Owner = await _context.Users.FirstAsync(u => u.Id == userId);
             } catch (InvalidOperationException) {
                 throw new UnauthorizedAccessException("Invalid user ID");
             }
@@ -30,8 +30,8 @@ namespace openld.Services {
             view.Drawing = drawing;
             view.Name = "Default";
 
-            await _context.Drawing.AddAsync(drawing);
-            await _context.View.AddAsync(view);
+            await _context.Drawings.AddAsync(drawing);
+            await _context.Views.AddAsync(view);
             await _context.SaveChangesAsync();
 
             return drawing.Id;
@@ -41,7 +41,7 @@ namespace openld.Services {
             Drawing drawing;
 
             try {
-                drawing = await _context.Drawing
+                drawing = await _context.Drawings
                 .Include(d => d.Views)
                     .ThenInclude(v => v.Structures)
                         .ThenInclude(s => s.Fixtures)
@@ -52,10 +52,24 @@ namespace openld.Services {
 
             return drawing;
         }
+
+        public async Task<Structure> addStructure(Structure structure) {
+            try {
+                structure.View = await _context.Views.FirstAsync(v => v.Id == structure.View.Id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("View ID not found");
+            }
+
+            await _context.Structures.AddAsync(structure);
+            await _context.SaveChangesAsync();
+
+            return structure;
+        }
     }
 
     public interface IDrawingService {
         Task<string> createDrawing(string userId);
         Task<Drawing> getDrawing(string id);
+        Task<Structure> addStructure(Structure structure);
     }
 }

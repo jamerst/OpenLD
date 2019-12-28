@@ -18,7 +18,7 @@ namespace openld.Controllers {
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetImage(string id) {
-            Fixture fixture = await _context.Fixture.Include(f => f.Image).FirstOrDefaultAsync(f => f.Id == id);
+            Fixture fixture = await _context.Fixtures.Include(f => f.Image).FirstOrDefaultAsync(f => f.Id == id);
 
             if (fixture == default(Fixture)) {
                 return NotFound();

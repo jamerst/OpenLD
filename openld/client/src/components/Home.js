@@ -8,11 +8,16 @@ export class Home extends Component {
   constructor(props) {
     super(props);
 
+    this.state = {
+      actions: <div></div>
+    }
+
     this.handleCreate = this.handleCreate.bind(this);
   }
 
   componentDidMount() {
     document.title = "OpenLD";
+    this.renderActions();
   }
 
   render () {
@@ -22,8 +27,7 @@ export class Home extends Component {
           <h1 className="display-3">OpenLD</h1>
           <p>OpenLD is a free online tool for creating lighting designs collaboratively.</p>
         </Container>
-        <hr/>
-        <Button color="primary" size="lg" onClick={this.handleCreate}>Create Drawing</Button>
+        {this.state.actions}
       </Jumbotron>
     );
   }
@@ -38,6 +42,12 @@ export class Home extends Component {
 
     if (data.success === true) {
       this.props.history.push("/drawing/" + data.data);
+    }
+  }
+
+  async renderActions() {
+    if (await authService.isAuthenticated()) {
+    this.setState({actions: <Fragment><hr/><Button color="primary" size="lg" onClick={this.handleCreate}>Create Drawing</Button></Fragment>});
     }
   }
 }

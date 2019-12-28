@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations.Schema;
-using NetTopologySuite.Geometries;
 
 namespace openld.Models {
     public class RiggedFixture {
@@ -7,6 +6,7 @@ namespace openld.Models {
         public string Id { get; set; }
         public Fixture Fixture { get; set; }
         public Structure Structure { get; set; }
+        [Column(TypeName = "jsonb")]
         public Point Position { get; set; }
         public short Address { get; set; }
         public short Universe { get; set; }

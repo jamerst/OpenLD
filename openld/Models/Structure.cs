@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using NetTopologySuite.Geometries;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace openld.Models {
@@ -7,6 +6,7 @@ namespace openld.Models {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public string Id { get; set; }
         public View View { get; set; }
+        [Column(TypeName = "jsonb")]
         public Geometry Geometry { get; set; }
         public List<RiggedFixture> Fixtures { get; set; }
         public string Name { get; set; }
