@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  Alert,
   Button, ButtonGroup,
   Card, CardHeader, CardBody,
   Container, Row, Col,
@@ -9,6 +10,7 @@ import {
 import { Layer, Line, Stage } from 'react-konva';
 import { Text } from './drawing/KonvaNodes';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { HubConnectionBuilder } from "@aspnet/signalr";
 
 import { DrawingUtils } from './drawing/DrawingUtils';
 import { View } from "./drawing/DrawingComponents";
@@ -38,7 +40,11 @@ export class Drawing extends Component {
       nextLinePoint: [],
       drawingData: {},
       currentView: "",
-      views: new Map()
+      views: new Map(),
+      hub: null,
+      alertContent: "",
+      alertColour: "info",
+      alertOpen: false
     }
 
     this.fetchDrawing = this.fetchDrawing.bind(this);
@@ -51,13 +57,33 @@ export class Drawing extends Component {
     this.handleStageClick = this.handleStageClick.bind(this);
     this.handleStageDblClick = this.handleStageDblClick.bind(this);
     this.addStructure = this.addStructure.bind(this);
+    this.insertNewStructure = this.insertNewStructure.bind(this);
+    this.addStructureSuccess = this.addStructureSuccess.bind(this);
+    this.addHubHandlers = this.addHubHandlers.bind(this);
     this.zoom = this.zoom.bind(this);
   }
 
   componentDidMount() {
+    this.setState({
+      hub: new HubConnectionBuilder()
+        .withUrl("/api/drawing/hub")
+        .build()
+    }, () => {
+      this.state.hub
+        .start()
+        .then(() => this.addHubHandlers())
+        .catch(err => console.log("Hub error: " + err));
+    });
+
     this.fetchDrawing();
 
     window.addEventListener("resize", this.sizeStage);
+  }
+
+  addHubHandlers() {
+    this.state.hub.on("NewStructure", structure => this.insertNewStructure(structure));
+    this.state.hub.on("AddStructureSuccess", structure => this.addStructureSuccess(structure));
+    this.state.hub.on("AddStructureFailure", () => this.setState({ alertColour: "danger", alertContent: "Error: failed to add structure", alertOpen: "true" }));
   }
 
   componentWillUnmount() {
@@ -97,6 +123,9 @@ export class Drawing extends Component {
               </ButtonGroup>
             </Col>
             <Col id="stage-container" className="p-0 m-0 flex-grow-1">
+              <div style={{position: "absolute", width: "100%", zIndex: "1000"}}>
+                <Alert color={this.state.alertColour} isOpen={this.state.alertOpen}>{this.state.alertContent}</Alert>
+              </div>
               <Stage
                 x = {0}
                 y = {0}
@@ -190,17 +219,23 @@ export class Drawing extends Component {
     const response = await fetch("api/drawing/GetDrawing/" + this.props.match.params.id, {
       headers: await authService.generateHeader()
     });
-    const data = await response.json();
-    this.setState({
-      drawingData: data.data,
-      loading: false,
-      currentView: data.data.views[0].id,
-      views: new Map(data.data.views.map(view => {return [view.id, view]}))
-    }, () => {
-      this.sizeStage();
-      console.log(this.state.drawingData);
-      console.log(this.state.views);
-    });
+    if (response.ok) {
+      const data = await response.json();
+
+      this.state.hub.invoke("OpenDrawing", data.data.id);
+
+      this.setState({
+        drawingData: data.data,
+        loading: false,
+        currentView: data.data.views[0].id,
+        views: new Map(data.data.views.map(view => {return [view.id, view]}))
+      }, () => {
+        this.sizeStage();
+      });
+    } else if (response.status === 401) {
+      alert("Access denied");
+    }
+
   }
 
   handleStageClick(event) {
@@ -242,32 +277,34 @@ export class Drawing extends Component {
       points.push({x: this.state.newLinePoints[i], y: this.state.newLinePoints[i+1]})
     }
 
-    const response = await fetch("api/drawing/AddStructure", {
-      method: "POST",
-      headers: await authService.generateHeader({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({
+    this.state.hub.invoke(
+      "AddStructure",
+      {
         view: {id: this.state.currentView},
         geometry: {points: points}
-      })
+      }
+    ).catch(err => console.log(err));
+  }
+
+  insertNewStructure(structure) {
+    this.setState((prevState) => {
+      const nextViews = new Map(prevState.views);
+      const curView = nextViews.get(structure.view.id)
+
+      const newView = {
+        ...curView,
+        structures: [...curView.structures, structure]
+      };
+
+      return {
+        views: nextViews.set(structure.view.id, newView)
+      };
     });
+  }
 
-    if (response.ok) {
-      const data = await response.json();
-      this.setState((prevState) => {
-        const nextViews = new Map(prevState.views);
-        const curView = nextViews.get(data.data.view.id)
-
-        const newView = {
-          ...curView,
-          structures: [...curView.structures, data.data]
-        };
-
-        return {
-          views: nextViews.set(data.data.view.id, newView),
-          newLinePoints: []
-        };
-      });
-    }
+  addStructureSuccess(structure) {
+    this.insertNewStructure(structure);
+    this.setState({newLinePoints: []});
   }
 
   handleMouseMove(event) {

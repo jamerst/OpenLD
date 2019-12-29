@@ -3,7 +3,6 @@ import { Layer, Line } from "react-konva";
 
 export class View extends Component {
   render() {
-    console.log(this.props);
     return (<Layer>
       {this.props.data.structures.map(structure => {
         return (
