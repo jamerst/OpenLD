@@ -47,6 +47,7 @@ export class Drawing extends Component {
       alertOpen: false
     }
 
+    this.initHubConnection = this.initHubConnection.bind(this);
     this.fetchDrawing = this.fetchDrawing.bind(this);
     this.renderGrid = this.renderGrid.bind(this);
     this.sizeStage = this.sizeStage.bind(this);
@@ -64,20 +65,27 @@ export class Drawing extends Component {
   }
 
   componentDidMount() {
+    this.initHubConnection();
+
+    window.addEventListener("resize", this.sizeStage);
+  }
+
+  async initHubConnection() {
+    let token = await authService.getAccessToken();
+
     this.setState({
       hub: new HubConnectionBuilder()
-        .withUrl("/api/drawing/hub")
+        .withUrl("/api/drawing/hub", { accessTokenFactory: () => token })
         .build()
     }, () => {
       this.state.hub
         .start()
-        .then(() => this.addHubHandlers())
+        .then(() => {
+          this.addHubHandlers();
+          this.fetchDrawing();
+        })
         .catch(err => console.log("Hub error: " + err));
     });
-
-    this.fetchDrawing();
-
-    window.addEventListener("resize", this.sizeStage);
   }
 
   addHubHandlers() {
@@ -343,7 +351,6 @@ export class Drawing extends Component {
   }
 
   handleDrag(event) {
-    console.log("DRAGGING");
     const pos = event.target.position();
     const snapPos = DrawingUtils.getNearestSnapPos(pos, this.state.snapGridSize);
     this.setState({

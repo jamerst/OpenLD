@@ -1,4 +1,7 @@
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.ApiAuthorization.IdentityServer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
@@ -34,6 +37,23 @@ namespace openld {
 
             services.AddAuthentication()
                 .AddIdentityServerJwt();
+
+            services.Configure<JwtBearerOptions>(
+                IdentityServerJwtConstants.IdentityServerJwtBearerScheme,
+                options => {
+                    var OnMessageReceived = options.Events.OnMessageReceived;
+
+                    options.Events.OnMessageReceived = async context => {
+                        await OnMessageReceived(context);
+
+                        string token = context.Request.Query["access_token"];
+                        if (!string.IsNullOrEmpty(token) &&
+                        context.HttpContext.Request.Path.StartsWithSegments("/api/drawing/hub")) {
+                            context.Token = token;
+                        }
+                    };
+                }
+            );
 
             services.AddControllersWithViews();
             services.AddRazorPages();

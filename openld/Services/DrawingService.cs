@@ -65,11 +65,37 @@ namespace openld.Services {
 
             return structure;
         }
+
+        public bool isSharedWith(string drawingId, string userId) {
+            if (_context.UserDrawings.Where(u => u.Drawing.Id == drawingId).Where(u => u.User.Id == userId).Any()) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        public bool isOwner(string drawingId, string userId) {
+            try {
+                Drawing drawing = _context.Drawings.AsNoTracking()
+                    .Include(d => d.Owner)
+                    .First(d => d.Id == drawingId);
+
+                if (drawing.Owner.Id == userId) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } catch (Exception) {
+                return false;
+            }
+        }
     }
 
     public interface IDrawingService {
         Task<string> createDrawing(string userId);
         Task<Drawing> getDrawing(string id);
         Task<Structure> addStructure(Structure structure);
+        bool isSharedWith(string drawingId, string userId);
+        bool isOwner(string drawingId, string userId);
     }
 }

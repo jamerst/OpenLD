@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
+using openld.Authorization;
 using openld.Models;
 using openld.Services;
 using openld.Utils;
@@ -22,6 +23,7 @@ namespace openld.Controllers {
             _fixtureTypeService = fixtureTypeService;
         }
         [HttpPost]
+        [Authorize]
         public async Task<ActionResult<JsonResponse<List<Fixture>>>> GetFixtures(SearchParams search) {
             return new JsonResponse<List<Fixture>> { success = true, data = await _fixtureService.SearchAllFixtures(search) };
         }

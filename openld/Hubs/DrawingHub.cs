@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
+using openld.Authorization;
 using openld.Models;
 using openld.Services;
 
 namespace openld.Hubs {
+
+    [Authorize]
     public class DrawingHub : Hub {
         private readonly IDrawingService _drawingService;
         private static ConcurrentDictionary<string, string> connectionDrawing = new ConcurrentDictionary<string, string>();
@@ -27,7 +31,7 @@ namespace openld.Hubs {
 
             await base.OnDisconnectedAsync(exception);
         }
-
+        [DrawingShared(AccessContext.Drawing)]
         public async Task AddStructure(Structure structure) {
             Structure newStructure;
             try {
