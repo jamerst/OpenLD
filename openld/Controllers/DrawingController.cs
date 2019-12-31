@@ -7,28 +7,29 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-using openld.Authorization;
 using openld.Models;
 using openld.Services;
 using openld.Utils;
 
 namespace openld.Controllers {
     [ApiController]
-    [Route("api/drawing/[action]/{drawingId}")]
+    [Route("api/drawing/[action]")]
     public class DrawingController : ControllerBase {
         private readonly IDrawingService _drawingService;
+        private readonly AuthUtils _authUtils;
         public DrawingController(IDrawingService drawingService) {
             _drawingService = drawingService;
+            _authUtils = new AuthUtils(drawingService);
         }
 
         [HttpPost]
         [Authorize]
-        public async Task<ActionResult<JsonResponse<string>>> CreateDrawing(string drawingId) {
+        public async Task<ActionResult<JsonResponse<string>>> CreateDrawing() {
             var user = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
             string newDrawingId = "";
             try {
-                newDrawingId = await _drawingService.createDrawing(user);
+                newDrawingId = await _drawingService.CreateDrawingAsync(user);
             } catch (Exception) {
                 return new JsonResponse<string> { success = false, msg = "Unknown error creating new drawing" };
             }
@@ -36,13 +37,16 @@ namespace openld.Controllers {
             return new JsonResponse<string> { success = true, data = newDrawingId };
         }
 
-        [HttpGet]
+        [HttpGet("{drawingId}")]
         [Authorize]
-        [DrawingShared(AccessContext.Drawing)]
         public async Task<ActionResult<JsonResponse<Drawing>>> GetDrawing(string drawingId) {
+            if (! await _authUtils.hasAccess(drawingId, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                return Unauthorized();
+            }
+
             Drawing drawing;
             try {
-                drawing = await _drawingService.getDrawing(drawingId);
+                drawing = await _drawingService.GetDrawingAsync(drawingId);
             } catch (KeyNotFoundException) {
                 return new JsonResponse<Drawing> { success = false, msg = "Drawing ID not found" };
             } catch (Exception) {
@@ -54,11 +58,14 @@ namespace openld.Controllers {
 
         [HttpPost]
         [Authorize]
-        [DrawingShared(AccessContext.Drawing)]
-        public async Task<ActionResult<JsonResponse<Structure>>> AddStructure(string drawingId, Structure structure) {
+        public async Task<ActionResult<JsonResponse<Structure>>> AddStructure(Structure structure) {
+            if (! await _authUtils.hasAccess(structure.View, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                return Unauthorized();
+            }
+
             Structure newStructure;
             try {
-                newStructure = await _drawingService.addStructure(structure);
+                newStructure = await _drawingService.AddStructureAsync(structure);
             } catch (Exception) {
                 return new JsonResponse<Structure> { success = false, msg = "Unknown error adding structure" };
             }

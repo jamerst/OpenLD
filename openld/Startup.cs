@@ -43,7 +43,10 @@ namespace openld {
                 options => {
                     var OnMessageReceived = options.Events.OnMessageReceived;
 
+                    // add logic to allow signalr hubs to be authorized successfully
+                    // token cannot be added in request headers, so it is sent as a parameter, so must be copied into context
                     options.Events.OnMessageReceived = async context => {
+                        // run original handler first
                         await OnMessageReceived(context);
 
                         string token = context.Request.Query["access_token"];

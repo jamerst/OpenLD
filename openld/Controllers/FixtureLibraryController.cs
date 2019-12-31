@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-using openld.Authorization;
 using openld.Models;
 using openld.Services;
 using openld.Utils;
@@ -25,14 +24,14 @@ namespace openld.Controllers {
         [HttpPost]
         [Authorize]
         public async Task<ActionResult<JsonResponse<List<Fixture>>>> GetFixtures(SearchParams search) {
-            return new JsonResponse<List<Fixture>> { success = true, data = await _fixtureService.SearchAllFixtures(search) };
+            return new JsonResponse<List<Fixture>> { success = true, data = await _fixtureService.SearchAllFixturesAsync(search) };
         }
 
         [HttpPost]
         [Authorize]
         public async Task<ActionResult<JsonResponse<object>>> CreateFixture(Fixture fixture) {
             try {
-                await _fixtureService.CreateFixture(fixture);
+                await _fixtureService.CreateFixtureAsync(fixture);
             } catch (KeyNotFoundException e) {
                 return new JsonResponse<object> { success = false, msg = e.Message };
             } catch (Exception) {
@@ -48,7 +47,7 @@ namespace openld.Controllers {
             string id = "";
 
             try {
-                id = await _fixtureService.UploadFixtureImage(file);
+                id = await _fixtureService.UploadFixtureImageAsync(file);
             } catch (ArgumentException e) {
                 return new JsonResponse<string> { success = false, msg = e.Message };
             } catch (Exception) {
@@ -60,13 +59,13 @@ namespace openld.Controllers {
 
         [HttpPost]
         public async Task<ActionResult<JsonResponse<List<FixtureType>>>> GetFixtureTypes() {
-            return new JsonResponse<List<FixtureType>> { success = true, data  = await _fixtureTypeService.GetAllTypes() };
+            return new JsonResponse<List<FixtureType>> { success = true, data  = await _fixtureTypeService.GetAllTypesAsync() };
         }
 
         [HttpPost]
         [Authorize]
         public async Task CreateTypes([FromBody] string[] names) {
-            await _fixtureTypeService.CreateTypes(names);
+            await _fixtureTypeService.CreateTypesAsync(names);
         }
     }
 }

@@ -5,6 +5,7 @@ import {
   Button, ButtonGroup,
   Card, CardHeader, CardBody,
   Container, Row, Col,
+  ListGroup, ListGroupItem,
   Navbar, NavbarBrand, NavLink,
   Spinner } from 'reactstrap';
 import { Layer, Line, Stage } from 'react-konva';
@@ -21,6 +22,7 @@ export class Drawing extends Component {
     super(props);
     this.state = {
       loading: true,
+      accessDenied: false,
       grid: [],
       gridSize: 1,
       snapGridSize: 0.1,
@@ -40,7 +42,7 @@ export class Drawing extends Component {
       nextLinePoint: [],
       drawingData: {},
       currentView: "",
-      views: new Map(),
+      views: [],
       hub: null,
       alertContent: "",
       alertColour: "info",
@@ -61,6 +63,10 @@ export class Drawing extends Component {
     this.insertNewStructure = this.insertNewStructure.bind(this);
     this.addStructureSuccess = this.addStructureSuccess.bind(this);
     this.addHubHandlers = this.addHubHandlers.bind(this);
+    this.handleCreateView = this.handleCreateView.bind(this);
+    this.insertNewView = this.insertNewView.bind(this);
+    this.setAlertError = this.setAlertError.bind(this);
+    this.switchView = this.switchView.bind(this);
     this.zoom = this.zoom.bind(this);
   }
 
@@ -91,7 +97,11 @@ export class Drawing extends Component {
   addHubHandlers() {
     this.state.hub.on("NewStructure", structure => this.insertNewStructure(structure));
     this.state.hub.on("AddStructureSuccess", structure => this.addStructureSuccess(structure));
-    this.state.hub.on("AddStructureFailure", () => this.setState({ alertColour: "danger", alertContent: "Error: failed to add structure", alertOpen: "true" }));
+    this.state.hub.on("AddStructureFailure", () => this.setAlertError("Failed to insert new structure"));
+
+    this.state.hub.on("NewView", view => this.insertNewView(view));
+    this.state.hub.on("CreateViewSuccess", view => this.insertNewView(view));
+    this.state.hub.on("CreateViewFailure", () => this.setAlertError("Failed to create new view"));
   }
 
   componentWillUnmount() {
@@ -99,7 +109,20 @@ export class Drawing extends Component {
   }
 
   render() {
-    if (this.state.loading === true) {
+    if (this.state.accessDenied === true) {
+      return (
+        <Container className="h-100">
+          <Col className="h-100">
+            <Row className="align-items-center justify-content-center flex-column h-100">
+              <FontAwesomeIcon icon="ban" style={{width: "10rem", height: "10rem", color: "#B71C1C"}}/>
+              <h1>Access Denied</h1>
+              <h3>Sorry, you don't have permission to view this drawing.</h3>
+              <Link to="/">Return Home</Link>
+            </Row>
+          </Col>
+        </Container>
+        );
+    } else if (this.state.loading === true) {
       return (
       <Container className="h-100">
         <Col className="h-100">
@@ -130,7 +153,7 @@ export class Drawing extends Component {
                 </Button>
               </ButtonGroup>
             </Col>
-            <Col id="stage-container" className="p-0 m-0 flex-grow-1">
+            <Col id="stage-container" className="p-0 m-0">
               <div style={{position: "absolute", width: "100%", zIndex: "1000"}}>
                 <Alert color={this.state.alertColour} isOpen={this.state.alertOpen}>{this.state.alertContent}</Alert>
               </div>
@@ -205,16 +228,49 @@ export class Drawing extends Component {
                     />
                 </Layer>
                 <View
-                    data={this.state.views.get(this.state.currentView)}
+                    data={this.state.views.find(view => view.id === this.state.currentView)}
                     onDragEnd = {this.handleDragEnd}
                     onDragMove = {this.handleDrag}
                 />
               </Stage>
             </Col>
-            <Col xs="1" className="p-0">
-              <Card className="rounded-0">
-                <CardHeader>Testing</CardHeader>
-                <CardBody>Hello</CardBody>
+            <Col xs="4" md="3" lg="1" className="p-0 d-flex flex-column align-items-stretch" style={{maxHeight: this.state.stageHeight}}>
+              <Card className="rounded-0" style={{minHeight: "15%"}}>
+                <CardHeader className="d-flex justify-content-between align-content-center pl-3 pr-3">
+                  <h5>Views</h5>
+                  <Button onClick={this.handleCreateView} close><FontAwesomeIcon icon="plus-circle"/></Button>
+                </CardHeader>
+
+                <CardBody className="overflow-auto p-0">
+                  <ListGroup>
+                    {this.state.views.map(view => {
+                      return (
+                        <ListGroupItem
+                          className="rounded-0 p-1 border-left-0 border-right-0 d-flex justify-content-between"
+                          onClick={() => this.switchView(view.id)}
+                          active={this.state.currentView === view.id}
+                        >
+                          <div>{view.name}</div>
+                          <Button close><FontAwesomeIcon icon="trash" size="xs"/></Button>
+                        </ListGroupItem>
+                      );
+                    })}
+                  </ListGroup>
+                </CardBody>
+              </Card>
+
+              <Card className="rounded-0" style={{minHeight: "15%"}}>
+                <CardHeader className="pl-3 pr-3"><h5>Selected Object</h5></CardHeader>
+                <CardBody className="overflow-auto text-center">
+                  <em>No object selected</em>
+                </CardBody>
+              </Card>
+
+              <Card className="rounded-0" style={{minHeight: "15%"}}>
+                <CardHeader className="pl-3 pr-3"><h5>Drawing Properties</h5></CardHeader>
+                <CardBody className="overflow-auto">
+
+                </CardBody>
               </Card>
             </Col>
           </Row>
@@ -227,23 +283,24 @@ export class Drawing extends Component {
     const response = await fetch("api/drawing/GetDrawing/" + this.props.match.params.id, {
       headers: await authService.generateHeader()
     });
+
     if (response.ok) {
       const data = await response.json();
 
-      this.state.hub.invoke("OpenDrawing", data.data.id);
+      this.state.hub.invoke("OpenDrawing", data.data.id)
+        .catch(err => console.error(err.toString()));
 
       this.setState({
         drawingData: data.data,
         loading: false,
         currentView: data.data.views[0].id,
-        views: new Map(data.data.views.map(view => {return [view.id, view]}))
+        views: data.data.views
       }, () => {
         this.sizeStage();
       });
     } else if (response.status === 401) {
-      alert("Access denied");
+      this.setState({accessDenied: true});
     }
-
   }
 
   handleStageClick(event) {
@@ -296,16 +353,19 @@ export class Drawing extends Component {
 
   insertNewStructure(structure) {
     this.setState((prevState) => {
-      const nextViews = new Map(prevState.views);
-      const curView = nextViews.get(structure.view.id)
+      let views = [...prevState.views];
+      const modifiedIndex = views.findIndex(view => view.id === structure.view.id);
+      const modifiedView = views[modifiedIndex]
 
       const newView = {
-        ...curView,
-        structures: [...curView.structures, structure]
+        ...modifiedView,
+        structures: [...modifiedView.structures, structure]
       };
 
+      views[modifiedIndex] = newView;
+
       return {
-        views: nextViews.set(structure.view.id, newView)
+        views: views
       };
     });
   }
@@ -313,6 +373,33 @@ export class Drawing extends Component {
   addStructureSuccess(structure) {
     this.insertNewStructure(structure);
     this.setState({newLinePoints: []});
+  }
+
+  async handleCreateView() {
+    let name = prompt("Enter view name");
+
+    this.state.hub.invoke(
+      "CreateView",
+      {
+        drawing: { id: this.props.match.params.id },
+        name: name
+      }
+    ).catch(err => console.log(err));
+  }
+
+  insertNewView(view) {
+    this.setState(prevState => {
+      let views = [...prevState.views];
+      views.push(view);
+
+      return{
+        views: views
+      };
+    })
+  }
+
+  switchView(id) {
+    this.setState({currentView: id});
   }
 
   handleMouseMove(event) {
@@ -338,16 +425,21 @@ export class Drawing extends Component {
   }
 
   sizeStage() {
-    const container = document.getElementById("stage-container");
+    // set the stage size to be very small initially to prevent it from taking all the width before the other columns have resized
     this.setState({
-      stageWidth: container.clientWidth,
-      stageHeight: container.clientHeight,
-      stageX: container.clientWidth / this.state.stageScale,
-      stageY: container.clientHeight / this.state.stageScale,
+      stageWidth: 0,
+      stageHeight: 0
     }, () => {
-      this.renderGrid();
-    });
-
+      const container = document.getElementById("stage-container");
+      this.setState({
+        stageWidth: container.clientWidth,
+        stageHeight: container.clientHeight,
+        stageX: container.clientWidth / this.state.stageScale,
+        stageY: container.clientHeight / this.state.stageScale,
+      }, () => {
+        this.renderGrid();
+      });
+    })
   }
 
   handleDrag(event) {
@@ -384,5 +476,13 @@ export class Drawing extends Component {
       grid.push([0, y, 2 * this.state.stageX, y]);
     }
     this.setState({grid: grid});
+  }
+
+  setAlertError(msg) {
+    this.setState({
+      alertColour: "danger",
+      alertContent: "Error: " + msg,
+      alertOpen: "true"
+    })
   }
 }

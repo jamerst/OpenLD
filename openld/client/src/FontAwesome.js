@@ -1,8 +1,18 @@
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faCheck, faChevronDown, faDrawPolygon, faEraser, faExclamation } from '@fortawesome/free-solid-svg-icons';
+import { faBan,
+  faCheck,
+  faChevronDown,
+  faDrawPolygon,
+  faEraser,
+  faExclamation,
+  faPlusCircle,
+  faTrash } from '@fortawesome/free-solid-svg-icons';
 
+library.add(faBan);
 library.add(faCheck);
 library.add(faChevronDown);
 library.add(faDrawPolygon);
 library.add(faEraser);
 library.add(faExclamation);
+library.add(faPlusCircle);
+library.add(faTrash);

@@ -14,11 +14,11 @@ namespace openld.Services {
             _context = context;
         }
 
-        public async Task<List<FixtureType>> GetAllTypes() {
+        public async Task<List<FixtureType>> GetAllTypesAsync() {
             return await _context.FixtureTypes.AsNoTracking().OrderBy(t => t.Name).ToListAsync();
         }
 
-        public async Task CreateTypes(string[] names) {
+        public async Task CreateTypesAsync(string[] names) {
             foreach (string name in names) {
                 FixtureType type = new FixtureType();
                 type.Name = name;
@@ -30,7 +30,7 @@ namespace openld.Services {
     }
 
     public interface IFixtureTypeService {
-        Task<List<FixtureType>> GetAllTypes();
-        Task CreateTypes(string[] names);
+        Task<List<FixtureType>> GetAllTypesAsync();
+        Task CreateTypesAsync(string[] names);
     }
 }

@@ -19,7 +19,7 @@ namespace openld.Services {
             _context = context;
         }
 
-        public async Task<List<Fixture>> SearchAllFixtures(SearchParams search) {
+        public async Task<List<Fixture>> SearchAllFixturesAsync(SearchParams search) {
             var query = _context.Fixtures.AsNoTracking()
                     .Where(f => EF.Functions.ILike(f.Name, $"%{search.name}%"))
                     .Where(f => EF.Functions.ILike(f.Manufacturer, $"%{search.manufacturer}%"));
@@ -35,7 +35,7 @@ namespace openld.Services {
                 .ToListAsync();
         }
 
-        public async Task CreateFixture(Fixture fixture) {
+        public async Task CreateFixtureAsync(Fixture fixture) {
             fixture.Type = await _context.FixtureTypes.FirstOrDefaultAsync(t => t.Id == fixture.Type.Id);
             fixture.Image = await _context.StoredImages.FirstOrDefaultAsync(i => i.Id == fixture.Image.Id);
 
@@ -49,7 +49,7 @@ namespace openld.Services {
             await _context.SaveChangesAsync();
         }
 
-        public async Task<string> UploadFixtureImage(IFormFile file) {
+        public async Task<string> UploadFixtureImageAsync(IFormFile file) {
             bool isImage = false;
             try {
                 isImage = ImageUtils.IsImage(file);
@@ -94,8 +94,8 @@ namespace openld.Services {
     }
 
     public interface IFixtureService {
-        Task<List<Fixture>> SearchAllFixtures(SearchParams search);
-        Task CreateFixture(Fixture fixture);
-        Task<string> UploadFixtureImage(IFormFile file);
+        Task<List<Fixture>> SearchAllFixturesAsync(SearchParams search);
+        Task CreateFixtureAsync(Fixture fixture);
+        Task<string> UploadFixtureImageAsync(IFormFile file);
     }
 }

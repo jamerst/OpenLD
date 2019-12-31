@@ -3,6 +3,10 @@ import { Layer, Line } from "react-konva";
 
 export class View extends Component {
   render() {
+    if (typeof(this.props.data) === "undefined" || typeof(this.props.data.structures) === "undefined") {
+      return null;
+    }
+
     return (<Layer>
       {this.props.data.structures.map(structure => {
         return (
