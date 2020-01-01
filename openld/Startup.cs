@@ -75,8 +75,9 @@ namespace openld {
                 options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
             }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 
-            services.AddSignalR()
-                .AddNewtonsoftJsonProtocol(options => options.PayloadSerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
+            services.AddSignalR(options => {
+                options.EnableDetailedErrors = true;
+            }).AddNewtonsoftJsonProtocol(options => options.PayloadSerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

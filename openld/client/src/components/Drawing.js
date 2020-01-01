@@ -14,7 +14,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { HubConnectionBuilder } from "@aspnet/signalr";
 
 import { DrawingUtils } from './drawing/DrawingUtils';
-import { View } from "./drawing/DrawingComponents";
+import { View, Grid, Scale } from "./drawing/DrawingComponents";
 import authService from './api-authorization/AuthorizeService';
 
 export class Drawing extends Component {
@@ -23,8 +23,7 @@ export class Drawing extends Component {
     this.state = {
       loading: true,
       accessDenied: false,
-      grid: [],
-      gridSize: 1,
+      gridEnabled: true,
       snapGridSize: 0.1,
       stageScale: 50,
       stageWidth: 0,
@@ -46,15 +45,13 @@ export class Drawing extends Component {
       hub: null,
       alertContent: "",
       alertColour: "info",
-      alertOpen: false
+      alertOpen: false,
+      stageCursor: "grab"
     }
 
     this.initHubConnection = this.initHubConnection.bind(this);
     this.fetchDrawing = this.fetchDrawing.bind(this);
-    this.renderGrid = this.renderGrid.bind(this);
     this.sizeStage = this.sizeStage.bind(this);
-    this.handleDrag = this.handleDrag.bind(this);
-    this.handleDragEnd = this.handleDragEnd.bind(this);
     this.handleToolSelect = this.handleToolSelect.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleStageClick = this.handleStageClick.bind(this);
@@ -67,6 +64,9 @@ export class Drawing extends Component {
     this.insertNewView = this.insertNewView.bind(this);
     this.setAlertError = this.setAlertError.bind(this);
     this.switchView = this.switchView.bind(this);
+    this.setTooltip = this.setTooltip.bind(this);
+    this.updateStructurePoints = this.updateStructurePoints.bind(this);
+    this.modifyStructurePoints = this.modifyStructurePoints.bind(this);
     this.zoom = this.zoom.bind(this);
   }
 
@@ -102,6 +102,9 @@ export class Drawing extends Component {
     this.state.hub.on("NewView", view => this.insertNewView(view));
     this.state.hub.on("CreateViewSuccess", view => this.insertNewView(view));
     this.state.hub.on("CreateViewFailure", () => this.setAlertError("Failed to create new view"));
+
+    this.state.hub.on("UpdateStructureGeometry", structure => this.modifyStructurePoints(structure.view.id, structure.id, structure.geometry.points));
+    this.state.hub.on("UpdateStructureGeometryFailure", () => this.setAlertError("Failed to move structure"));
   }
 
   componentWillUnmount() {
@@ -142,7 +145,7 @@ export class Drawing extends Component {
         </Navbar>
         <Container fluid className="pl-0 d-flex flex-grow-1">
           <Row className="d-flex flex-grow-1">
-            <Col xs="auto" className="pr-0">
+            <Col xs="auto" className="pr-0 bg-light">
               <ButtonGroup vertical>
                 <Button tool="polygon" outline size="lg" onClick={this.handleToolSelect} active={this.state.selectedTool === "polygon"}>
                   <FontAwesomeIcon icon="draw-polygon" />
@@ -164,42 +167,22 @@ export class Drawing extends Component {
                 height = {this.state.stageHeight}
                 scale = {{x: this.state.stageScale, y: -this.state.stageScale}}
                 offsetY = {this.state.stageY}
+                draggable
 
                 onWheel = {this.zoom}
                 onMouseMove = {this.handleMouseMove}
                 onClick = {this.handleStageClick}
                 onDblClick = {this.handleStageDblClick}
+
+                style={{cursor: this.state.stageCursor}}
               >
-                <Layer>
-                  {this.state.grid.map((line, index) => {
-                    return (
-                      <Line
-                        key = {index}
-                        points = {line}
-                        stroke = "#ddd"
-                        strokeWidth = {0.01}
-                      />
-                    );
-                  })}
-                </Layer>
-                <Layer>
-                  <Line
-                    key = "scale"
-                    points = {[
-                      Math.floor(this.state.stageX) - 1, 1,
-                      Math.floor(this.state.stageX), 1
-                    ]}
-                    stroke = "#000"
-                    strokeWidth = {0.025}
-                  />
-                  <Text
-                    key = "scaleLabel"
-                    x = {(Math.floor(this.state.stageX) - 1)}
-                    y = {1.25}
-                    text = "1m"
-                    textScale = {1 / this.state.stageScale}
-                  />
-                </Layer>
+                <Grid
+                  enabled = {this.state.gridEnabled}
+                  xLim = {this.state.stageX}
+                  yLim = {this.state.stageY}
+                  gridSize = {1}
+                  lineWidth = {0.01}
+                />
                 <Layer>
                   <Text
                     key = "tooltip"
@@ -216,9 +199,6 @@ export class Drawing extends Component {
                       position = {this.state.newLinePos}
                       stroke = "#000"
                       strokeWidth = {0.05}
-                      draggable
-                      onDragEnd = {this.handleDragEnd}
-                      onDragMove = {this.handleDrag}
                     />
                     <Line
                       key = "line-preview"
@@ -229,12 +209,13 @@ export class Drawing extends Component {
                 </Layer>
                 <View
                     data={this.state.views.find(view => view.id === this.state.currentView)}
-                    onDragEnd = {this.handleDragEnd}
-                    onDragMove = {this.handleDrag}
+                    snapGridSize = {this.state.snapGridSize}
+                    updatePoints = {this.modifyStructurePoints}
+                    setTooltip = {this.setTooltip}
                 />
               </Stage>
             </Col>
-            <Col xs="4" md="3" lg="1" className="p-0 d-flex flex-column align-items-stretch" style={{maxHeight: this.state.stageHeight}}>
+            <Col xs="4" md="3" lg="1" className="p-0 d-flex flex-column align-items-stretch bg-light" style={{maxHeight: this.state.stageHeight}}>
               <Card className="rounded-0" style={{minHeight: "15%"}}>
                 <CardHeader className="d-flex justify-content-between align-content-center pl-3 pr-3">
                   <h5>Views</h5>
@@ -246,12 +227,20 @@ export class Drawing extends Component {
                     {this.state.views.map(view => {
                       return (
                         <ListGroupItem
+                          key = {"list-" + view.id}
                           className="rounded-0 p-1 border-left-0 border-right-0 d-flex justify-content-between"
                           onClick={() => this.switchView(view.id)}
                           active={this.state.currentView === view.id}
+                          style={{cursor: "pointer"}}
                         >
                           <div>{view.name}</div>
-                          <Button close><FontAwesomeIcon icon="trash" size="xs"/></Button>
+                          <Button close>
+                            <FontAwesomeIcon
+                              icon="trash"
+                              size="xs"
+                              className={this.state.currentView === view.id ? "text-white" : ""}
+                            />
+                            </Button>
                         </ListGroupItem>
                       );
                     })}
@@ -303,44 +292,8 @@ export class Drawing extends Component {
     }
   }
 
-  handleStageClick(event) {
-    if (this.state.selectedTool === "polygon") {
-      const stage = event.target.getStage();
-      const point = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.state.snapGridSize);
-      if (this.state.isDrawing === true) {
-        this.setState({
-          newLinePoints: [...this.state.newLinePoints, ...[point.x, point.y]],
-          lastLinePoint: [point.x, point.y]
-        });
-      } else {
-        this.setState({
-          isDrawing: true,
-          newLinePoints: [point.x, point.y],
-          newLinePos: [point.x, point.y],
-          lastLinePoint: [point.x, point.y]
-        });
-      }
-    }
-  }
-
-  handleStageDblClick(event) {
-    if (this.state.selectedTool === "polygon") {
-      this.setState({
-        isDrawing: false,
-        selectedTool: "none",
-        lastLinePoint: [],
-        nextLinePoint: [],
-        tooltipVisible: false
-      })
-      this.addStructure();
-    }
-  }
-
   async addStructure() {
-    let points = [];
-    for (let i = 0; i < this.state.newLinePoints.length; i+=2) {
-      points.push({x: this.state.newLinePoints[i], y: this.state.newLinePoints[i+1]})
-    }
+    let points = DrawingUtils.arrayPointsToObject(this.state.newLinePoints);
 
     this.state.hub.invoke(
       "AddStructure",
@@ -402,6 +355,79 @@ export class Drawing extends Component {
     this.setState({currentView: id});
   }
 
+  async updateStructurePoints(id, points) {
+    this.state.hub.invoke(
+      "UpdateStructureGeometry",
+        id,
+        {points: points}
+
+    ).catch(err => console.log(err));
+  }
+
+  modifyStructurePoints(viewId, id, points) {
+    if (viewId === null) {
+      viewId = this.state.currentView;
+    }
+
+    this.setState((prevState) => {
+      let views = [...prevState.views];
+      const viewIndex = views.findIndex(view => view.id === viewId);
+      const modifiedView = views[viewIndex];
+
+      const structureIndex = modifiedView.structures.findIndex(structure => structure.id === id);
+      const modifiedStructure = modifiedView.structures[structureIndex];
+
+      const newStructure = {
+        ...modifiedStructure,
+        geometry: {points: points}
+      };
+
+      modifiedView.structures[structureIndex] = newStructure;
+
+      views[viewIndex] = modifiedView;
+
+      return {
+        views: views
+      };
+    }, () => {
+      this.updateStructurePoints(id, points);
+    });
+  }
+
+  handleStageClick(event) {
+    if (this.state.selectedTool === "polygon") {
+      const stage = event.target.getStage();
+      const point = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.state.snapGridSize);
+      if (this.state.isDrawing === true) {
+        this.setState({
+          newLinePoints: [...this.state.newLinePoints, ...[point.x, point.y]],
+          lastLinePoint: [point.x, point.y]
+        });
+      } else {
+        this.setState({
+          isDrawing: true,
+          newLinePoints: [point.x, point.y],
+          newLinePos: [point.x, point.y],
+          lastLinePoint: [point.x, point.y]
+        });
+      }
+    }
+  }
+
+  handleStageDblClick(event) {
+    if (this.state.selectedTool === "polygon") {
+      this.setState({
+        isDrawing: false,
+        selectedTool: "none",
+        lastLinePoint: [],
+        nextLinePoint: [],
+        tooltipVisible: false,
+        stageCursor: "grab"
+      })
+      this.addStructure();
+    }
+  }
+
   handleMouseMove(event) {
     if (this.state.selectedTool === "polygon") {
       const stage = event.target.getStage();
@@ -418,9 +444,9 @@ export class Drawing extends Component {
   handleToolSelect(event) {
     const tool = event.target.getAttribute("tool");
     if (this.state.selectedTool === tool) {
-      this.setState({selectedTool: "none"});
+      this.setState({selectedTool: "none", stageCursor: "grab"});
     } else {
-      this.setState({selectedTool: tool});
+      this.setState({selectedTool: tool, stageCursor: "crosshair"});
     }
   }
 
@@ -436,27 +462,8 @@ export class Drawing extends Component {
         stageHeight: container.clientHeight,
         stageX: container.clientWidth / this.state.stageScale,
         stageY: container.clientHeight / this.state.stageScale,
-      }, () => {
-        this.renderGrid();
       });
     })
-  }
-
-  handleDrag(event) {
-    const pos = event.target.position();
-    const snapPos = DrawingUtils.getNearestSnapPos(pos, this.state.snapGridSize);
-    this.setState({
-      tooltipPos: {x: pos.x - 0.5, y: pos.y - 0.5},
-      tooltipText: "(" + snapPos.x.toFixed(1) + "," + snapPos.y.toFixed(1) + ")",
-      tooltipVisible: true
-    });
-  }
-
-  handleDragEnd(event) {
-    const pos = event.target.position();
-    event.target.position(DrawingUtils.getNearestSnapPos(pos, this.state.snapGridSize));
-    event.target.getLayer().draw();
-    this.setState({tooltipVisible: false});
   }
 
   zoom(event) {
@@ -466,16 +473,12 @@ export class Drawing extends Component {
     this.setState({stageScale: newScale});
   }
 
-  renderGrid() {
-    let grid = [];
-    for (let x = 0; x < 2 * this.state.stageX; x+=this.state.gridSize) {
-      grid.push([x, 0, x, 2 * this.state.stageY]);
-    }
-
-    for (let y = 0; y < 2 * this.state.stageY; y+=this.state.gridSize) {
-      grid.push([0, y, 2 * this.state.stageX, y]);
-    }
-    this.setState({grid: grid});
+  setTooltip(pos, visible, text) {
+    this.setState({
+      tooltipPos: pos,
+      tooltipVisible: visible,
+      tooltipText: text
+    });
   }
 
   setAlertError(msg) {

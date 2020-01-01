@@ -68,6 +68,22 @@ namespace openld.Hubs {
             await Clients.Caller.SendAsync("AddStructureSuccess", newStructure);
         }
 
+        public async Task UpdateStructureGeometry(string structureId, Geometry geometry) {
+            if (! await _authUtils.hasAccess(new Structure {Id = structureId}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                throw new HubException("401: Unauthorised");
+            }
+
+            Structure updated;
+            try {
+                updated = await _drawingService.SetStructureGeometryAsync(structureId, geometry);
+            } catch (Exception) {
+                await Clients.Caller.SendAsync("UpdateStructureGeometryFailure");
+                return;
+            }
+
+            await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SendAsync("UpdateStructureGeometry", updated);
+        }
+
         public async Task CreateView(View view) {
             if (! await _authUtils.hasAccess(view.Drawing.Id, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 throw new HubException("401: Unauthorised");
