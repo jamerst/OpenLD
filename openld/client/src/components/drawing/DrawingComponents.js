@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Layer, Line} from "react-konva";
+import { Layer, Line, Rect} from "react-konva";
 import { DrawingUtils } from "./DrawingUtils";
 
 export class View extends Component {
@@ -21,6 +21,7 @@ export class View extends Component {
             onDragStart = {this.props.onDragStart}
             onDragMove = {this.props.onDragMove}
             onDragEnd = {this.props.onDragEnd}
+            setCursor = {this.props.setCursor}
           />
         )
       })}
@@ -39,6 +40,8 @@ export class Structure extends Component {
     this.handleDragStart = this.handleDragStart.bind(this);
     this.handleDrag = this.handleDrag.bind(this);
     this.handleDragEnd = this.handleDragEnd.bind(this);
+    this.onMouseOver = this.onMouseOver.bind(this);
+    this.onMouseOut = this.onMouseOut.bind(this);
   }
 
   render() {
@@ -56,6 +59,8 @@ export class Structure extends Component {
         onDragStart = {this.handleDragStart}
         onDragMove = {this.handleDrag}
         onDragEnd = {this.handleDragEnd}
+        onMouseOver = {this.onMouseOver}
+        onMouseOut = {this.onMouseOut}
       />
     );
   }
@@ -87,6 +92,18 @@ export class Structure extends Component {
     event.target.getLayer().draw();
     this.props.setTooltip({x: 0, y: 0}, false, "");
   }
+
+  onMouseOver(event) {
+    event.target.strokeWidth(0.1);
+    event.target.draw();
+    this.props.setCursor("grabbing");
+  }
+
+  onMouseOut(event) {
+    event.target.strokeWidth(0.05);
+    event.target.draw();
+    this.props.setCursor("grab");
+  }
 }
 
 export class Grid extends Component {
@@ -106,6 +123,13 @@ export class Grid extends Component {
 
     return (
       <Layer>
+        <Rect
+          x = {0}
+          y = {0}
+          width = {this.props.xLim}
+          height = {this.props.yLim}
+          fill = "#fff"
+        />
         {grid.map((line, index) => {
           return (
             <Line

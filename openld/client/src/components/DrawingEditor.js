@@ -14,10 +14,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { HubConnectionBuilder } from "@aspnet/signalr";
 
 import { DrawingUtils } from './drawing/DrawingUtils';
-import { View, Grid, Scale } from "./drawing/DrawingComponents";
+import { View, Grid } from "./drawing/DrawingComponents";
 import authService from './api-authorization/AuthorizeService';
 
-export class Drawing extends Component {
+export class DrawingEditor extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -30,6 +30,7 @@ export class Drawing extends Component {
       stageHeight: 0,
       stageX: 0,
       stageY: 0,
+      stagePosition: {x: 0, y: 0},
       tooltipPos: {x: 0, y: 0},
       tooltipVisible: false,
       tooltipText: "",
@@ -67,6 +68,7 @@ export class Drawing extends Component {
     this.setTooltip = this.setTooltip.bind(this);
     this.updateStructurePoints = this.updateStructurePoints.bind(this);
     this.modifyStructurePoints = this.modifyStructurePoints.bind(this);
+    this.setStageCursor = this.setStageCursor.bind(this);
     this.zoom = this.zoom.bind(this);
   }
 
@@ -139,24 +141,24 @@ export class Drawing extends Component {
 
     return (
       <div className="d-flex flex-column h-100">
-        <Navbar color="light">
-          <NavbarBrand>{this.state.drawingData.title}</NavbarBrand>
-          <NavLink tag={Link} to="/"><Button close/></NavLink>
+        <Navbar color="dark">
+          <NavbarBrand className="text-light">{this.state.drawingData.title}</NavbarBrand>
+          <NavLink tag={Link} to="/"><Button className="text-light" close/></NavLink>
         </Navbar>
         <Container fluid className="pl-0 d-flex flex-grow-1">
           <Row className="d-flex flex-grow-1">
             <Col xs="auto" className="pr-0 bg-light">
               <ButtonGroup vertical>
-                <Button tool="polygon" outline size="lg" onClick={this.handleToolSelect} active={this.state.selectedTool === "polygon"}>
+                <Button tool="polygon" outline color="primary" size="lg" onClick={this.handleToolSelect} active={this.state.selectedTool === "polygon"}>
                   <FontAwesomeIcon icon="draw-polygon" />
                 </Button>
 
-                <Button tool="eraser" outline size="lg" onClick={this.handleToolSelect} active={this.state.selectedTool === "eraser"}>
+                <Button tool="eraser" outline color="danger" size="lg" onClick={this.handleToolSelect} active={this.state.selectedTool === "eraser"}>
                   <FontAwesomeIcon icon="eraser" />
                 </Button>
               </ButtonGroup>
             </Col>
-            <Col id="stage-container" className="p-0 m-0">
+            <Col id="stage-container" className="p-0 m-0 bg-secondary">
               <div style={{position: "absolute", width: "100%", zIndex: "1000"}}>
                 <Alert color={this.state.alertColour} isOpen={this.state.alertOpen}>{this.state.alertContent}</Alert>
               </div>
@@ -168,6 +170,8 @@ export class Drawing extends Component {
                 scale = {{x: this.state.stageScale, y: -this.state.stageScale}}
                 offsetY = {this.state.stageY}
                 draggable
+                position = {this.state.stagePosition}
+                onDragMove = {(event) => this.setState({stagePosition: event.target.position()})}
 
                 onWheel = {this.zoom}
                 onMouseMove = {this.handleMouseMove}
@@ -178,10 +182,10 @@ export class Drawing extends Component {
               >
                 <Grid
                   enabled = {this.state.gridEnabled}
-                  xLim = {this.state.stageX}
-                  yLim = {this.state.stageY}
+                  xLim = {this.state.drawingData.width}
+                  yLim = {this.state.drawingData.height}
                   gridSize = {1}
-                  lineWidth = {0.01}
+                  lineWidth = {1 / this.state.stageScale}
                 />
                 <Layer>
                   <Text
@@ -212,6 +216,7 @@ export class Drawing extends Component {
                     snapGridSize = {this.state.snapGridSize}
                     updatePoints = {this.modifyStructurePoints}
                     setTooltip = {this.setTooltip}
+                    setCursor = {this.setStageCursor}
                 />
               </Stage>
             </Col>
@@ -285,7 +290,7 @@ export class Drawing extends Component {
         currentView: data.data.views[0].id,
         views: data.data.views
       }, () => {
-        this.sizeStage();
+        this.sizeStage(true);
       });
     } else if (response.status === 401) {
       this.setState({accessDenied: true});
@@ -450,7 +455,7 @@ export class Drawing extends Component {
     }
   }
 
-  sizeStage() {
+  sizeStage(setScale) {
     // set the stage size to be very small initially to prevent it from taking all the width before the other columns have resized
     this.setState({
       stageWidth: 0,
@@ -462,8 +467,28 @@ export class Drawing extends Component {
         stageHeight: container.clientHeight,
         stageX: container.clientWidth / this.state.stageScale,
         stageY: container.clientHeight / this.state.stageScale,
+      }, () => {
+        if (setScale === true) {
+          this.setState({
+            stageScale: Math.min(
+              this.state.stageWidth / (this.state.drawingData.width * 1.05),
+              this.state.stageHeight / (this.state.drawingData.height * 1.05)
+            )
+          }, () => {
+            this.setState({
+              stagePosition: {
+                x: (this.state.stageWidth - this.state.drawingData.width * this.state.stageScale) / 2,
+                y: ((this.state.stageHeight - this.state.drawingData.height * this.state.stageScale) / 2) + ((this.state.drawingData.height * this.state.stageScale) / 2)
+              }
+            });
+          });
+        }
       });
     })
+  }
+
+  setStageCursor(cursor) {
+    this.setState({stageCursor: cursor});
   }
 
   zoom(event) {

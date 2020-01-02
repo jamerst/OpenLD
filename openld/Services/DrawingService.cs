@@ -14,16 +14,13 @@ namespace openld.Services {
         public DrawingService(OpenLDContext context) {
             _context = context;
         }
-        public async Task<string> CreateDrawingAsync(string userId) {
-            Drawing drawing = new Drawing();
-
+        public async Task<string> CreateDrawingAsync(string userId, Drawing drawing) {
             try {
                 drawing.Owner = await _context.Users.FirstAsync(u => u.Id == userId);
             } catch (InvalidOperationException) {
                 throw new UnauthorizedAccessException("Invalid user ID");
             }
 
-            drawing.Title = "New Drawing";
             drawing.LastModified = DateTime.Now;
 
             View view = new View();
@@ -154,7 +151,7 @@ namespace openld.Services {
     }
 
     public interface IDrawingService {
-        Task<string> CreateDrawingAsync(string userId);
+        Task<string> CreateDrawingAsync(string userId, Drawing drawing);
         Task<View> CreateViewAsync(View view);
         Task<Drawing> GetDrawingAsync(string id);
         Task<Drawing> GetDrawingAsync(View view);

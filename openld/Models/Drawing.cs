@@ -10,5 +10,7 @@ namespace openld.Models {
         public User Owner { get; set; }
         public DateTime LastModified { get; set; }
         public List<View> Views { get; set; }
+        public float Width { get; set; }
+        public float Height { get; set; }
     }
 }

@@ -24,12 +24,16 @@ namespace openld.Controllers {
 
         [HttpPost]
         [Authorize]
-        public async Task<ActionResult<JsonResponse<string>>> CreateDrawing() {
+        public async Task<ActionResult<JsonResponse<string>>> CreateDrawing(Drawing drawing) {
+            if (drawing.Width < 1 || drawing.Height < 1) {
+                return new JsonResponse<string> { success = false, msg = "Invalid drawing size" };
+            }
+
             var user = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
             string newDrawingId = "";
             try {
-                newDrawingId = await _drawingService.CreateDrawingAsync(user);
+                newDrawingId = await _drawingService.CreateDrawingAsync(user, drawing);
             } catch (Exception) {
                 return new JsonResponse<string> { success = false, msg = "Unknown error creating new drawing" };
             }

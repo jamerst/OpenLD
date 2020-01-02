@@ -1,6 +1,9 @@
 import React, { Component, Fragment } from 'react';
-import { Button, Container, Jumbotron } from 'reactstrap';
+import {
+  Button, Container, Jumbotron
+} from 'reactstrap';
 import authService from './api-authorization/AuthorizeService';
+import { CreateDrawingForm } from './drawing/CreateDrawingForm';
 
 export class Home extends Component {
   static displayName = Home.name;
@@ -9,10 +12,13 @@ export class Home extends Component {
     super(props);
 
     this.state = {
-      actions: <div></div>
+      actions: <div></div>,
+      createModalOpen: false,
     }
 
-    this.handleCreate = this.handleCreate.bind(this);
+    this.toggle = this.toggle.bind(this);
+    this.redirect = this.redirect.bind(this);
+    this.renderActions = this.renderActions.bind(this);
   }
 
   componentDidMount() {
@@ -22,32 +28,35 @@ export class Home extends Component {
 
   render () {
     return (
-      <Jumbotron>
-        <Container>
-          <h1 className="display-3">OpenLD</h1>
-          <p>OpenLD is a free online tool for creating lighting designs collaboratively.</p>
-        </Container>
-        {this.state.actions}
-      </Jumbotron>
+      <Fragment>
+        <Jumbotron>
+          <Container>
+            <h1 className="display-3">OpenLD</h1>
+            <p>OpenLD is a free online tool for creating lighting designs collaboratively.</p>
+          </Container>
+          {this.state.actions}
+        </Jumbotron>
+
+        <CreateDrawingForm
+          isOpen = {this.state.createModalOpen}
+          onSubmitSuccess = {this.redirect}
+          toggle = {this.toggle}
+        />
+      </Fragment>
     );
   }
 
-  async handleCreate() {
-    const response = await fetch("api/drawing/CreateDrawing", {
-      method: "POST",
-      headers: await authService.generateHeader()
-    });
+  toggle() {
+    this.setState({createModalOpen: !this.state.createModalOpen});
+  }
 
-    const data = await response.json();
-
-    if (data.success === true) {
-      this.props.history.push("/drawing/" + data.data);
-    }
+  redirect(id) {
+    this.props.history.push("/drawing/" + id);
   }
 
   async renderActions() {
     if (await authService.isAuthenticated()) {
-    this.setState({actions: <Fragment><hr/><Button color="primary" size="lg" onClick={this.handleCreate}>Create Drawing</Button></Fragment>});
+      this.setState({actions: <Fragment><hr/><Button color="primary" size="lg" onClick={this.toggle}>Create Drawing</Button></Fragment>});
     }
   }
 }
