@@ -76,5 +76,57 @@ namespace openld.Controllers {
 
             return new JsonResponse<Structure> { success = true, data = newStructure };
         }
+
+        [HttpGet("{drawingId}")]
+        [Authorize]
+        public async Task<ActionResult<JsonResponse<List<UserDrawings>>>> GetSharedUsers(string drawingId) {
+            if (! await _authUtils.hasAccess(drawingId, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                return Unauthorized();
+            }
+
+            List<UserDrawings> users;
+            try {
+                users = await _drawingService.GetSharedUsersAsync(drawingId);
+            } catch (Exception) {
+                return new JsonResponse<List<UserDrawings>> { success = false, msg = "Unknown error fetching users" };
+            }
+
+            return new JsonResponse<List<UserDrawings>> { success = true, data = users };
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<ActionResult<JsonResponse<UserDrawings>>> ShareWith(UserDrawings ud) {
+            if (! await _authUtils.hasAccess(ud.Drawing.Id, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                return Unauthorized();
+            }
+
+            try {
+                ud = await _drawingService.ShareWithUserAsync(ud.User.Email, ud.Drawing.Id);
+            } catch (KeyNotFoundException e) {
+                return new JsonResponse<UserDrawings> { success = false, msg = e.Message };
+            } catch (Exception) {
+                return new JsonResponse<UserDrawings> { success = false, msg = "Unknown error sharing with user" };
+            }
+
+            return new JsonResponse<UserDrawings> { success = true, data = ud };
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<ActionResult<JsonResponse<string>>> UnshareWith(UserDrawings ud) {
+            if (! await _authUtils.hasAccess(ud.Drawing.Id, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                return Unauthorized();
+            }
+
+            string id;
+            try {
+                id = await _drawingService.UnshareWithUserAsync(ud.Id);
+            } catch (Exception) {
+                return new JsonResponse<string> { success = false, msg = "Unknown error unsharing with user" };
+            }
+
+            return new JsonResponse<string> { success = true, data = id };
+        }
     }
 }

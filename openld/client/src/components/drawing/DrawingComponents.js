@@ -1,10 +1,10 @@
 import React, { Component } from "react";
-import { Layer, Line, Rect} from "react-konva";
+import { Layer, Line, Rect, Label, Tag, Text } from "react-konva";
 import { DrawingUtils } from "./DrawingUtils";
 
 export class View extends Component {
   render() {
-    if (typeof(this.props.data) === "undefined" || typeof(this.props.data.structures) === "undefined") {
+    if (typeof(this.props.data) === "undefined" || !this.props.data.structures) {
       return null;
     }
 
@@ -22,6 +22,7 @@ export class View extends Component {
             onDragMove = {this.props.onDragMove}
             onDragEnd = {this.props.onDragEnd}
             setCursor = {this.props.setCursor}
+            scale = {this.props.scale}
           />
         )
       })}
@@ -55,6 +56,7 @@ export class Structure extends Component {
         points={points}
         stroke = "#000"
         strokeWidth = {0.05}
+        hitStrokeWidth = {1}
         draggable
         onDragStart = {this.handleDragStart}
         onDragMove = {this.handleDrag}
@@ -76,8 +78,8 @@ export class Structure extends Component {
     const newPoint = {x: points[0] + change.x, y: points[1] + change.y};
 
     const snapPos = DrawingUtils.getNearestSnapPos(newPoint, this.props.snapGridSize);
-
-    this.props.setTooltip({x: newPoint.x, y: newPoint.y + 0.5}, true, "(" + snapPos.x.toFixed(1) + "," + snapPos.y.toFixed(1) + ")");
+    console.log(this.props.scale);
+    this.props.setTooltip({x: newPoint.x, y: newPoint.y + 25 / this.props.scale}, true, "(" + snapPos.x.toFixed(1) + "," + snapPos.y.toFixed(1) + ")");
   }
 
   handleDragEnd(event) {
@@ -96,7 +98,7 @@ export class Structure extends Component {
   onMouseOver(event) {
     event.target.strokeWidth(0.1);
     event.target.draw();
-    this.props.setCursor("grabbing");
+    this.props.setCursor("pointer");
   }
 
   onMouseOut(event) {
@@ -142,5 +144,25 @@ export class Grid extends Component {
         })}
       </Layer>
     );
+  }
+}
+
+export class Tooltip extends Component {
+  render() {
+    return (
+      <Label
+        position = {this.props.position}
+        scale = {{x: this.props.scale, y: -this.props.scale}}
+        visible = {this.props.visible}
+      >
+        <Tag fill="#ddd"/>
+        <Text
+          key = "tooltip"
+          text = {this.props.text}
+          fill = "#000"
+          padding = {2}
+        />
+      </Label>
+    )
   }
 }

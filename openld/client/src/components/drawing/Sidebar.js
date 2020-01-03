@@ -1,0 +1,81 @@
+import React, { Component } from "react";
+import { Col,
+  Button,
+  Card, CardHeader, CardBody,
+  ListGroup, ListGroupItem
+} from "reactstrap";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { ShareDrawing } from "./ShareDrawing";
+
+export class Sidebar extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      shareModalOpen: true
+    };
+
+    this.toggleShareModal = this.toggleShareModal.bind(this);
+  }
+
+  render() {
+    return (
+      <Col xs={this.props.xs} md={this.props.md} lg={this.props.lg} className="p-0 d-flex flex-column align-items-stretch bg-light" style={{maxHeight: this.props.height}}>
+        <Card className="rounded-0" style={{minHeight: "15%"}}>
+          <CardHeader className="d-flex justify-content-between align-content-center pl-3 pr-3">
+            <h5>Views</h5>
+            <Button onClick={this.props.onCreateView} close><FontAwesomeIcon icon="plus-circle"/></Button>
+          </CardHeader>
+
+          <CardBody className="overflow-auto p-0">
+            <ListGroup>
+              {this.props.views.map(view => {
+                return (
+                  <ListGroupItem
+                    key = {"list-" + view.id}
+                    className="rounded-0 p-1 border-left-0 border-right-0 d-flex justify-content-between"
+                    onClick={() => this.props.onClickView(view.id)}
+                    active={this.props.currentView === view.id}
+                    style={{cursor: "pointer"}}
+                  >
+                    <div>{view.name}</div>
+                    <Button close>
+                      <FontAwesomeIcon
+                        icon="trash"
+                        size="xs"
+                        className={this.props.currentView === view.id ? "text-white" : ""}
+                      />
+                      </Button>
+                  </ListGroupItem>
+                );
+              })}
+            </ListGroup>
+          </CardBody>
+        </Card>
+
+        <Card className="rounded-0" style={{minHeight: "15%"}}>
+          <CardHeader className="pl-3 pr-3"><h5>Selected Object</h5></CardHeader>
+          <CardBody className="overflow-auto text-center">
+            <em>No object selected</em>
+          </CardBody>
+        </Card>
+
+        <Card className="rounded-0" style={{minHeight: "15%"}}>
+          <CardHeader className="pl-3 pr-3"><h5>Drawing Properties</h5></CardHeader>
+          <CardBody className="overflow-auto">
+            <Button color="primary" size="sm" onClick={this.toggleShareModal}>Sharing Settings</Button>
+          </CardBody>
+        </Card>
+        <ShareDrawing
+          isOpen = {this.state.shareModalOpen}
+          drawingId = {this.props.drawingId}
+          toggle = {this.toggleShareModal}
+        />
+      </Col>
+    );
+  }
+
+  toggleShareModal() {
+    this.setState({shareModalOpen: !this.state.shareModalOpen})
+  }
+}

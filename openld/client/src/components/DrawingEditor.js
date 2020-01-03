@@ -3,18 +3,16 @@ import { Link } from 'react-router-dom';
 import {
   Alert,
   Button, ButtonGroup,
-  Card, CardHeader, CardBody,
   Container, Row, Col,
-  ListGroup, ListGroupItem,
   Navbar, NavbarBrand, NavLink,
   Spinner } from 'reactstrap';
 import { Layer, Line, Stage } from 'react-konva';
-import { Text } from './drawing/KonvaNodes';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { HubConnectionBuilder } from "@aspnet/signalr";
 
 import { DrawingUtils } from './drawing/DrawingUtils';
-import { View, Grid } from "./drawing/DrawingComponents";
+import { View, Grid, Tooltip } from "./drawing/DrawingComponents";
+import { Sidebar } from "./drawing/Sidebar";
 import authService from './api-authorization/AuthorizeService';
 
 export class DrawingEditor extends Component {
@@ -171,12 +169,13 @@ export class DrawingEditor extends Component {
                 offsetY = {this.state.stageY}
                 draggable
                 position = {this.state.stagePosition}
-                onDragMove = {(event) => this.setState({stagePosition: event.target.position()})}
 
                 onWheel = {this.zoom}
                 onMouseMove = {this.handleMouseMove}
                 onClick = {this.handleStageClick}
                 onDblClick = {this.handleStageDblClick}
+                onDragStart = {() => this.setStageCursor("grabbing")}
+                onDragEnd = {() => this.setStageCursor("grab")}
 
                 style={{cursor: this.state.stageCursor}}
               >
@@ -187,15 +186,6 @@ export class DrawingEditor extends Component {
                   gridSize = {1}
                   lineWidth = {1 / this.state.stageScale}
                 />
-                <Layer>
-                  <Text
-                    key = "tooltip"
-                    position = {this.state.tooltipPos}
-                    visible = {this.state.tooltipVisible}
-                    text = {this.state.tooltipText}
-                    textScale = {1 / this.state.stageScale}
-                  />
-                </Layer>
                 <Layer>
                     <Line
                       key = "new-line"
@@ -217,56 +207,32 @@ export class DrawingEditor extends Component {
                     updatePoints = {this.modifyStructurePoints}
                     setTooltip = {this.setTooltip}
                     setCursor = {this.setStageCursor}
+                    scale = {this.state.stageScale}
                 />
+                <Layer>
+                  <Tooltip
+                    position = {this.state.tooltipPos}
+                    visible = {this.state.tooltipVisible}
+                    text = {this.state.tooltipText}
+                    scale = {1.25 / this.state.stageScale}
+                  />
+                </Layer>
               </Stage>
             </Col>
-            <Col xs="4" md="3" lg="1" className="p-0 d-flex flex-column align-items-stretch bg-light" style={{maxHeight: this.state.stageHeight}}>
-              <Card className="rounded-0" style={{minHeight: "15%"}}>
-                <CardHeader className="d-flex justify-content-between align-content-center pl-3 pr-3">
-                  <h5>Views</h5>
-                  <Button onClick={this.handleCreateView} close><FontAwesomeIcon icon="plus-circle"/></Button>
-                </CardHeader>
+            <Sidebar
+              xs = "4"
+              md = "3"
+              lg = "1"
 
-                <CardBody className="overflow-auto p-0">
-                  <ListGroup>
-                    {this.state.views.map(view => {
-                      return (
-                        <ListGroupItem
-                          key = {"list-" + view.id}
-                          className="rounded-0 p-1 border-left-0 border-right-0 d-flex justify-content-between"
-                          onClick={() => this.switchView(view.id)}
-                          active={this.state.currentView === view.id}
-                          style={{cursor: "pointer"}}
-                        >
-                          <div>{view.name}</div>
-                          <Button close>
-                            <FontAwesomeIcon
-                              icon="trash"
-                              size="xs"
-                              className={this.state.currentView === view.id ? "text-white" : ""}
-                            />
-                            </Button>
-                        </ListGroupItem>
-                      );
-                    })}
-                  </ListGroup>
-                </CardBody>
-              </Card>
+              drawingId = {this.state.drawingData.id}
 
-              <Card className="rounded-0" style={{minHeight: "15%"}}>
-                <CardHeader className="pl-3 pr-3"><h5>Selected Object</h5></CardHeader>
-                <CardBody className="overflow-auto text-center">
-                  <em>No object selected</em>
-                </CardBody>
-              </Card>
+              height = {this.state.stageHeight}
+              views = {this.state.views}
+              currentView = {this.state.currentView}
 
-              <Card className="rounded-0" style={{minHeight: "15%"}}>
-                <CardHeader className="pl-3 pr-3"><h5>Drawing Properties</h5></CardHeader>
-                <CardBody className="overflow-auto">
-
-                </CardBody>
-              </Card>
-            </Col>
+              onCreateView = {this.handleCreateView}
+              onClickView = {this.switchView}
+            />
           </Row>
         </Container>
       </div>
