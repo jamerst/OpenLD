@@ -20,7 +20,10 @@ export class DrawingEditor extends Component {
     super(props);
     this.state = {
       loading: true,
-      accessDenied: false,
+      error: false,
+      errorTitle: "",
+      errorMsg: "",
+      errorIcon: "",
       gridEnabled: true,
       snapGridSize: 0.1,
       stageScale: 50,
@@ -71,40 +74,7 @@ export class DrawingEditor extends Component {
   }
 
   componentDidMount() {
-    this.initHubConnection();
-
-    window.addEventListener("resize", this.sizeStage);
-  }
-
-  async initHubConnection() {
-    let token = await authService.getAccessToken();
-
-    this.setState({
-      hub: new HubConnectionBuilder()
-        .withUrl("/api/drawing/hub", { accessTokenFactory: () => token })
-        .build()
-    }, () => {
-      this.state.hub
-        .start()
-        .then(() => {
-          this.addHubHandlers();
-          this.fetchDrawing();
-        })
-        .catch(err => console.log("Hub error: " + err));
-    });
-  }
-
-  addHubHandlers() {
-    this.state.hub.on("NewStructure", structure => this.insertNewStructure(structure));
-    this.state.hub.on("AddStructureSuccess", structure => this.addStructureSuccess(structure));
-    this.state.hub.on("AddStructureFailure", () => this.setAlertError("Failed to insert new structure"));
-
-    this.state.hub.on("NewView", view => this.insertNewView(view));
-    this.state.hub.on("CreateViewSuccess", view => this.insertNewView(view));
-    this.state.hub.on("CreateViewFailure", () => this.setAlertError("Failed to create new view"));
-
-    this.state.hub.on("UpdateStructureGeometry", structure => this.modifyStructurePoints(structure.view.id, structure.id, structure.geometry.points));
-    this.state.hub.on("UpdateStructureGeometryFailure", () => this.setAlertError("Failed to move structure"));
+    this.fetchDrawing();
   }
 
   componentWillUnmount() {
@@ -112,14 +82,14 @@ export class DrawingEditor extends Component {
   }
 
   render() {
-    if (this.state.accessDenied === true) {
+    if (this.state.error === true) {
       return (
         <Container className="h-100">
           <Col className="h-100">
             <Row className="align-items-center justify-content-center flex-column h-100">
-              <FontAwesomeIcon icon="ban" style={{width: "10rem", height: "10rem", color: "#B71C1C"}}/>
-              <h1>Access Denied</h1>
-              <h3>Sorry, you don't have permission to view this drawing.</h3>
+              {this.state.errorIcon}
+              <h1 className="mt-3">{this.state.errorTitle}</h1>
+              <h3>{this.state.errorMsg}</h3>
               <Link to="/">Return Home</Link>
             </Row>
           </Col>
@@ -239,6 +209,38 @@ export class DrawingEditor extends Component {
     );
   }
 
+  async initHubConnection() {
+    let token = await authService.getAccessToken();
+
+    this.setState({
+      hub: new HubConnectionBuilder()
+        .withUrl("/api/drawing/hub", { accessTokenFactory: () => token })
+        .build()
+    }, () => {
+      this.state.hub
+        .start()
+        .then(() => {
+          this.addHubHandlers();
+          this.state.hub.invoke("OpenDrawing", this.state.drawingData.id)
+            .catch(err => console.error(err.toString()));
+        })
+        .catch(err => console.log("Hub error: " + err));
+    });
+  }
+
+  addHubHandlers() {
+    this.state.hub.on("NewStructure", structure => this.insertNewStructure(structure));
+    this.state.hub.on("AddStructureSuccess", structure => this.addStructureSuccess(structure));
+    this.state.hub.on("AddStructureFailure", () => this.setAlertError("Failed to insert new structure"));
+
+    this.state.hub.on("NewView", view => this.insertNewView(view));
+    this.state.hub.on("CreateViewSuccess", view => this.insertNewView(view));
+    this.state.hub.on("CreateViewFailure", () => this.setAlertError("Failed to create new view"));
+
+    this.state.hub.on("UpdateStructureGeometry", structure => this.modifyStructurePoints(structure.view.id, structure.id, structure.geometry.points));
+    this.state.hub.on("UpdateStructureGeometryFailure", () => this.setAlertError("Failed to move structure"));
+  }
+
   async fetchDrawing() {
     const response = await fetch("api/drawing/GetDrawing/" + this.props.match.params.id, {
       headers: await authService.generateHeader()
@@ -247,19 +249,30 @@ export class DrawingEditor extends Component {
     if (response.ok) {
       const data = await response.json();
 
-      this.state.hub.invoke("OpenDrawing", data.data.id)
-        .catch(err => console.error(err.toString()));
-
       this.setState({
         drawingData: data.data,
         loading: false,
         currentView: data.data.views[0].id,
         views: data.data.views
-      }, () => {
+      }, async () => {
+        this.initHubConnection();
         this.sizeStage(true);
+        window.addEventListener("resize", this.sizeStage);
       });
     } else if (response.status === 401) {
-      this.setState({accessDenied: true});
+      this.setState({
+        error: true,
+        errorTitle: "Access Denied",
+        errorMsg: "Sorry, you don't have permission to view this drawing.",
+        errorIcon: <FontAwesomeIcon icon="ban" style={{width: "15rem", height: "15rem", color: "#B71C1C"}}/>
+      });
+    } else if (response.status === 404) {
+      this.setState({
+        error: true,
+        errorTitle: "Not Found",
+        errorMsg: "The drawing you requested couldn't be found.",
+        errorIcon: <FontAwesomeIcon icon={["far", "question-circle"]} style={{width: "15rem", height: "15rem", color: "#1565C0"}}/>
+      });
     }
   }
 

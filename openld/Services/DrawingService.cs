@@ -97,6 +97,10 @@ namespace openld.Services {
             return structure.View.Drawing;
         }
 
+        public async Task<bool> DrawingExistsAsync(string id) {
+            return await _context.Drawings.Where(d => d.Id == id).AnyAsync();
+        }
+
         public async Task<Structure> AddStructureAsync(Structure structure) {
             try {
                 structure.View = await _context.Views.FirstAsync(v => v.Id == structure.View.Id);
@@ -146,13 +150,15 @@ namespace openld.Services {
 
             Drawing drawing;
             try {
-                drawing = await _context.Drawings.FirstAsync(d => d.Id == drawingId);
+                drawing = await _context.Drawings.Include(d => d.Owner).FirstAsync(d => d.Id == drawingId);
             } catch (InvalidOperationException) {
                 throw new KeyNotFoundException("Drawing ID not found");
             }
 
             if (drawing.Owner.Id == user.Id) {
                 throw new InvalidOperationException("Cannot share with drawing owner");
+            } else if (await _context.UserDrawings.Where(ud => ud.User == user).Where(ud => ud.Drawing == drawing).AnyAsync()) {
+                throw new InvalidOperationException("Drawing already shared with user");
             }
 
             UserDrawings ud = new UserDrawings();
@@ -166,7 +172,17 @@ namespace openld.Services {
         }
 
         public async Task<string> UnshareWithUserAsync(string userDrawingId) {
+            UserDrawings ud;
+            try {
+                ud = await _context.UserDrawings.FirstAsync(ud => ud.Id == userDrawingId);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("UserDrawing id not found");
+            }
 
+            _context.UserDrawings.Remove(ud);
+            await _context.SaveChangesAsync();
+
+            return userDrawingId;
         }
 
         public async Task<bool> IsSharedWithAsync(string drawingId, string userId) {
@@ -200,6 +216,7 @@ namespace openld.Services {
         Task<Drawing> GetDrawingAsync(string id);
         Task<Drawing> GetDrawingAsync(View view);
         Task<Drawing> GetDrawingAsync(Structure structure);
+        Task<bool> DrawingExistsAsync(string id);
         Task<Structure> AddStructureAsync(Structure structure);
         Task<Structure> SetStructureGeometryAsync(string structureId, Geometry geometry);
         Task<List<UserDrawings>> GetSharedUsersAsync(string drawingId);

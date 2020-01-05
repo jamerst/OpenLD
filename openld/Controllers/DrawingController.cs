@@ -44,6 +44,10 @@ namespace openld.Controllers {
         [HttpGet("{drawingId}")]
         [Authorize]
         public async Task<ActionResult<JsonResponse<Drawing>>> GetDrawing(string drawingId) {
+            if (! await _drawingService.DrawingExistsAsync(drawingId)) {
+                return NotFound();
+            }
+
             if (! await _authUtils.hasAccess(drawingId, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 return Unauthorized();
             }
@@ -103,7 +107,7 @@ namespace openld.Controllers {
 
             try {
                 ud = await _drawingService.ShareWithUserAsync(ud.User.Email, ud.Drawing.Id);
-            } catch (KeyNotFoundException e) {
+            } catch (Exception e) when (e is KeyNotFoundException || e is InvalidOperationException) {
                 return new JsonResponse<UserDrawings> { success = false, msg = e.Message };
             } catch (Exception) {
                 return new JsonResponse<UserDrawings> { success = false, msg = "Unknown error sharing with user" };

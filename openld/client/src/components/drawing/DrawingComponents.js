@@ -78,7 +78,7 @@ export class Structure extends Component {
     const newPoint = {x: points[0] + change.x, y: points[1] + change.y};
 
     const snapPos = DrawingUtils.getNearestSnapPos(newPoint, this.props.snapGridSize);
-    console.log(this.props.scale);
+
     this.props.setTooltip({x: newPoint.x, y: newPoint.y + 25 / this.props.scale}, true, "(" + snapPos.x.toFixed(1) + "," + snapPos.y.toFixed(1) + ")");
   }
 
