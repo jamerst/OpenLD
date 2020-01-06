@@ -25,7 +25,7 @@ namespace openld.Controllers {
         [HttpPost]
         [Authorize]
         public async Task<ActionResult<JsonResponse<string>>> CreateDrawing(Drawing drawing) {
-            if (drawing.Width < 1 || drawing.Height < 1) {
+            if (drawing.Views[0].Width < 1 || drawing.Views[0].Height < 1) {
                 return new JsonResponse<string> { success = false, msg = "Invalid drawing size" };
             }
 

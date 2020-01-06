@@ -89,6 +89,11 @@ namespace openld.Hubs {
                 throw new HubException("401: Unauthorised");
             }
 
+            if (view.Width < 1 || view.Height < 1) {
+                await Clients.Caller.SendAsync("CreateViewFailure", "Invalid view size");
+                return;
+            }
+
             View newView;
             try {
                 newView = await _drawingService.CreateViewAsync(view);
@@ -99,6 +104,22 @@ namespace openld.Hubs {
 
             await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SendAsync("NewView", newView);
             await Clients.Caller.SendAsync("CreateViewSuccess", newView);
+        }
+
+        public async Task DeleteView(string viewId) {
+            if (! await _authUtils.hasAccess(new View {Id = viewId}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                throw new HubException("401: Unauthorised");
+            }
+
+            try {
+                await _drawingService.DeleteViewAsync(viewId);
+            } catch (Exception) {
+                await Clients.Caller.SendAsync("DeleteViewFailure");
+                return;
+            }
+
+            await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SendAsync("DeleteView", viewId);
+            await Clients.Caller.SendAsync("DeleteViewSuccess", viewId);
         }
     }
 }

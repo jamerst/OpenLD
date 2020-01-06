@@ -18,6 +18,24 @@ namespace openld.Data {
 
         protected override void OnModelCreating(ModelBuilder builder) {
             base.OnModelCreating(builder);
+
+            builder.Entity<Drawing>()
+                .HasMany(d => d.Views)
+                .WithOne(v => v.Drawing)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<View>()
+                .HasMany(v => v.Structures)
+                .WithOne(s => s.View)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Structure>()
+                .HasMany(s => s.Fixtures)
+                .WithOne(f => f.Structure)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
         }
 
         public override DbSet<User> Users { get; set; }

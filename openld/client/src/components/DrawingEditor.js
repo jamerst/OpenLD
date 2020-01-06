@@ -54,6 +54,7 @@ export class DrawingEditor extends Component {
     this.initHubConnection = this.initHubConnection.bind(this);
     this.fetchDrawing = this.fetchDrawing.bind(this);
     this.sizeStage = this.sizeStage.bind(this);
+    this.scaleStage = this.scaleStage.bind(this);
     this.handleToolSelect = this.handleToolSelect.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleStageClick = this.handleStageClick.bind(this);
@@ -62,15 +63,17 @@ export class DrawingEditor extends Component {
     this.insertNewStructure = this.insertNewStructure.bind(this);
     this.addStructureSuccess = this.addStructureSuccess.bind(this);
     this.addHubHandlers = this.addHubHandlers.bind(this);
-    this.handleCreateView = this.handleCreateView.bind(this);
     this.insertNewView = this.insertNewView.bind(this);
     this.setAlertError = this.setAlertError.bind(this);
+    this.setAlert = this.setAlert.bind(this);
+    this.toggleAlert = this.toggleAlert.bind(this);
     this.switchView = this.switchView.bind(this);
     this.setTooltip = this.setTooltip.bind(this);
     this.updateStructurePoints = this.updateStructurePoints.bind(this);
     this.modifyStructurePoints = this.modifyStructurePoints.bind(this);
     this.setStageCursor = this.setStageCursor.bind(this);
     this.zoom = this.zoom.bind(this);
+    this.getCurrentView = this.getCurrentView.bind(this);
   }
 
   componentDidMount() {
@@ -117,18 +120,18 @@ export class DrawingEditor extends Component {
           <Row className="d-flex flex-grow-1">
             <Col xs="auto" className="pr-0 bg-light">
               <ButtonGroup vertical>
-                <Button tool="polygon" outline color="primary" size="lg" onClick={this.handleToolSelect} active={this.state.selectedTool === "polygon"}>
+                <Button tool="polygon" outline color="primary" size="lg" className="rounded-0" onClick={this.handleToolSelect} active={this.state.selectedTool === "polygon"}>
                   <FontAwesomeIcon icon="draw-polygon" />
                 </Button>
 
-                <Button tool="eraser" outline color="danger" size="lg" onClick={this.handleToolSelect} active={this.state.selectedTool === "eraser"}>
+                <Button tool="eraser" outline color="danger" size="lg" className="rounded-0" onClick={this.handleToolSelect} active={this.state.selectedTool === "eraser"}>
                   <FontAwesomeIcon icon="eraser" />
                 </Button>
               </ButtonGroup>
             </Col>
             <Col id="stage-container" className="p-0 m-0 bg-secondary">
               <div style={{position: "absolute", width: "100%", zIndex: "1000"}}>
-                <Alert color={this.state.alertColour} isOpen={this.state.alertOpen}>{this.state.alertContent}</Alert>
+                <Alert color={this.state.alertColour} isOpen={this.state.alertOpen} toggle={this.toggleAlert}>{this.state.alertContent}</Alert>
               </div>
               <Stage
                 x = {0}
@@ -151,8 +154,8 @@ export class DrawingEditor extends Component {
               >
                 <Grid
                   enabled = {this.state.gridEnabled}
-                  xLim = {this.state.drawingData.width}
-                  yLim = {this.state.drawingData.height}
+                  xLim = {this.getCurrentView().width}
+                  yLim = {this.getCurrentView().height}
                   gridSize = {1}
                   lineWidth = {1 / this.state.stageScale}
                 />
@@ -199,8 +202,8 @@ export class DrawingEditor extends Component {
               height = {this.state.stageHeight}
               views = {this.state.views}
               currentView = {this.state.currentView}
+              hub = {this.state.hub}
 
-              onCreateView = {this.handleCreateView}
               onClickView = {this.switchView}
             />
           </Row>
@@ -236,6 +239,9 @@ export class DrawingEditor extends Component {
     this.state.hub.on("NewView", view => this.insertNewView(view));
     this.state.hub.on("CreateViewSuccess", view => this.insertNewView(view));
     this.state.hub.on("CreateViewFailure", () => this.setAlertError("Failed to create new view"));
+    this.state.hub.on("DeleteView", view => this.deleteView(view));
+    this.state.hub.on("DeleteViewSuccess", view => this.deleteView(view));
+    this.state.hub.on("DeleteViewFailure", () => this.setAlertError("Failed to delete view"));
 
     this.state.hub.on("UpdateStructureGeometry", structure => this.modifyStructurePoints(structure.view.id, structure.id, structure.geometry.points));
     this.state.hub.on("UpdateStructureGeometryFailure", () => this.setAlertError("Failed to move structure"));
@@ -256,7 +262,7 @@ export class DrawingEditor extends Component {
         views: data.data.views
       }, async () => {
         this.initHubConnection();
-        this.sizeStage(true);
+        this.sizeStage(this.scaleStage);
         window.addEventListener("resize", this.sizeStage);
       });
     } else if (response.status === 401) {
@@ -312,18 +318,6 @@ export class DrawingEditor extends Component {
     this.setState({newLinePoints: []});
   }
 
-  async handleCreateView() {
-    let name = prompt("Enter view name");
-
-    this.state.hub.invoke(
-      "CreateView",
-      {
-        drawing: { id: this.props.match.params.id },
-        name: name
-      }
-    ).catch(err => console.log(err));
-  }
-
   insertNewView(view) {
     this.setState(prevState => {
       let views = [...prevState.views];
@@ -335,8 +329,32 @@ export class DrawingEditor extends Component {
     })
   }
 
+  deleteView(view) {
+    this.setState(prevState => {
+      let views = [...prevState.views];
+      let currentView = prevState.currentView;
+      const removedIndex = views.findIndex(v => v.id === view);
+
+      if (removedIndex > -1) {
+        views.splice(removedIndex, 1);
+      }
+
+      if (view === this.state.currentView) {
+        this.setAlert("warning", "The view you were working on was deleted.")
+        currentView = views[0].id;
+      }
+
+      return {
+        views: views,
+        currentView: currentView
+      }
+    });
+  }
+
   switchView(id) {
-    this.setState({currentView: id});
+    this.setState({
+      currentView: id
+    }, this.scaleStage);
   }
 
   async updateStructurePoints(id, points) {
@@ -434,7 +452,7 @@ export class DrawingEditor extends Component {
     }
   }
 
-  sizeStage(setScale) {
+  sizeStage(callback) {
     // set the stage size to be very small initially to prevent it from taking all the width before the other columns have resized
     this.setState({
       stageWidth: 0,
@@ -447,23 +465,29 @@ export class DrawingEditor extends Component {
         stageX: container.clientWidth / this.state.stageScale,
         stageY: container.clientHeight / this.state.stageScale,
       }, () => {
-        if (setScale === true) {
-          this.setState({
-            stageScale: Math.min(
-              this.state.stageWidth / (this.state.drawingData.width * 1.05),
-              this.state.stageHeight / (this.state.drawingData.height * 1.05)
-            )
-          }, () => {
-            this.setState({
-              stagePosition: {
-                x: (this.state.stageWidth - this.state.drawingData.width * this.state.stageScale) / 2,
-                y: ((this.state.stageHeight - this.state.drawingData.height * this.state.stageScale) / 2) + ((this.state.drawingData.height * this.state.stageScale) / 2)
-              }
-            });
-          });
+        if (callback && typeof callback === "function") {
+          callback();
         }
       });
     })
+  }
+
+  scaleStage() {
+    // set the scale such that the entire view can be seen
+    this.setState({
+      stageScale: Math.min(
+        this.state.stageWidth / (this.getCurrentView().width * 1.05),
+        this.state.stageHeight / (this.getCurrentView().height * 1.05)
+      )
+    }, () => {
+      // center the drawing (approximately)
+      this.setState({
+        stagePosition: {
+          x: (this.state.stageWidth - this.getCurrentView().width * this.state.stageScale) / 2,
+          y: ((this.state.stageHeight - this.getCurrentView().height * this.state.stageScale) / 2) + ((this.getCurrentView().height * this.state.stageScale) / 2)
+        }
+      });
+    });
   }
 
   setStageCursor(cursor) {
@@ -491,5 +515,21 @@ export class DrawingEditor extends Component {
       alertContent: "Error: " + msg,
       alertOpen: "true"
     })
+  }
+
+  setAlert(colour, msg) {
+    this.setState({
+      alertColour: colour,
+      alertContent: msg,
+      alertOpen: "true"
+    })
+  }
+
+  toggleAlert() {
+    this.setState({alertOpen: !this.state.alertOpen});
+  }
+
+  getCurrentView() {
+    return this.state.views.find(v => v.id === this.state.currentView);
   }
 }

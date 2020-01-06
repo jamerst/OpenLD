@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using openld.Data;
@@ -10,9 +11,10 @@ using openld.Models;
 namespace openld.Migrations
 {
     [DbContext(typeof(OpenLDContext))]
-    partial class OpenLDContextModelSnapshot : ModelSnapshot
+    [Migration("20200106093404_ViewSize")]
+    partial class ViewSize
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -355,7 +357,6 @@ namespace openld.Migrations
                         .HasColumnType("jsonb");
 
                     b.Property<string>("StructureId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<short>("Universe")
@@ -411,7 +412,6 @@ namespace openld.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("ViewId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -529,7 +529,6 @@ namespace openld.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("DrawingId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<float>("Height")
@@ -639,9 +638,7 @@ namespace openld.Migrations
 
                     b.HasOne("openld.Models.Structure", "Structure")
                         .WithMany("Fixtures")
-                        .HasForeignKey("StructureId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("StructureId");
                 });
 
             modelBuilder.Entity("openld.Models.Structure", b =>
@@ -652,9 +649,7 @@ namespace openld.Migrations
 
                     b.HasOne("openld.Models.View", "View")
                         .WithMany("Structures")
-                        .HasForeignKey("ViewId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ViewId");
                 });
 
             modelBuilder.Entity("openld.Models.UserDrawings", b =>
@@ -672,9 +667,7 @@ namespace openld.Migrations
                 {
                     b.HasOne("openld.Models.Drawing", "Drawing")
                         .WithMany("Views")
-                        .HasForeignKey("DrawingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("DrawingId");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,28 +1,27 @@
-import React, { Component } from "react";
+import React, { Component } from "react"
 import {
   Alert,
   Container, Col, Row,
-  Button, Form, FormGroup, Input, Label,
+  Button, CustomInput, Form, FormGroup, Input, Label,
   Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-import authService from '../api-authorization/AuthorizeService';
-
-
-export class CreateDrawingForm extends Component {
+export class CreateViewForm extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      title: "New Drawing",
+      name: "New View",
       width: 50,
       height: 50,
+      type: 0,
       error: false,
       errorMsg: ""
     }
 
     this.handleSubmit = this.handleSubmit.bind(this);
-    this.handleTitleChange = this.handleTitleChange.bind(this);
+    this.handleNameChange = this.handleNameChange.bind(this);
+    this.handleTypeChange = this.handleTypeChange.bind(this);
     this.handleWidthChange = this.handleWidthChange.bind(this);
     this.handleHeightChange = this.handleHeightChange.bind(this);
   }
@@ -30,7 +29,7 @@ export class CreateDrawingForm extends Component {
   render() {
     return (
       <Modal isOpen={this.props.isOpen} toggle={this.props.toggle}>
-          <ModalHeader toggle={this.props.toggle}>New Drawing</ModalHeader>
+          <ModalHeader toggle={this.props.toggle}>New View</ModalHeader>
           <Alert color="danger" isOpen={this.state.error}>
             <Container>
               <Row className="align-items-center">
@@ -49,13 +48,25 @@ export class CreateDrawingForm extends Component {
               <Row form>
                 <Col xs="12">
                   <FormGroup>
-                    <Label for="name">Drawing Title</Label>
-                    <Input type="text" value={this.state.title} onChange={this.handleTitleChange} name="title" placeholder="Title"/>
+                    <Label for="name">View Name</Label>
+                    <Input type="text" value={this.state.name} onChange={this.handleNameChange} name="name" placeholder="Name"/>
                   </FormGroup>
                 </Col>
               </Row>
 
-              <Label>Default View Size</Label>
+              <Row form>
+                <Col xs="12">
+                  <FormGroup>
+                    <Label for="type">View Type</Label>
+                    <CustomInput type="select" name="type" id="type" value={this.state.type} onChange={this.handleTypeChange}>
+                      <option value="0">Top-down</option>
+                      <option value="1">Front-on</option>
+                    </CustomInput>
+                  </FormGroup>
+                </Col>
+              </Row>
+
+              <Label className="mb-0">View Size</Label>
               <Row form>
                 <Col xs="12" md="6">
                   <FormGroup>
@@ -80,35 +91,32 @@ export class CreateDrawingForm extends Component {
     )
   }
 
-  async handleSubmit(event) {
-    event.preventDefault();
-    const response = await fetch("api/drawing/CreateDrawing", {
-      method: "POST",
-      headers: await authService.generateHeader({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({
-        title: this.state.title,
-        views: [{
-          width: this.state.width,
-          height: this.state.height
-        }]
-      })
-    });
+  handleSubmit(event) {
+    event.preventDefault()
 
-    if (response.ok) {
-      const data = await response.json();
-
-      if (data.success === true) {
-        this.props.onSubmitSuccess(data.data);
-      } else {
-        this.setState({error: true, errorMsg: data.msg});
+    this.props.hub.invoke(
+      "CreateView",
+      {
+        drawing: { id: this.props.drawingId },
+        name: this.state.name,
+        type: this.state.type,
+        width: this.state.width,
+        height: this.state.height
       }
-    } else {
-      this.setState({error: true, errorMsg: "Unknown error creating drawing"});
-    }
+    ).catch(err => {
+      console.log(err);
+      this.setState({error: true, errorMsg: err});
+    }).then(() => {
+      this.props.toggle();
+    });
   }
 
-  handleTitleChange(event) {
-    this.setState({title: event.target.value});
+  handleNameChange(event) {
+    this.setState({name: event.target.value});
+  }
+
+  handleTypeChange(event) {
+    this.setState({type: event.target.value});
   }
 
   handleWidthChange(event) {

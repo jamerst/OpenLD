@@ -8,6 +8,8 @@ namespace openld.Models {
         public Drawing Drawing { get; set; }
         public string Name { get; set; }
         public List<Structure> Structures { get; set; }
+        public float Width { get; set; }
+        public float Height { get; set; }
         public int Type { get; set; }
     }
 }

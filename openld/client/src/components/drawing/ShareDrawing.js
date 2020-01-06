@@ -35,6 +35,22 @@ export class ShareDrawing extends Component {
   }
 
   render() {
+    let users = <em className="text-center">No users</em>;
+    if (this.state.userDrawings.length > 0) {
+      users = this.state.userDrawings.map(ud => {
+        return (
+          <ListGroupItem key={"ud-" + ud.user.id}>
+            <div className="d-flex justify-content-between">
+              <div>
+                {ud.user.email}
+              </div>
+              <Button close onClick={() => this.handleRemoveUser(ud.id)}/>
+            </div>
+          </ListGroupItem>
+        );
+      })
+    }
+
     return (
       <Modal isOpen={this.props.isOpen} toggle={this.props.toggle}>
         <ModalHeader toggle={this.props.toggle}>Sharing Settings</ModalHeader>
@@ -57,18 +73,7 @@ export class ShareDrawing extends Component {
         <ModalBody>
           This drawing is shared with:
           <ListGroup>
-            {this.state.userDrawings.map(ud => {
-              return (
-                <ListGroupItem key={"ud-" + ud.user.id}>
-                  <div className="d-flex justify-content-between">
-                    <div>
-                      {ud.user.email}
-                    </div>
-                    <Button close onClick={() => this.handleRemoveUser(ud.id)}/>
-                  </div>
-                </ListGroupItem>
-              );
-            })}
+            {users}
           </ListGroup>
           <hr/>
           <h5>Share with user</h5>
