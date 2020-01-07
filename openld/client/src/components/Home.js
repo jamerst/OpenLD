@@ -1,7 +1,9 @@
 import React, { Component, Fragment } from 'react';
+import { Link } from 'react-router-dom';
 import {
-  Button, Container, Jumbotron
+  Button, Container, Jumbotron, Col, Row, Card, CardBody, CardFooter, CardHeader
 } from 'reactstrap';
+import Moment from "react-moment";
 import authService from './api-authorization/AuthorizeService';
 import { CreateDrawingForm } from './drawing/CreateDrawingForm';
 
@@ -14,6 +16,9 @@ export class Home extends Component {
     this.state = {
       actions: <div></div>,
       createModalOpen: false,
+      ownedDrawings: [],
+      sharedDrawings: [],
+      authenticated: false
     }
 
     this.toggle = this.toggle.bind(this);
@@ -24,9 +29,56 @@ export class Home extends Component {
   componentDidMount() {
     document.title = "OpenLD";
     this.renderActions();
+    this.fetchDrawings();
   }
 
   render () {
+    let drawings;
+    if (this.state.authenticated === true) {
+      drawings = (
+        <Container>
+          <Row>
+            <Col xs="12" md="6">
+              <Row><h2>Your Drawings</h2></Row>
+              {this.state.ownedDrawings.map(drawing => {
+                return (
+                  <Link to={"/drawing/" + drawing.id} className="text-dark">
+                    <Card className="mb-3">
+                      <CardHeader><h4 className="mb-0">{drawing.title}</h4></CardHeader>
+                      <CardBody>
+                        <strong>Owner:</strong> {drawing.owner.userName}
+                      </CardBody>
+                      <CardFooter className="text-right small">
+                        <em>Last modified <Moment date={drawing.lastModified} fromNow/></em>
+                      </CardFooter>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </Col>
+            <Col xs="12" md="6">
+              <Row><h2>Drawings Shared With You</h2></Row>
+              {this.state.sharedDrawings.map(drawing => {
+                return (
+                  <Link to={"/drawing/" + drawing.id} className="text-dark" key={drawing.id}>
+                    <Card className="mb-3">
+                      <CardHeader><h4 className="mb-0">{drawing.title}</h4></CardHeader>
+                      <CardBody>
+                        <strong>Owner:</strong> {drawing.owner.userName}
+                      </CardBody>
+                      <CardFooter className="text-right small">
+                        <em>Last modified <Moment date={drawing.lastModified} fromNow/></em>
+                      </CardFooter>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </Col>
+          </Row>
+        </Container>
+      )
+    }
+
     return (
       <Fragment>
         <Jumbotron>
@@ -42,6 +94,8 @@ export class Home extends Component {
           onSubmitSuccess = {this.redirect}
           toggle = {this.toggle}
         />
+
+        {drawings}
       </Fragment>
     );
   }
@@ -57,6 +111,35 @@ export class Home extends Component {
   async renderActions() {
     if (await authService.isAuthenticated()) {
       this.setState({actions: <Fragment><hr/><Button color="primary" size="lg" onClick={this.toggle}>Create Drawing</Button></Fragment>});
+    }
+  }
+
+  async fetchDrawings() {
+    if (await authService.isAuthenticated()) {
+      this.setState({authenticated: true});
+      const ownedResponse = await fetch("api/drawing/GetOwnedDrawings", {
+        headers: await authService.generateHeader()
+      });
+
+      if (ownedResponse.ok) {
+        let data = await ownedResponse.json();
+
+        if (data.success === true) {
+          this.setState({ownedDrawings: data.data})
+        }
+      }
+
+      const sharedResponse = await fetch("api/drawing/GetSharedDrawings", {
+        headers: await authService.generateHeader()
+      });
+
+      if (sharedResponse.ok) {
+        let data = await sharedResponse.json();
+
+        if (data.success === true) {
+          this.setState({sharedDrawings: data.data})
+        }
+      }
     }
   }
 }

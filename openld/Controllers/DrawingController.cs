@@ -132,5 +132,31 @@ namespace openld.Controllers {
 
             return new JsonResponse<string> { success = true, data = id };
         }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<ActionResult<JsonResponse<List<Drawing>>>> GetOwnedDrawings() {
+            List<Drawing> drawings;
+            try {
+                drawings = await _drawingService.GetOwnedDrawingsAsync(HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            } catch (Exception) {
+                return new JsonResponse<List<Drawing>> { success = false, msg = "Unknown error fetching drawings" };
+            }
+
+            return new JsonResponse<List<Drawing>> { success = true, data = drawings };
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<ActionResult<JsonResponse<List<Drawing>>>> GetSharedDrawings() {
+            List<Drawing> drawings;
+            try {
+                drawings = await _drawingService.GetSharedDrawingsAsync(HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            } catch (Exception) {
+                return new JsonResponse<List<Drawing>> { success = false, msg = "Unknown error fetching drawings" };
+            }
+
+            return new JsonResponse<List<Drawing>> { success = true, data = drawings };
+        }
     }
 }

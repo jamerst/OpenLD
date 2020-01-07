@@ -121,6 +121,7 @@ namespace openld.Services {
 
             _context.Views.Remove(view);
             await _context.SaveChangesAsync();
+            await UpdateLastModifiedAsync(view);
         }
 
         public async Task<Structure> AddStructureAsync(Structure structure) {
@@ -133,6 +134,7 @@ namespace openld.Services {
             await _context.Structures.AddAsync(structure);
             await _context.SaveChangesAsync();
 
+            await UpdateLastModifiedAsync(structure.View);
             return structure;
         }
 
@@ -148,6 +150,8 @@ namespace openld.Services {
 
             structure.Geometry = geometry;
             await _context.SaveChangesAsync();
+
+            await UpdateLastModifiedAsync(structure.View);
             return structure;
         }
 
@@ -190,6 +194,7 @@ namespace openld.Services {
             await _context.UserDrawings.AddAsync(ud);
             await _context.SaveChangesAsync();
 
+            await UpdateLastModifiedAsync(drawing);
             return ud;
         }
 
@@ -230,6 +235,59 @@ namespace openld.Services {
                 return false;
             }
         }
+
+        public async Task<List<Drawing>> GetOwnedDrawingsAsync(string userId) {
+            return await _context.Drawings
+                .Include(d => d.Owner)
+                .Where(d => d.Owner.Id == userId)
+                .Select(d => new Drawing {
+                    Id = d.Id,
+                    Title = d.Title,
+                    Owner = new User { UserName = d.Owner.UserName },
+                    LastModified = d.LastModified,
+                })
+                .OrderBy(d => d.LastModified)
+                .ToListAsync();
+        }
+
+        public async Task<List<Drawing>> GetSharedDrawingsAsync(string userId) {
+            return await _context.Drawings
+                .Include(d => d.Owner)
+                .Where(d => _context.UserDrawings
+                    .Where(ud => ud.Drawing.Id == d.Id)
+                    .Where(ud => ud.User.Id == userId)
+                    .Any()
+                ).Select(d => new Drawing {
+                    Id = d.Id,
+                    Title = d.Title,
+                    Owner = new User { UserName = d.Owner.UserName },
+                    LastModified = d.LastModified,
+                })
+                .OrderBy(d => d.LastModified)
+                .ToListAsync();
+        }
+
+        public async Task UpdateLastModifiedAsync(Drawing drawing) {
+            try {
+                drawing = await _context.Drawings.FirstAsync(d => d.Id == drawing.Id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("Drawing ID not found");
+            }
+
+            drawing.LastModified = DateTime.Now;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateLastModifiedAsync(View view) {
+            try {
+                view = await _context.Views.Include(v => v.Drawing).FirstAsync(v => v.Id == view.Id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("View ID not found");
+            }
+
+            view.Drawing.LastModified = DateTime.Now;
+            await _context.SaveChangesAsync();
+        }
     }
 
     public interface IDrawingService {
@@ -247,5 +305,9 @@ namespace openld.Services {
         Task<string> UnshareWithUserAsync(string userDrawingId);
         Task<bool> IsSharedWithAsync(string drawingId, string userId);
         Task<bool> IsOwnerAsync(string drawingId, string userId);
+        Task<List<Drawing>> GetOwnedDrawingsAsync(string userId);
+        Task<List<Drawing>> GetSharedDrawingsAsync(string userId);
+        Task UpdateLastModifiedAsync(Drawing drawing);
+        Task UpdateLastModifiedAsync(View view);
     }
 }

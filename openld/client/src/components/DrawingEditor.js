@@ -177,7 +177,7 @@ export class DrawingEditor extends Component {
                 <View
                     data={this.state.views.find(view => view.id === this.state.currentView)}
                     snapGridSize = {this.state.snapGridSize}
-                    updatePoints = {this.modifyStructurePoints}
+                    updatePoints = {this.updateStructurePoints}
                     setTooltip = {this.setTooltip}
                     setCursor = {this.setStageCursor}
                     scale = {this.state.stageScale}
@@ -357,7 +357,9 @@ export class DrawingEditor extends Component {
     }, this.scaleStage);
   }
 
-  async updateStructurePoints(id, points) {
+  async updateStructurePoints(viewId, id, points) {
+    this.modifyStructurePoints(viewId, id, points);
+
     this.state.hub.invoke(
       "UpdateStructureGeometry",
         id,
@@ -391,8 +393,6 @@ export class DrawingEditor extends Component {
       return {
         views: views
       };
-    }, () => {
-      this.updateStructurePoints(id, points);
     });
   }
 
