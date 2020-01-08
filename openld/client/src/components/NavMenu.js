@@ -36,9 +36,6 @@ export class NavMenu extends Component {
                   <NavLink tag={Link} to="/library">Fixture Library</NavLink>
                 </NavItem>
                 <NavItem>
-                  <NavLink tag={Link} to="/drawing">Drawing</NavLink>
-                </NavItem>
-                <NavItem>
                   <NavLink tag={Link} to="/token">Token</NavLink>
                 </NavItem>
               </ul>

@@ -111,7 +111,17 @@ export class Structure extends Component {
 export class Grid extends Component {
   render() {
     if (!this.props.enabled) {
-      return null;
+      return (
+        <Layer>
+          <Rect
+            x = {0}
+            y = {0}
+            width = {this.props.xLim}
+            height = {this.props.yLim}
+            fill = "#fff"
+          />
+        </Layer>
+      )
     }
 
     let grid = [];

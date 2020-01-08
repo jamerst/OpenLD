@@ -144,6 +144,7 @@ export class FixtureLibrary extends Component {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(this.state.searchParams)
     });
+    console.log(response);
 
     const data = await response.json();
     this.setState({ results: data.data, loading: false });

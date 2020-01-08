@@ -1,8 +1,9 @@
 import React, { Component } from "react";
 import { Col,
-  Button,
+  Button, CustomInput,
   Card, CardHeader, CardBody,
-  ListGroup, ListGroupItem
+  ListGroup, ListGroupItem, Label,
+  Tooltip
 } from "reactstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { ShareDrawing } from "./ShareDrawing";
@@ -18,13 +19,15 @@ export class Sidebar extends Component {
       createViewOpen: false,
       deleteViewOpen: false,
       deletedViewId: "",
-      deletedViewName: "test"
+      deletedViewName: "test",
+      gridTooltipOpen: false
     };
 
     this.toggleShareModal = this.toggleShareModal.bind(this);
     this.toggleCreateView = this.toggleCreateView.bind(this);
     this.toggleDeleteView = this.toggleDeleteView.bind(this);
     this.handleClickDelete = this.handleClickDelete.bind(this);
+    this.toggleGridTooltip = this.toggleGridTooltip.bind(this);
   }
 
   render() {
@@ -96,6 +99,17 @@ export class Sidebar extends Component {
           <CardHeader className="pl-3 pr-3"><h5 className="mb-0">Drawing Properties</h5></CardHeader>
           <CardBody className="overflow-auto">
             <Button color="primary" size="sm" onClick={this.toggleShareModal}>Sharing Settings</Button>
+            <CustomInput type="switch" onChange={this.props.toggleGrid} checked={this.props.gridEnabled} id="grid-toggle" label="Show Grid"/>
+
+            <Label for="grid-size">Grid Size</Label>
+            <CustomInput
+              type="range" min="1" max="20" step="1" name="gridSize" id="grid-size"
+              value={this.props.gridSize}
+              onChange={event => this.props.setGridSize(parseFloat(event.target.value))}
+            />
+            <Tooltip isOpen={this.state.gridTooltipOpen} target="grid-size" toggle={this.toggleGridTooltip} hideArrow>
+              {this.props.gridSize}m
+            </Tooltip>
           </CardBody>
         </Card>
         <ShareDrawing
@@ -125,5 +139,9 @@ export class Sidebar extends Component {
       deletedViewName: name,
       deleteViewOpen: true
     })
+  }
+
+  toggleGridTooltip() {
+    this.setState({gridTooltipOpen: !this.state.gridTooltipOpen});
   }
 }

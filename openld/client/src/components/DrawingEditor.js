@@ -25,6 +25,7 @@ export class DrawingEditor extends Component {
       errorMsg: "",
       errorIcon: "",
       gridEnabled: true,
+      gridSize: 1,
       snapGridSize: 0.1,
       stageScale: 50,
       stageWidth: 0,
@@ -59,6 +60,7 @@ export class DrawingEditor extends Component {
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleStageClick = this.handleStageClick.bind(this);
     this.handleStageDblClick = this.handleStageDblClick.bind(this);
+    this.handleKeyUp = this.handleKeyUp.bind(this);
     this.addStructure = this.addStructure.bind(this);
     this.insertNewStructure = this.insertNewStructure.bind(this);
     this.addStructureSuccess = this.addStructureSuccess.bind(this);
@@ -74,14 +76,18 @@ export class DrawingEditor extends Component {
     this.setStageCursor = this.setStageCursor.bind(this);
     this.zoom = this.zoom.bind(this);
     this.getCurrentView = this.getCurrentView.bind(this);
+    this.toggleGrid = this.toggleGrid.bind(this);
+    this.setGridSize = this.setGridSize.bind(this);
   }
 
   componentDidMount() {
     this.fetchDrawing();
+    window.addEventListener("keyup", this.handleKeyUp);
   }
 
   componentWillUnmount() {
     window.removeEventListener("resize", this.sizeStage);
+    window.removeEventListener("keyup", this.handleKeyUp)
   }
 
   render() {
@@ -120,16 +126,16 @@ export class DrawingEditor extends Component {
           <Row className="d-flex flex-grow-1">
             <Col xs="auto" className="pr-0 bg-light">
               <ButtonGroup vertical>
-                <Button tool="polygon" outline color="primary" size="lg" className="rounded-0" onClick={this.handleToolSelect} active={this.state.selectedTool === "polygon"}>
-                  <FontAwesomeIcon icon="draw-polygon" />
+                <Button outline color="primary" size="lg" className="rounded-0" onClick={() => this.handleToolSelect("polygon")} active={this.state.selectedTool === "polygon"}>
+                  <FontAwesomeIcon icon="draw-polygon"/>
                 </Button>
 
-                <Button tool="eraser" outline color="danger" size="lg" className="rounded-0" onClick={this.handleToolSelect} active={this.state.selectedTool === "eraser"}>
-                  <FontAwesomeIcon icon="eraser" />
+                <Button outline color="danger" size="lg" className="rounded-0" onClick={() => this.handleToolSelect("eraser")} active={this.state.selectedTool === "eraser"}>
+                  <FontAwesomeIcon icon="eraser"/>
                 </Button>
               </ButtonGroup>
             </Col>
-            <Col id="stage-container" className="p-0 m-0 bg-secondary">
+            <Col id="stage-container" className="p-0 m-0 bg-secondary" xs="10">
               <div style={{position: "absolute", width: "100%", zIndex: "1000"}}>
                 <Alert color={this.state.alertColour} isOpen={this.state.alertOpen} toggle={this.toggleAlert}>{this.state.alertContent}</Alert>
               </div>
@@ -156,7 +162,7 @@ export class DrawingEditor extends Component {
                   enabled = {this.state.gridEnabled}
                   xLim = {this.getCurrentView().width}
                   yLim = {this.getCurrentView().height}
-                  gridSize = {1}
+                  gridSize = {this.state.gridSize}
                   lineWidth = {1 / this.state.stageScale}
                 />
                 <Layer>
@@ -193,18 +199,18 @@ export class DrawingEditor extends Component {
               </Stage>
             </Col>
             <Sidebar
-              xs = "4"
-              md = "3"
-              lg = "1"
-
               drawingId = {this.state.drawingData.id}
 
               height = {this.state.stageHeight}
               views = {this.state.views}
               currentView = {this.state.currentView}
               hub = {this.state.hub}
+              gridEnabled = {this.state.gridEnabled}
+              gridSize = {this.state.gridSize}
 
               onClickView = {this.switchView}
+              toggleGrid = {this.toggleGrid}
+              setGridSize = {this.setGridSize}
             />
           </Row>
         </Container>
@@ -400,18 +406,22 @@ export class DrawingEditor extends Component {
     if (this.state.selectedTool === "polygon") {
       const stage = event.target.getStage();
       const point = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.state.snapGridSize);
-      if (this.state.isDrawing === true) {
-        this.setState({
-          newLinePoints: [...this.state.newLinePoints, ...[point.x, point.y]],
-          lastLinePoint: [point.x, point.y]
-        });
-      } else {
-        this.setState({
-          isDrawing: true,
-          newLinePoints: [point.x, point.y],
-          newLinePos: [point.x, point.y],
-          lastLinePoint: [point.x, point.y]
-        });
+
+      if (point.x >= 0 && point.x <= this.getCurrentView().width &&
+      point.y >= 0 && point.y <= this.getCurrentView().height) {
+        if (this.state.isDrawing === true) {
+          this.setState({
+            newLinePoints: [...this.state.newLinePoints, ...[point.x, point.y]],
+            lastLinePoint: [point.x, point.y]
+          });
+        } else {
+          this.setState({
+            isDrawing: true,
+            newLinePoints: [point.x, point.y],
+            newLinePos: [point.x, point.y],
+            lastLinePoint: [point.x, point.y]
+          });
+        }
       }
     }
   }
@@ -425,8 +435,11 @@ export class DrawingEditor extends Component {
         nextLinePoint: [],
         tooltipVisible: false,
         stageCursor: "grab"
-      })
-      this.addStructure();
+      });
+
+      if (this.state.newLinePoints.length > 4) {
+        this.addStructure();
+      }
     }
   }
 
@@ -434,6 +447,13 @@ export class DrawingEditor extends Component {
     if (this.state.selectedTool === "polygon") {
       const stage = event.target.getStage();
       const snapPos = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.state.snapGridSize);
+
+      if (snapPos.x < 0 || snapPos.x > this.getCurrentView().width ||
+      snapPos.y < 0 || snapPos.y > this.getCurrentView().height) {
+          this.setStageCursor("not-allowed");
+      } else {
+        this.setStageCursor("crosshair");
+      }
       this.setState({
         tooltipPos: {x: snapPos.x - 0.5, y: snapPos.y - 0.5},
         tooltipText: "(" + snapPos.x.toFixed(1) + "," + snapPos.y.toFixed(1) + ")",
@@ -443,12 +463,29 @@ export class DrawingEditor extends Component {
     }
   }
 
-  handleToolSelect(event) {
-    const tool = event.target.getAttribute("tool");
+  handleToolSelect(tool) {
     if (this.state.selectedTool === tool) {
-      this.setState({selectedTool: "none", stageCursor: "grab"});
-    } else {
+      if (this.state.isDrawing === true) {
+        this.handleStageDblClick();
+      }
+
+      this.setState({selectedTool: "none", stageCursor: "grab", tooltipVisible: false});
+    } else if (tool === "polygon") {
       this.setState({selectedTool: tool, stageCursor: "crosshair"});
+    }
+  }
+
+  handleKeyUp(event) {
+    if (this.state.selectedTool !== "none" && event.keyCode === 27) {
+      this.setState({
+        isDrawing: false,
+        selectedTool: "none",
+        lastLinePoint: [],
+        nextLinePoint: [],
+        tooltipVisible: false,
+        stageCursor: "grab",
+        newLinePoints: []
+      });
     }
   }
 
@@ -460,10 +497,10 @@ export class DrawingEditor extends Component {
     }, () => {
       const container = document.getElementById("stage-container");
       this.setState({
-        stageWidth: container.clientWidth,
-        stageHeight: container.clientHeight,
-        stageX: container.clientWidth / this.state.stageScale,
-        stageY: container.clientHeight / this.state.stageScale,
+        stageWidth: container.offsetWidth,
+        stageHeight: container.offsetHeight,
+        stageX: container.offsetWidth / this.state.stageScale,
+        stageY: container.offsetHeight / this.state.stageScale,
       }, () => {
         if (callback && typeof callback === "function") {
           callback();
@@ -523,6 +560,15 @@ export class DrawingEditor extends Component {
       alertContent: msg,
       alertOpen: "true"
     })
+  }
+
+  toggleGrid() {
+    this.setState({gridEnabled: !this.state.gridEnabled});
+  }
+
+  setGridSize(size) {
+    console.log(size);
+    this.setState({gridSize: size});
   }
 
   toggleAlert() {

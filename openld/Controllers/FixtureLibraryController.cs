@@ -22,7 +22,6 @@ namespace openld.Controllers {
             _fixtureTypeService = fixtureTypeService;
         }
         [HttpPost]
-        [Authorize]
         public async Task<ActionResult<JsonResponse<List<Fixture>>>> GetFixtures(SearchParams search) {
             return new JsonResponse<List<Fixture>> { success = true, data = await _fixtureService.SearchAllFixturesAsync(search) };
         }
