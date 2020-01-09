@@ -6,12 +6,11 @@ import {
   Container, Row, Col,
   Navbar, NavbarBrand, NavLink,
   Spinner } from 'reactstrap';
-import { Layer, Line, Stage } from 'react-konva';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { HubConnectionBuilder } from "@aspnet/signalr";
 
 import { DrawingUtils } from './drawing/DrawingUtils';
-import { View, Grid, Tooltip } from "./drawing/DrawingComponents";
+import { Drawing } from "./drawing/Drawing";
 import { Sidebar } from "./drawing/Sidebar";
 import authService from './api-authorization/AuthorizeService';
 
@@ -33,15 +32,8 @@ export class DrawingEditor extends Component {
       stageX: 0,
       stageY: 0,
       stagePosition: {x: 0, y: 0},
-      tooltipPos: {x: 0, y: 0},
-      tooltipVisible: false,
-      tooltipText: "",
       selectedTool: "none",
       isDrawing: false,
-      newLinePoints: [0, 0],
-      newLinePos: {x: 0, y: 0},
-      lastLinePoint: [],
-      nextLinePoint: [],
       drawingData: {},
       currentView: "",
       views: [],
@@ -49,7 +41,9 @@ export class DrawingEditor extends Component {
       alertContent: "",
       alertColour: "info",
       alertOpen: false,
-      stageCursor: "grab"
+      stageCursor: "grab",
+      selectedObjectType: "none",
+      selectedObjectId: ""
     }
 
     this.initHubConnection = this.initHubConnection.bind(this);
@@ -57,10 +51,8 @@ export class DrawingEditor extends Component {
     this.sizeStage = this.sizeStage.bind(this);
     this.scaleStage = this.scaleStage.bind(this);
     this.handleToolSelect = this.handleToolSelect.bind(this);
-    this.handleMouseMove = this.handleMouseMove.bind(this);
-    this.handleStageClick = this.handleStageClick.bind(this);
-    this.handleStageDblClick = this.handleStageDblClick.bind(this);
-    this.handleKeyUp = this.handleKeyUp.bind(this);
+
+
     this.addStructure = this.addStructure.bind(this);
     this.insertNewStructure = this.insertNewStructure.bind(this);
     this.addStructureSuccess = this.addStructureSuccess.bind(this);
@@ -70,24 +62,25 @@ export class DrawingEditor extends Component {
     this.setAlert = this.setAlert.bind(this);
     this.toggleAlert = this.toggleAlert.bind(this);
     this.switchView = this.switchView.bind(this);
-    this.setTooltip = this.setTooltip.bind(this);
-    this.updateStructurePoints = this.updateStructurePoints.bind(this);
-    this.modifyStructurePoints = this.modifyStructurePoints.bind(this);
-    this.setStageCursor = this.setStageCursor.bind(this);
-    this.zoom = this.zoom.bind(this);
+
+    this.moveStructure = this.moveStructure.bind(this);
+    this.updateStructurePos = this.updateStructurePos.bind(this);
+
     this.getCurrentView = this.getCurrentView.bind(this);
     this.toggleGrid = this.toggleGrid.bind(this);
     this.setGridSize = this.setGridSize.bind(this);
+    this.setScale = this.setScale.bind(this);
+    this.setTool = this.setTool.bind(this);
+    this.setIsDrawing = this.setIsDrawing.bind(this);
+    this.setCursor = this.setCursor.bind(this);
   }
 
   componentDidMount() {
     this.fetchDrawing();
-    window.addEventListener("keyup", this.handleKeyUp);
   }
 
   componentWillUnmount() {
     window.removeEventListener("resize", this.sizeStage);
-    window.removeEventListener("keyup", this.handleKeyUp)
   }
 
   render() {
@@ -139,64 +132,31 @@ export class DrawingEditor extends Component {
               <div style={{position: "absolute", width: "100%", zIndex: "1000"}}>
                 <Alert color={this.state.alertColour} isOpen={this.state.alertOpen} toggle={this.toggleAlert}>{this.state.alertContent}</Alert>
               </div>
-              <Stage
-                x = {0}
-                y = {0}
+              <Drawing
                 width = {this.state.stageWidth}
                 height = {this.state.stageHeight}
-                scale = {{x: this.state.stageScale, y: -this.state.stageScale}}
-                offsetY = {this.state.stageY}
-                draggable
+                scale = {this.state.stageScale}
+                x = {this.state.stageX}
+                y = {this.state.stageY}
                 position = {this.state.stagePosition}
 
-                onWheel = {this.zoom}
-                onMouseMove = {this.handleMouseMove}
-                onClick = {this.handleStageClick}
-                onDblClick = {this.handleStageDblClick}
-                onDragStart = {() => this.setStageCursor("grabbing")}
-                onDragEnd = {() => this.setStageCursor("grab")}
+                viewData = {this.getCurrentView()}
+                isDrawing = {this.state.isDrawing}
+                selectedTool = {this.state.selectedTool}
+                cursor = {this.state.stageCursor}
 
-                style={{cursor: this.state.stageCursor}}
-              >
-                <Grid
-                  enabled = {this.state.gridEnabled}
-                  xLim = {this.getCurrentView().width}
-                  yLim = {this.getCurrentView().height}
-                  gridSize = {this.state.gridSize}
-                  lineWidth = {1 / this.state.stageScale}
-                />
-                <Layer>
-                    <Line
-                      key = "new-line"
-                      points = {this.state.newLinePoints}
-                      position = {this.state.newLinePos}
-                      stroke = "#000"
-                      strokeWidth = {0.05}
-                    />
-                    <Line
-                      key = "line-preview"
-                      points = {[...this.state.lastLinePoint, ...this.state.nextLinePoint]}
-                      stroke = "#ddd"
-                      strokeWidth = {0.05}
-                    />
-                </Layer>
-                <View
-                    data={this.state.views.find(view => view.id === this.state.currentView)}
-                    snapGridSize = {this.state.snapGridSize}
-                    updatePoints = {this.updateStructurePoints}
-                    setTooltip = {this.setTooltip}
-                    setCursor = {this.setStageCursor}
-                    scale = {this.state.stageScale}
-                />
-                <Layer>
-                  <Tooltip
-                    position = {this.state.tooltipPos}
-                    visible = {this.state.tooltipVisible}
-                    text = {this.state.tooltipText}
-                    scale = {1.25 / this.state.stageScale}
-                  />
-                </Layer>
-              </Stage>
+                onCreateStructure = {this.addStructure}
+                onMoveStructure = {this.moveStructure}
+
+                gridEnabled = {this.state.gridEnabled}
+                gridSize = {this.state.gridSize}
+                snapGridSize = {this.state.snapGridSize}
+
+                setScale = {this.setScale}
+                setTool = {this.setTool}
+                setIsDrawing = {this.setIsDrawing}
+                setCursor = {this.setCursor}
+              />
             </Col>
             <Sidebar
               drawingId = {this.state.drawingData.id}
@@ -249,7 +209,7 @@ export class DrawingEditor extends Component {
     this.state.hub.on("DeleteViewSuccess", view => this.deleteView(view));
     this.state.hub.on("DeleteViewFailure", () => this.setAlertError("Failed to delete view"));
 
-    this.state.hub.on("UpdateStructureGeometry", structure => this.modifyStructurePoints(structure.view.id, structure.id, structure.geometry.points));
+    this.state.hub.on("UpdateStructureGeometry", structure => this.updateStructurePos(structure.view.id, structure.id, structure.geometry.points));
     this.state.hub.on("UpdateStructureGeometryFailure", () => this.setAlertError("Failed to move structure"));
   }
 
@@ -288,8 +248,8 @@ export class DrawingEditor extends Component {
     }
   }
 
-  async addStructure() {
-    let points = DrawingUtils.arrayPointsToObject(this.state.newLinePoints);
+  async addStructure(addedPoints) {
+    let points = DrawingUtils.arrayPointsToObject(addedPoints);
 
     this.state.hub.invoke(
       "AddStructure",
@@ -354,6 +314,8 @@ export class DrawingEditor extends Component {
         views: views,
         currentView: currentView
       }
+    }, () => {
+      this.scaleStage();
     });
   }
 
@@ -363,18 +325,16 @@ export class DrawingEditor extends Component {
     }, this.scaleStage);
   }
 
-  async updateStructurePoints(viewId, id, points) {
-    this.modifyStructurePoints(viewId, id, points);
-
+  async moveStructure(viewId, id, points) {
     this.state.hub.invoke(
       "UpdateStructureGeometry",
         id,
         {points: points}
-
-    ).catch(err => console.log(err));
+    ).catch(err => console.log(err))
+    .then(() => this.updateStructurePos(viewId, id, points));
   }
 
-  modifyStructurePoints(viewId, id, points) {
+  updateStructurePos(viewId, id, points) {
     if (viewId === null) {
       viewId = this.state.currentView;
     }
@@ -402,67 +362,6 @@ export class DrawingEditor extends Component {
     });
   }
 
-  handleStageClick(event) {
-    if (this.state.selectedTool === "polygon") {
-      const stage = event.target.getStage();
-      const point = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.state.snapGridSize);
-
-      if (point.x >= 0 && point.x <= this.getCurrentView().width &&
-      point.y >= 0 && point.y <= this.getCurrentView().height) {
-        if (this.state.isDrawing === true) {
-          this.setState({
-            newLinePoints: [...this.state.newLinePoints, ...[point.x, point.y]],
-            lastLinePoint: [point.x, point.y]
-          });
-        } else {
-          this.setState({
-            isDrawing: true,
-            newLinePoints: [point.x, point.y],
-            newLinePos: [point.x, point.y],
-            lastLinePoint: [point.x, point.y]
-          });
-        }
-      }
-    }
-  }
-
-  handleStageDblClick(event) {
-    if (this.state.selectedTool === "polygon") {
-      this.setState({
-        isDrawing: false,
-        selectedTool: "none",
-        lastLinePoint: [],
-        nextLinePoint: [],
-        tooltipVisible: false,
-        stageCursor: "grab"
-      });
-
-      if (this.state.newLinePoints.length > 4) {
-        this.addStructure();
-      }
-    }
-  }
-
-  handleMouseMove(event) {
-    if (this.state.selectedTool === "polygon") {
-      const stage = event.target.getStage();
-      const snapPos = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.state.snapGridSize);
-
-      if (snapPos.x < 0 || snapPos.x > this.getCurrentView().width ||
-      snapPos.y < 0 || snapPos.y > this.getCurrentView().height) {
-          this.setStageCursor("not-allowed");
-      } else {
-        this.setStageCursor("crosshair");
-      }
-      this.setState({
-        tooltipPos: {x: snapPos.x - 0.5, y: snapPos.y - 0.5},
-        tooltipText: "(" + snapPos.x.toFixed(1) + "," + snapPos.y.toFixed(1) + ")",
-        tooltipVisible: true,
-        nextLinePoint: [snapPos.x, snapPos.y]
-      });
-    }
-  }
-
   handleToolSelect(tool) {
     if (this.state.selectedTool === tool) {
       if (this.state.isDrawing === true) {
@@ -472,20 +371,6 @@ export class DrawingEditor extends Component {
       this.setState({selectedTool: "none", stageCursor: "grab", tooltipVisible: false});
     } else if (tool === "polygon") {
       this.setState({selectedTool: tool, stageCursor: "crosshair"});
-    }
-  }
-
-  handleKeyUp(event) {
-    if (this.state.selectedTool !== "none" && event.keyCode === 27) {
-      this.setState({
-        isDrawing: false,
-        selectedTool: "none",
-        lastLinePoint: [],
-        nextLinePoint: [],
-        tooltipVisible: false,
-        stageCursor: "grab",
-        newLinePoints: []
-      });
     }
   }
 
@@ -517,33 +402,30 @@ export class DrawingEditor extends Component {
         this.state.stageHeight / (this.getCurrentView().height * 1.05)
       )
     }, () => {
-      // center the drawing (approximately)
+      // center the drawing
       this.setState({
         stagePosition: {
           x: (this.state.stageWidth - this.getCurrentView().width * this.state.stageScale) / 2,
-          y: ((this.state.stageHeight - this.getCurrentView().height * this.state.stageScale) / 2) + ((this.getCurrentView().height * this.state.stageScale) / 2)
+          y: (this.state.stageHeight + this.getCurrentView().height * this.state.stageScale) / 2 - this.state.stageY * this.state.stageScale
         }
       });
     });
   }
 
-  setStageCursor(cursor) {
+  setScale(scale) {
+    this.setState({stageScale: scale});
+  }
+
+  setTool(tool) {
+    this.setState({selectedTool: tool});
+  }
+
+  setIsDrawing(isDrawing) {
+    this.setState({isDrawing: isDrawing});
+  }
+
+  setCursor(cursor) {
     this.setState({stageCursor: cursor});
-  }
-
-  zoom(event) {
-    event.evt.preventDefault();
-
-    const newScale = event.evt.deltaY < 0 ? this.state.stageScale * 1.25 : this.state.stageScale / 1.25;
-    this.setState({stageScale: newScale});
-  }
-
-  setTooltip(pos, visible, text) {
-    this.setState({
-      tooltipPos: pos,
-      tooltipVisible: visible,
-      tooltipText: text
-    });
   }
 
   setAlertError(msg) {
@@ -567,7 +449,6 @@ export class DrawingEditor extends Component {
   }
 
   setGridSize(size) {
-    console.log(size);
     this.setState({gridSize: size});
   }
 

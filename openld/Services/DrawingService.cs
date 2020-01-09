@@ -100,6 +100,7 @@ namespace openld.Services {
             newView.Width = view.Width;
             newView.Height = view.Height;
             newView.Type = view.Type;
+            newView.Structures = new List<Structure>();
 
             await _context.Views.AddAsync(newView);
             await _context.SaveChangesAsync();
@@ -121,7 +122,7 @@ namespace openld.Services {
 
             _context.Views.Remove(view);
             await _context.SaveChangesAsync();
-            await UpdateLastModifiedAsync(view);
+            await UpdateLastModifiedAsync(view.Drawing);
         }
 
         public async Task<Structure> AddStructureAsync(Structure structure) {
