@@ -2,7 +2,7 @@ import React, { Component, Fragment } from 'react';
 import authService from './api-authorization/AuthorizeService';
 import { Collapse,
   Col, Container, Row,
-  Button, CustomInput, Form, FormGroup, Input, Label } from 'reactstrap';
+  Button, CustomInput, Form, FormGroup, Input, Label, Spinner } from 'reactstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import { FixtureResults } from './fixture-library/FixtureResults';
@@ -14,6 +14,7 @@ export class FixtureLibrary extends Component {
 
   constructor(props) {
     super(props);
+
     this.state = {
       results: [],
       types: [],
@@ -25,17 +26,9 @@ export class FixtureLibrary extends Component {
       loading: true,
       loadingTypes: true
     };
-
-    this.fetchFixtures = this.fetchFixtures.bind(this);
-
-    this.handleSearchChange = this.handleSearchChange.bind(this);
-    this.handleSearchSubmit = this.handleSearchSubmit.bind(this);
-
-    this.renderAddButton = this.renderAddButton.bind(this);
-    this.handleAddToggle = this.handleAddToggle.bind(this);
   }
 
-  componentDidMount() {
+  componentDidMount = () => {
     this.renderAddButton();
     const params = this.props.location.search;
     this.setState({ searchParams: new SearchParams(params) });
@@ -49,11 +42,11 @@ export class FixtureLibrary extends Component {
     this.fetchFixtureTypes();
   }
 
-  render() {
+  render = () => {
     const toggle = () => this.setState({ advancedSearch: !this.state.advancedSearch });
 
     let contents = this.state.loading
-      ? <p className="text-center"><em>Loading results..</em></p>
+      ? <div className="text-center"><Spinner style={{width: "5em", height: "5em"}}/></div>
       : <FixtureResults results={this.state.results} onCardClick={this.handleClick}/>;
 
     let types = this.renderTypes();
@@ -118,27 +111,27 @@ export class FixtureLibrary extends Component {
     );
   }
 
-  handleClick(id) {
+  handleClick = (id) => {
     console.log(id);
   }
 
-  handleSearchChange(event) {
+  handleSearchChange = (event) => {
     let params = this.state.searchParams;
     params[event.target.name] = event.target.value;
     this.setState({ searchParams: params });
   }
 
-  handleSearchSubmit(event) {
+  handleSearchSubmit = (event) => {
     event.preventDefault();
     this.fetchFixtures(this.state.searchTerm);
     this.props.history.push("/library" + this.state.searchParams.getQueryString());
   }
 
-  handleAddToggle() {
+  handleAddToggle = () => {
     this.setState({ addModalOpen: !this.state.addModalOpen });
   }
 
-  async fetchFixtures() {
+  fetchFixtures = async () => {
     const response = await fetch('api/library/GetFixtures', {
       method: "POST",
       headers: { 'Content-Type': 'application/json' },
@@ -149,7 +142,7 @@ export class FixtureLibrary extends Component {
     this.setState({ results: data.data, loading: false });
   }
 
-  renderTypes() {
+  renderTypes = () => {
     return (
       <Fragment>
         {this.state.types.map(type => {
@@ -160,7 +153,7 @@ export class FixtureLibrary extends Component {
     );
   }
 
-  async fetchFixtureTypes() {
+  fetchFixtureTypes = async () => {
     const response = await fetch('api/library/GetFixtureTypes', {
       method: "POST"
     });
@@ -169,7 +162,7 @@ export class FixtureLibrary extends Component {
     this.setState({ types: data.data, loadingTypes: false });
   }
 
-  async renderAddButton() {
+  renderAddButton = async () => {
     if (await authService.isAuthenticated()) {
       this.setState({ addButton: <Button color="secondary" onClick={this.handleAddToggle}>Add Fixture</Button> });
     }

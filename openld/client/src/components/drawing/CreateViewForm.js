@@ -18,15 +18,9 @@ export class CreateViewForm extends Component {
       error: false,
       errorMsg: ""
     }
-
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.handleNameChange = this.handleNameChange.bind(this);
-    this.handleTypeChange = this.handleTypeChange.bind(this);
-    this.handleWidthChange = this.handleWidthChange.bind(this);
-    this.handleHeightChange = this.handleHeightChange.bind(this);
   }
 
-  render() {
+  render = () => {
     return (
       <Modal isOpen={this.props.isOpen} toggle={this.props.toggle}>
           <ModalHeader toggle={this.props.toggle}>New View</ModalHeader>
@@ -91,7 +85,7 @@ export class CreateViewForm extends Component {
     )
   }
 
-  handleSubmit(event) {
+  handleSubmit = (event) => {
     event.preventDefault()
 
     this.props.hub.invoke(
@@ -111,19 +105,19 @@ export class CreateViewForm extends Component {
     });
   }
 
-  handleNameChange(event) {
+  handleNameChange = (event) => {
     this.setState({name: event.target.value});
   }
 
-  handleTypeChange(event) {
+  handleTypeChange = (event) => {
     this.setState({type: event.target.value});
   }
 
-  handleWidthChange(event) {
+  handleWidthChange = (event) => {
     this.setState({width: event.target.value});
   }
 
-  handleHeightChange(event) {
+  handleHeightChange = (event) => {
     this.setState({height: event.target.value});
   }
 }

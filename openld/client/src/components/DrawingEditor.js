@@ -5,7 +5,7 @@ import {
   Button, ButtonGroup,
   Container, Row, Col,
   Navbar, NavbarBrand, NavLink,
-  Spinner } from 'reactstrap';
+  Spinner, UncontrolledTooltip } from 'reactstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { HubConnectionBuilder } from "@aspnet/signalr";
 
@@ -17,12 +17,14 @@ import authService from './api-authorization/AuthorizeService';
 export class DrawingEditor extends Component {
   constructor(props) {
     super(props);
+
     this.state = {
       loading: true,
       error: false,
       errorTitle: "",
       errorMsg: "",
       errorIcon: "",
+
       gridEnabled: true,
       gridSize: 1,
       snapGridSize: 0.1,
@@ -32,58 +34,36 @@ export class DrawingEditor extends Component {
       stageX: 0,
       stageY: 0,
       stagePosition: {x: 0, y: 0},
+      stageCursor: "grab",
+
       selectedTool: "none",
       isDrawing: false,
+      selectedObjectType: "none",
+      selectedObjectId: "",
+
       drawingData: {},
       currentView: "",
       views: [],
+      connectedUsers: [],
+
       hub: null,
+
       alertContent: "",
       alertColour: "info",
-      alertOpen: false,
-      stageCursor: "grab",
-      selectedObjectType: "none",
-      selectedObjectId: ""
+      alertOpen: false
     }
-
-    this.initHubConnection = this.initHubConnection.bind(this);
-    this.fetchDrawing = this.fetchDrawing.bind(this);
-    this.sizeStage = this.sizeStage.bind(this);
-    this.scaleStage = this.scaleStage.bind(this);
-    this.handleToolSelect = this.handleToolSelect.bind(this);
-
-
-    this.addStructure = this.addStructure.bind(this);
-    this.insertNewStructure = this.insertNewStructure.bind(this);
-    this.addStructureSuccess = this.addStructureSuccess.bind(this);
-    this.addHubHandlers = this.addHubHandlers.bind(this);
-    this.insertNewView = this.insertNewView.bind(this);
-    this.setAlertError = this.setAlertError.bind(this);
-    this.setAlert = this.setAlert.bind(this);
-    this.toggleAlert = this.toggleAlert.bind(this);
-    this.switchView = this.switchView.bind(this);
-
-    this.moveStructure = this.moveStructure.bind(this);
-    this.updateStructurePos = this.updateStructurePos.bind(this);
-
-    this.getCurrentView = this.getCurrentView.bind(this);
-    this.toggleGrid = this.toggleGrid.bind(this);
-    this.setGridSize = this.setGridSize.bind(this);
-    this.setScale = this.setScale.bind(this);
-    this.setTool = this.setTool.bind(this);
-    this.setIsDrawing = this.setIsDrawing.bind(this);
-    this.setCursor = this.setCursor.bind(this);
   }
 
-  componentDidMount() {
+  componentDidMount = () => {
     this.fetchDrawing();
   }
 
-  componentWillUnmount() {
+  componentWillUnmount = () => {
     window.removeEventListener("resize", this.sizeStage);
+    this.state.hub.stop();
   }
 
-  render() {
+  render = () => {
     if (this.state.error === true) {
       return (
         <Container className="h-100">
@@ -113,7 +93,17 @@ export class DrawingEditor extends Component {
       <div className="d-flex flex-column h-100">
         <Navbar color="dark">
           <NavbarBrand className="text-light">{this.state.drawingData.title}</NavbarBrand>
-          <NavLink tag={Link} to="/"><Button className="text-light" close/></NavLink>
+          <div className="d-flex">
+            {this.state.connectedUsers.map(u => {
+              return (
+                <div key={"userCircle-" + u.id} className="bg-secondary text-light rounded-circle font-weight-bold d-flex align-items-center justify-content-center ml-2" style={{width: "2.5em", height: "2.5em"}}>
+                  <div id={"userCircle-" + u.id} style={{fontSize: "130%"}}>{u.userName.charAt(0).toUpperCase()}</div>
+                  <UncontrolledTooltip placement="bottom" target={"userCircle-" + u.id}>{u.userName}</UncontrolledTooltip>
+                </div>
+              );
+            })}
+            <NavLink tag={Link} to="/"><Button className="text-light" close/></NavLink>
+          </div>
         </Navbar>
         <Container fluid className="pl-0 d-flex flex-grow-1">
           <Row className="d-flex flex-grow-1">
@@ -178,7 +168,7 @@ export class DrawingEditor extends Component {
     );
   }
 
-  async initHubConnection() {
+  initHubConnection = async () => {
     let token = await authService.getAccessToken();
 
     this.setState({
@@ -197,7 +187,11 @@ export class DrawingEditor extends Component {
     });
   }
 
-  addHubHandlers() {
+  addHubHandlers = () => {
+    this.state.hub.on("ConnectedUsers", users => this.setConnectedUsers(users));
+    this.state.hub.on("UserJoined", user => this.userJoin(user));
+    this.state.hub.on("UserLeft", user => this.userLeave(user));
+
     this.state.hub.on("NewStructure", structure => this.insertNewStructure(structure));
     this.state.hub.on("AddStructureSuccess", structure => this.addStructureSuccess(structure));
     this.state.hub.on("AddStructureFailure", () => this.setAlertError("Failed to insert new structure"));
@@ -213,7 +207,7 @@ export class DrawingEditor extends Component {
     this.state.hub.on("UpdateStructureGeometryFailure", () => this.setAlertError("Failed to move structure"));
   }
 
-  async fetchDrawing() {
+  fetchDrawing = async () => {
     const response = await fetch("api/drawing/GetDrawing/" + this.props.match.params.id, {
       headers: await authService.generateHeader()
     });
@@ -248,7 +242,7 @@ export class DrawingEditor extends Component {
     }
   }
 
-  async addStructure(addedPoints) {
+  addStructure = async (addedPoints) => {
     let points = DrawingUtils.arrayPointsToObject(addedPoints);
 
     this.state.hub.invoke(
@@ -260,7 +254,7 @@ export class DrawingEditor extends Component {
     ).catch(err => console.log(err));
   }
 
-  insertNewStructure(structure) {
+  insertNewStructure = (structure) => {
     this.setState((prevState) => {
       let views = [...prevState.views];
       const modifiedIndex = views.findIndex(view => view.id === structure.view.id);
@@ -279,12 +273,12 @@ export class DrawingEditor extends Component {
     });
   }
 
-  addStructureSuccess(structure) {
+  addStructureSuccess = (structure) => {
     this.insertNewStructure(structure);
     this.setState({newLinePoints: []});
   }
 
-  insertNewView(view) {
+  insertNewView = (view) => {
     this.setState(prevState => {
       let views = [...prevState.views];
       views.push(view);
@@ -295,7 +289,7 @@ export class DrawingEditor extends Component {
     })
   }
 
-  deleteView(view) {
+  deleteView = (view) => {
     this.setState(prevState => {
       let views = [...prevState.views];
       let currentView = prevState.currentView;
@@ -319,13 +313,13 @@ export class DrawingEditor extends Component {
     });
   }
 
-  switchView(id) {
+  switchView = (id) => {
     this.setState({
       currentView: id
     }, this.scaleStage);
   }
 
-  async moveStructure(viewId, id, points) {
+  moveStructure = async (viewId, id, points) => {
     this.state.hub.invoke(
       "UpdateStructureGeometry",
         id,
@@ -334,7 +328,7 @@ export class DrawingEditor extends Component {
     .then(() => this.updateStructurePos(viewId, id, points));
   }
 
-  updateStructurePos(viewId, id, points) {
+  updateStructurePos = (viewId, id, points) => {
     if (viewId === null) {
       viewId = this.state.currentView;
     }
@@ -362,7 +356,7 @@ export class DrawingEditor extends Component {
     });
   }
 
-  handleToolSelect(tool) {
+  handleToolSelect = (tool) => {
     if (this.state.selectedTool === tool) {
       if (this.state.isDrawing === true) {
         this.handleStageDblClick();
@@ -374,7 +368,7 @@ export class DrawingEditor extends Component {
     }
   }
 
-  sizeStage(callback) {
+  sizeStage = (callback) => {
     // set the stage size to be very small initially to prevent it from taking all the width before the other columns have resized
     this.setState({
       stageWidth: 0,
@@ -394,7 +388,7 @@ export class DrawingEditor extends Component {
     })
   }
 
-  scaleStage() {
+  scaleStage = () => {
     // set the scale such that the entire view can be seen
     this.setState({
       stageScale: Math.min(
@@ -412,23 +406,52 @@ export class DrawingEditor extends Component {
     });
   }
 
-  setScale(scale) {
+  userJoin = (user) => {
+    this.setState(prevState => {
+      let users = [...prevState.connectedUsers];
+
+      users.push(user);
+
+      return {connectedUsers: users};
+    })
+  }
+
+  userLeave = (user) => {
+    this.setState(prevState => {
+      const removedIndex = prevState.connectedUsers.findIndex(u => u.id === user);
+
+      let users = [...prevState.connectedUsers];
+      if (removedIndex > -1) {
+        users.splice(removedIndex, 1);
+      }
+
+      return {
+        connectedUsers: users
+      };
+    })
+  }
+
+  setConnectedUsers = (users) => {
+    this.setState({connectedUsers: users});
+  }
+
+  setScale = (scale) => {
     this.setState({stageScale: scale});
   }
 
-  setTool(tool) {
+  setTool = (tool) => {
     this.setState({selectedTool: tool});
   }
 
-  setIsDrawing(isDrawing) {
+  setIsDrawing = (isDrawing) => {
     this.setState({isDrawing: isDrawing});
   }
 
-  setCursor(cursor) {
+  setCursor = (cursor) => {
     this.setState({stageCursor: cursor});
   }
 
-  setAlertError(msg) {
+  setAlertError = (msg) => {
     this.setState({
       alertColour: "danger",
       alertContent: "Error: " + msg,
@@ -436,7 +459,7 @@ export class DrawingEditor extends Component {
     })
   }
 
-  setAlert(colour, msg) {
+  setAlert = (colour, msg) => {
     this.setState({
       alertColour: colour,
       alertContent: msg,
@@ -444,19 +467,19 @@ export class DrawingEditor extends Component {
     })
   }
 
-  toggleGrid() {
+  toggleGrid = () => {
     this.setState({gridEnabled: !this.state.gridEnabled});
   }
 
-  setGridSize(size) {
+  setGridSize = (size) => {
     this.setState({gridSize: size});
   }
 
-  toggleAlert() {
+  toggleAlert = () => {
     this.setState({alertOpen: !this.state.alertOpen});
   }
 
-  getCurrentView() {
+  getCurrentView = () => {
     return this.state.views.find(v => v.id === this.state.currentView);
   }
 }

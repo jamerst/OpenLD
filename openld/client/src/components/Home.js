@@ -1,7 +1,7 @@
 import React, { Component, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Button, Container, Jumbotron, Col, Row, Card, CardBody, CardFooter, CardHeader
+  Button, Container, Jumbotron, Col, Row, Card, CardBody, CardFooter, CardHeader, Spinner
 } from 'reactstrap';
 import Moment from "react-moment";
 import authService from './api-authorization/AuthorizeService';
@@ -18,65 +18,71 @@ export class Home extends Component {
       createModalOpen: false,
       ownedDrawings: [],
       sharedDrawings: [],
-      authenticated: false
+      authenticated: false,
+      loadingOwned: true,
+      loadingShared: true
     }
-
-    this.toggle = this.toggle.bind(this);
-    this.redirect = this.redirect.bind(this);
-    this.renderActions = this.renderActions.bind(this);
   }
 
-  componentDidMount() {
+  componentDidMount = () => {
     document.title = "OpenLD";
     this.renderActions();
     this.fetchDrawings();
   }
 
-  render () {
+  render = () => {
     let drawings;
     if (this.state.authenticated === true) {
-      drawings = (
-        <Container>
-          <Row>
-            <Col xs="12" md="6">
-              <Row><h2>Your Drawings</h2></Row>
-              {this.state.ownedDrawings.map(drawing => {
-                return (
-                  <Link to={"/drawing/" + drawing.id} className="text-dark">
-                    <Card className="mb-3">
-                      <CardHeader><h4 className="mb-0">{drawing.title}</h4></CardHeader>
-                      <CardBody>
-                        <strong>Owner:</strong> {drawing.owner.userName}
-                      </CardBody>
-                      <CardFooter className="text-right small">
-                        <em>Last modified <Moment date={drawing.lastModified} fromNow/></em>
-                      </CardFooter>
-                    </Card>
-                  </Link>
-                );
-              })}
-            </Col>
-            <Col xs="12" md="6">
-              <Row><h2>Drawings Shared With You</h2></Row>
-              {this.state.sharedDrawings.map(drawing => {
-                return (
-                  <Link to={"/drawing/" + drawing.id} className="text-dark" key={drawing.id}>
-                    <Card className="mb-3">
-                      <CardHeader><h4 className="mb-0">{drawing.title}</h4></CardHeader>
-                      <CardBody>
-                        <strong>Owner:</strong> {drawing.owner.userName}
-                      </CardBody>
-                      <CardFooter className="text-right small">
-                        <em>Last modified <Moment date={drawing.lastModified} fromNow/></em>
-                      </CardFooter>
-                    </Card>
-                  </Link>
-                );
-              })}
-            </Col>
-          </Row>
-        </Container>
-      )
+      if (this.state.loadingOwned === true || this.state.loadingShared === true) {
+        drawings = (
+          <Container className="text-center">
+            <Spinner style={{width: "5rem", height: "5rem"}}/>
+          </Container>
+        );
+      } else {
+        drawings = (
+          <Container>
+            <Row>
+              <Col xs="12" md="6">
+                <Row><h2>Your Drawings</h2></Row>
+                {this.state.ownedDrawings.map(drawing => {
+                  return (
+                    <Link to={"/drawing/" + drawing.id} className="text-dark" key={drawing.id}>
+                      <Card className="mb-3">
+                        <CardHeader><h4 className="mb-0">{drawing.title}</h4></CardHeader>
+                        <CardBody>
+                          <strong>Owner:</strong> {drawing.owner.userName}
+                        </CardBody>
+                        <CardFooter className="text-right small">
+                          <em>Last modified <Moment date={drawing.lastModified} fromNow/></em>
+                        </CardFooter>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </Col>
+              <Col xs="12" md="6">
+                <Row><h2>Drawings Shared With You</h2></Row>
+                {this.state.sharedDrawings.map(drawing => {
+                  return (
+                    <Link to={"/drawing/" + drawing.id} className="text-dark" key={drawing.id}>
+                      <Card className="mb-3">
+                        <CardHeader><h4 className="mb-0">{drawing.title}</h4></CardHeader>
+                        <CardBody>
+                          <strong>Owner:</strong> {drawing.owner.userName}
+                        </CardBody>
+                        <CardFooter className="text-right small">
+                          <em>Last modified <Moment date={drawing.lastModified} fromNow/></em>
+                        </CardFooter>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </Col>
+            </Row>
+          </Container>
+        );
+      }
     }
 
     return (
@@ -100,21 +106,21 @@ export class Home extends Component {
     );
   }
 
-  toggle() {
+  toggle = () => {
     this.setState({createModalOpen: !this.state.createModalOpen});
   }
 
-  redirect(id) {
+  redirect = (id) => {
     this.props.history.push("/drawing/" + id);
   }
 
-  async renderActions() {
+  renderActions = async () => {
     if (await authService.isAuthenticated()) {
       this.setState({actions: <Fragment><hr/><Button color="primary" size="lg" onClick={this.toggle}>Create Drawing</Button></Fragment>});
     }
   }
 
-  async fetchDrawings() {
+  fetchDrawings = async () => {
     if (await authService.isAuthenticated()) {
       this.setState({authenticated: true});
       const ownedResponse = await fetch("api/drawing/GetOwnedDrawings", {
@@ -125,7 +131,10 @@ export class Home extends Component {
         let data = await ownedResponse.json();
 
         if (data.success === true) {
-          this.setState({ownedDrawings: data.data})
+          this.setState({
+            ownedDrawings: data.data,
+            loadingOwned: false
+          });
         }
       }
 
@@ -137,7 +146,10 @@ export class Home extends Component {
         let data = await sharedResponse.json();
 
         if (data.success === true) {
-          this.setState({sharedDrawings: data.data})
+          this.setState({
+            sharedDrawings: data.data,
+            loadingShared: false
+          });
         }
       }
     }

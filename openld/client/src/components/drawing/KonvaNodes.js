@@ -4,7 +4,7 @@ import ReactKonvaCore from 'react-konva'
 // Customised konva node components
 
 export class Text extends Component {
-    render() {
+    render = () => {
       return (
         <ReactKonvaCore.Text
           {...this.props}

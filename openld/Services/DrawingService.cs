@@ -247,7 +247,7 @@ namespace openld.Services {
                     Owner = new User { UserName = d.Owner.UserName },
                     LastModified = d.LastModified,
                 })
-                .OrderBy(d => d.LastModified)
+                .OrderByDescending(d => d.LastModified)
                 .ToListAsync();
         }
 
@@ -264,7 +264,7 @@ namespace openld.Services {
                     Owner = new User { UserName = d.Owner.UserName },
                     LastModified = d.LastModified,
                 })
-                .OrderBy(d => d.LastModified)
+                .OrderByDescending(d => d.LastModified)
                 .ToListAsync();
         }
 

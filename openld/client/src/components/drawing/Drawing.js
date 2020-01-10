@@ -18,26 +18,17 @@ export class Drawing extends Component {
       tooltipPos: {x: 0, y: 0},
       tooltipText: ""
     };
-
-    this.handleKeyUp = this.handleKeyUp.bind(this);
-
-    this.handleStageClick = this.handleStageClick.bind(this);
-    this.handleStageDblClick = this.handleStageDblClick.bind(this);
-    this.handleStageMouseMove = this.handleStageMouseMove.bind(this);
-    this.handleStageWheel = this.handleStageWheel.bind(this);
-
-    this.setTooltip = this.setTooltip.bind(this);
   }
 
-  componentDidMount() {
+  componentDidMount = () => {
     window.addEventListener("keyup", this.handleKeyUp);
   }
 
-  componentWillUnmount() {
+  componentWillUnmount = () => {
     window.removeEventListener("keyup", this.handleKeyUp);
   }
 
-  render() {
+  render = () => {
     return (
       <Stage
         x = {0}
@@ -100,7 +91,7 @@ export class Drawing extends Component {
     );
   }
 
-  handleStageClick(event) {
+  handleStageClick = (event) => {
     if (this.props.selectedTool === "polygon") {
       const stage = event.target.getStage();
       const point = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.props.snapGridSize);
@@ -123,7 +114,7 @@ export class Drawing extends Component {
     }
   }
 
-  handleStageDblClick(event) {
+  handleStageDblClick = (event) => {
     if (this.props.selectedTool === "polygon") {
       this.setState({
         lastLinePoint: [],
@@ -145,7 +136,7 @@ export class Drawing extends Component {
     }
   }
 
-  handleStageMouseMove(event) {
+  handleStageMouseMove = (event) => {
     if (this.props.selectedTool === "polygon") {
       const stage = event.target.getStage();
       const snapPos = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.props.snapGridSize);
@@ -165,14 +156,14 @@ export class Drawing extends Component {
     }
   }
 
-  handleStageWheel(event) {
+  handleStageWheel = (event) => {
     event.evt.preventDefault();
 
     const newScale = event.evt.deltaY < 0 ? this.props.scale * 1.25 : this.props.scale / 1.25;
     this.props.setScale(newScale);
   }
 
-  handleKeyUp(event) {
+  handleKeyUp = (event) => {
     if (this.props.selectedTool !== "none" && event.keyCode === 27) {
       this.setState({
         lastLinePoint: [],
@@ -187,7 +178,7 @@ export class Drawing extends Component {
     }
   }
 
-  setTooltip(pos, visible, text) {
+  setTooltip = (pos, visible, text) => {
     this.setState({
       tooltipPos: pos,
       tooltipVisible: visible,

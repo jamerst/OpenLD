@@ -22,19 +22,13 @@ export class ShareDrawing extends Component {
       alertTitle: "",
       alertMsg: ""
     };
-
-    this.fetchSharedUsers = this.fetchSharedUsers.bind(this);
-    this.handleEmailChange = this.handleEmailChange.bind(this);
-    this.handleAddUser = this.handleAddUser.bind(this);
-    this.handleRemoveUser = this.handleRemoveUser.bind(this);
-    this.showAlert = this.showAlert.bind(this);
   }
 
-  componentDidMount() {
+  componentDidMount = () => {
     this.fetchSharedUsers()
   }
 
-  render() {
+  render = () => {
     let users = <em className="text-center">No users</em>;
     if (this.state.userDrawings.length > 0) {
       users = this.state.userDrawings.map(ud => {
@@ -94,7 +88,7 @@ export class ShareDrawing extends Component {
     );
   }
 
-  async handleAddUser(event) {
+  handleAddUser = async (event) => {
     event.preventDefault();
     const response = await fetch("api/drawing/ShareWith", {
       headers: await authService.generateHeader({ 'Content-Type': 'application/json' }),
@@ -122,7 +116,7 @@ export class ShareDrawing extends Component {
     }
   }
 
-  async handleRemoveUser(id) {
+  handleRemoveUser = async (id) => {
     const response = await fetch("api/drawing/UnshareWith", {
       headers: await authService.generateHeader({ 'Content-Type': 'application/json' }),
       method: "POST",
@@ -148,11 +142,11 @@ export class ShareDrawing extends Component {
     }
   }
 
-  handleEmailChange(event) {
+  handleEmailChange = (event) => {
     this.setState({email: event.target.value});
   }
 
-  async fetchSharedUsers() {
+  fetchSharedUsers = async () => {
     const response = await fetch("api/drawing/GetSharedUsers/" + this.props.drawingId, {
       headers: await authService.generateHeader()
     });
@@ -165,7 +159,7 @@ export class ShareDrawing extends Component {
     }
   }
 
-  showAlert(colour, icon, title, msg) {
+  showAlert = (colour, icon, title, msg) => {
     this.setState({
       alertVisible: true,
       alertColour: colour,

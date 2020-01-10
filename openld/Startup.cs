@@ -69,6 +69,7 @@ namespace openld {
             services.AddTransient<IFixtureService, FixtureService>();
             services.AddTransient<IFixtureTypeService, FixtureTypeService>();
             services.AddTransient<IDrawingService, DrawingService>();
+            services.AddTransient<IUserService, UserService>();
 
             services.AddControllers().AddNewtonsoftJson(options => {
                 // ignore loops when serialising

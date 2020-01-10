@@ -2,7 +2,7 @@ import React, { Component, Fragment } from 'react';
 import { Card, CardImg, CardBody, CardTitle, Col, Container, Row } from 'reactstrap';
 
 export class FixtureResults extends Component {
-  render() {
+  render = () => {
     if (this.props.results.length > 0) {
       return (
         <Fragment>

@@ -197,6 +197,11 @@ export class AuthorizeService {
             await this.userManager.removeUser();
             this.updateState(undefined);
         });
+
+        this.userManager.events.addAccessTokenExpired(async () => {
+            const user = await this.userManager.signinSilent();
+            this.updateState(user);
+        });
     }
 
     static get instance() { return authService }

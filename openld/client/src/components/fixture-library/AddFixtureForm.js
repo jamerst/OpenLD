@@ -21,14 +21,9 @@ export class AddFixtureForm extends Component {
       addFormError: false,
       addFormErrorMessage: ""
     }
-
-    this.handleAddChange = this.handleAddChange.bind(this);
-    this.handleAddSubmit = this.handleAddSubmit.bind(this);
-    this.handleImageChange = this.handleImageChange.bind(this);
-    this.handleOpen = this.handleOpen.bind(this);
   }
 
-  render() {
+  render = () => {
     return (
       <Modal isOpen={this.props.isOpen} onOpened={this.handleOpen}>
         <ModalHeader>Add New Fixture</ModalHeader>
@@ -100,7 +95,7 @@ export class AddFixtureForm extends Component {
     );
   }
 
-  handleAddChange(event) {
+  handleAddChange = (event) => {
     if (event.target.name !== "image") {
       let values = this.state.newFixture;
 
@@ -113,7 +108,7 @@ export class AddFixtureForm extends Component {
     }
   }
 
-  async handleImageChange(event) {
+  handleImageChange = async (event) => {
     this.setState({
       uploading: true,
       uploadAlertColor: "secondary",
@@ -151,7 +146,7 @@ export class AddFixtureForm extends Component {
     }
   }
 
-  async handleAddSubmit(event) {
+  handleAddSubmit = async (event) => {
     event.preventDefault();
 
     this.setState({ addFormError: false });
@@ -181,7 +176,7 @@ export class AddFixtureForm extends Component {
     }
   }
 
-  handleOpen() {
+  handleOpen = () => {
     let fixture = new NewFixture();
     fixture.type.id = this.props.types[0].id
 

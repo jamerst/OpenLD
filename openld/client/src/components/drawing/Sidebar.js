@@ -22,15 +22,9 @@ export class Sidebar extends Component {
       deletedViewName: "test",
       gridTooltipOpen: false
     };
-
-    this.toggleShareModal = this.toggleShareModal.bind(this);
-    this.toggleCreateView = this.toggleCreateView.bind(this);
-    this.toggleDeleteView = this.toggleDeleteView.bind(this);
-    this.handleClickDelete = this.handleClickDelete.bind(this);
-    this.toggleGridTooltip = this.toggleGridTooltip.bind(this);
   }
 
-  render() {
+  render = () => {
     return (
       <Col xs={this.props.xs} md={this.props.md} lg={this.props.lg} className="p-0 d-flex flex-column align-items-stretch bg-light" style={{maxHeight: this.props.height}}>
         <Card className="rounded-0" style={{minHeight: "15%"}}>
@@ -121,19 +115,19 @@ export class Sidebar extends Component {
     );
   }
 
-  toggleShareModal() {
+  toggleShareModal = () => {
     this.setState({shareModalOpen: !this.state.shareModalOpen});
   }
 
-  toggleCreateView() {
+  toggleCreateView = () => {
     this.setState({createViewOpen: !this.state.createViewOpen});
   }
 
-  toggleDeleteView() {
+  toggleDeleteView = () => {
     this.setState({deleteViewOpen: !this.state.deleteViewOpen});
   }
 
-  handleClickDelete(id, name) {
+  handleClickDelete = (id, name) => {
     this.setState({
       deletedViewId: id,
       deletedViewName: name,
@@ -141,7 +135,7 @@ export class Sidebar extends Component {
     })
   }
 
-  toggleGridTooltip() {
+  toggleGridTooltip = () => {
     this.setState({gridTooltipOpen: !this.state.gridTooltipOpen});
   }
 }

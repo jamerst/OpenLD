@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -14,11 +15,16 @@ namespace openld.Hubs {
     [Authorize]
     public class DrawingHub : Hub {
         private readonly IDrawingService _drawingService;
+        private readonly IUserService _userService;
         private readonly AuthUtils _authUtils;
-        private static ConcurrentDictionary<string, string> connectionDrawing = new ConcurrentDictionary<string, string>();
+        // store the assigned group name (drawing ID) for each connection ID
+        private static Dictionary<string, string> connectionDrawing = new Dictionary<string, string>();
+        // store the users for each drawing
+        private static Dictionary<string, List<User>> drawingUsers = new Dictionary<string, List<User>>();
 
-        public DrawingHub(IDrawingService drawingService) {
+        public DrawingHub(IDrawingService drawingService, IUserService userService) {
             _drawingService = drawingService;
+            _userService = userService;
             _authUtils = new AuthUtils(drawingService);
         }
 
@@ -28,8 +34,17 @@ namespace openld.Hubs {
 
         public override async Task OnDisconnectedAsync(Exception exception) {
             if (connectionDrawing.ContainsKey(Context.ConnectionId)) {
+                // alert other users in group to disconnecting
+                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId])
+                    .SendAsync("UserLeft",
+                        Context.User.FindFirst(ClaimTypes.NameIdentifier).Value
+                    );
+
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, connectionDrawing[Context.ConnectionId]);
-                connectionDrawing.TryRemove(Context.ConnectionId, out _);
+
+                // remove user list and connection drawing items
+                drawingUsers[connectionDrawing[Context.ConnectionId]].RemoveAll(u => u.Id == Context.User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                connectionDrawing.Remove(Context.ConnectionId);
             }
 
             await base.OnDisconnectedAsync(exception);
@@ -44,11 +59,28 @@ namespace openld.Hubs {
             if (connectionDrawing.ContainsKey(Context.ConnectionId)) {
                 // remove from group - can't be in two drawings at once
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, connectionDrawing[Context.ConnectionId]);
-                connectionDrawing.TryRemove(Context.ConnectionId, out _);
+                connectionDrawing.Remove(Context.ConnectionId);
             }
 
             await Groups.AddToGroupAsync(Context.ConnectionId, id);
-            connectionDrawing.TryAdd(Context.ConnectionId, id);
+
+            // add connection id => group name element
+            connectionDrawing.Add(Context.ConnectionId, id);
+
+            // create user list if doesn't exist
+            if (!drawingUsers.ContainsKey(id)) {
+                drawingUsers.Add(id, new List<User>());
+            }
+            await Clients.Caller.SendAsync("ConnectedUsers", drawingUsers[id]);
+
+            // get user details for joining user from DB
+            User newUser = await _userService.GetUserDetailsAsync(Context.User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            drawingUsers[id].Add(newUser);
+
+            // send joining user details to rest of group
+            await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId])
+                .SendAsync("UserJoined", newUser);
+
         }
 
         public async Task AddStructure(Structure structure) {

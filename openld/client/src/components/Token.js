@@ -10,17 +10,17 @@ export class Token extends Component {
         };
     }
 
-    componentDidMount() {
+    componentDidMount = () => {
         this.getToken();
     }
 
-    render() {
+    render = () => {
         return (
             <Container>Access token: <code>{this.state.token}</code></Container>
         );
     }
 
-    async getToken() {
+    getToken = async () => {
         if (await authService.isAuthenticated()) {
             this.setState({token: await authService.getAccessToken()});
         } else {

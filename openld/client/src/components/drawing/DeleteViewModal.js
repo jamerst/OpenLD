@@ -14,11 +14,9 @@ export class DeleteViewModal extends Component {
       error: false,
       errorMsg: ""
     }
-
-    this.handleConfirm = this.handleConfirm.bind(this);
   }
 
-  render() {
+  render = () => {
     return (
       <Modal isOpen={this.props.isOpen} toggle={this.props.toggle} >
         <ModalHeader toggle={this.props.toggle}>Delete View</ModalHeader>
@@ -49,7 +47,7 @@ export class DeleteViewModal extends Component {
     )
   }
 
-  handleConfirm() {
+  handleConfirm = () => {
     this.props.hub.invoke(
       "DeleteView",
       this.props.viewId

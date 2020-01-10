@@ -3,7 +3,7 @@ import { Layer, Line, Rect, Label, Tag, Text } from "react-konva";
 import { DrawingUtils } from "./DrawingUtils";
 
 export class View extends Component {
-  render() {
+  render = () => {
     if (typeof(this.props.data) === "undefined" || !this.props.data.structures) {
       return null;
     }
@@ -37,15 +37,9 @@ export class Structure extends Component {
     this.state = {
       originalPos: {x: 0, y: 0}
     }
-
-    this.handleDragStart = this.handleDragStart.bind(this);
-    this.handleDrag = this.handleDrag.bind(this);
-    this.handleDragEnd = this.handleDragEnd.bind(this);
-    this.onMouseOver = this.onMouseOver.bind(this);
-    this.onMouseOut = this.onMouseOut.bind(this);
   }
 
-  render() {
+  render = () => {
     let points = typeof this.props.points !== "undefined" ?
     [].concat.apply([], this.props.points.map(p => [p.x, p.y]))
     : [];
@@ -67,11 +61,11 @@ export class Structure extends Component {
     );
   }
 
-  handleDragStart(event) {
+  handleDragStart = (event) => {
     this.setState({startPos: event.target.position()});
   }
 
-  handleDrag(event) {
+  handleDrag = (event) => {
     const pos = event.target.position();
     const change = DrawingUtils.getDifference(pos, this.state.startPos);
     const points = event.target.points();
@@ -82,7 +76,7 @@ export class Structure extends Component {
     this.props.setTooltip({x: newPoint.x, y: newPoint.y + 25 / this.props.scale}, true, "(" + snapPos.x.toFixed(1) + "," + snapPos.y.toFixed(1) + ")");
   }
 
-  handleDragEnd(event) {
+  handleDragEnd = (event) => {
     const snapPos = DrawingUtils.getNearestSnapPos(event.target.position(), this.props.snapGridSize);
     const change = DrawingUtils.getDifference(snapPos, this.state.startPos);
 
@@ -95,13 +89,13 @@ export class Structure extends Component {
     this.props.setTooltip({x: 0, y: 0}, false, "");
   }
 
-  onMouseOver(event) {
+  onMouseOver = (event) => {
     event.target.strokeWidth(0.1);
     event.target.draw();
     this.props.setCursor("pointer");
   }
 
-  onMouseOut(event) {
+  onMouseOut = (event) => {
     event.target.strokeWidth(0.05);
     event.target.draw();
     this.props.setCursor("grab");
@@ -109,7 +103,7 @@ export class Structure extends Component {
 }
 
 export class Grid extends Component {
-  render() {
+  render = () => {
     if (!this.props.enabled) {
       return (
         <Layer>
@@ -158,7 +152,7 @@ export class Grid extends Component {
 }
 
 export class Tooltip extends Component {
-  render() {
+  render = () => {
     return (
       <Label
         position = {this.props.position}

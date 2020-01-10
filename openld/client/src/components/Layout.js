@@ -20,7 +20,7 @@ export class PageLayout extends Component {
 export class DrawingLayout extends Component {
   static displayName = DrawingLayout.name;
 
-  render () {
+  render = () => {
     return (
       <Container fluid className="p-0 h-100">
         {this.props.children}
