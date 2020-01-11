@@ -53,107 +53,8 @@ namespace openld.Services {
             return drawing;
         }
 
-        public async Task<Drawing> GetDrawingAsync(View view) {
-            try {
-                view = await _context.Views
-                    .AsNoTracking()
-                        .Include(v => v.Drawing)
-                        .FirstAsync(v => v.Id == view.Id);
-
-            } catch (InvalidOperationException) {
-                throw new KeyNotFoundException("View ID not found");
-            }
-
-            return view.Drawing;
-        }
-
-        public async Task<Drawing> GetDrawingAsync(Structure structure) {
-            try {
-                structure = await _context.Structures
-                    .AsNoTracking()
-                        .Include(s => s.View)
-                            .ThenInclude(v => v.Drawing)
-                        .FirstAsync(s => s.Id == structure.Id);
-
-            } catch (InvalidOperationException) {
-                throw new KeyNotFoundException("View ID not found");
-            }
-
-            return structure.View.Drawing;
-        }
-
         public async Task<bool> DrawingExistsAsync(string id) {
             return await _context.Drawings.Where(d => d.Id == id).AnyAsync();
-        }
-
-        public async Task<View> CreateViewAsync(View view) {
-            Drawing drawing;
-            try {
-                drawing = await _context.Drawings.FirstAsync(d => d.Id == view.Drawing.Id);
-            } catch (InvalidOperationException) {
-                throw new KeyNotFoundException("Drawing ID not found");
-            }
-
-            View newView = new View();
-            newView.Drawing = drawing;
-            newView.Name = view.Name;
-            newView.Width = view.Width;
-            newView.Height = view.Height;
-            newView.Type = view.Type;
-            newView.Structures = new List<Structure>();
-
-            await _context.Views.AddAsync(newView);
-            await _context.SaveChangesAsync();
-
-            return newView;
-        }
-
-        public async Task DeleteViewAsync(string viewId) {
-            View view;
-            try {
-                view = await _context.Views.Include(v => v.Drawing).FirstAsync(v => v.Id == viewId);
-            } catch (InvalidOperationException) {
-                throw new KeyNotFoundException("View ID not found");
-            }
-
-            if (_context.Views.AsNoTracking().Where(v => v.Drawing.Id == view.Drawing.Id).Count() == 1) {
-                throw new InvalidOperationException("Cannot delete last view in drawing");
-            }
-
-            _context.Views.Remove(view);
-            await _context.SaveChangesAsync();
-            await UpdateLastModifiedAsync(view.Drawing);
-        }
-
-        public async Task<Structure> AddStructureAsync(Structure structure) {
-            try {
-                structure.View = await _context.Views.FirstAsync(v => v.Id == structure.View.Id);
-            } catch (InvalidOperationException) {
-                throw new KeyNotFoundException("View ID not found");
-            }
-
-            await _context.Structures.AddAsync(structure);
-            await _context.SaveChangesAsync();
-
-            await UpdateLastModifiedAsync(structure.View);
-            return structure;
-        }
-
-        public async Task<Structure> SetStructureGeometryAsync(string structureId, Geometry geometry) {
-            Structure structure;
-            try {
-                structure = await _context.Structures
-                    .Include(s => s.View)
-                    .FirstAsync(s => s.Id == structureId);
-            } catch (InvalidOperationException) {
-                throw new KeyNotFoundException("Structure ID not found");
-            }
-
-            structure.Geometry = geometry;
-            await _context.SaveChangesAsync();
-
-            await UpdateLastModifiedAsync(structure.View);
-            return structure;
         }
 
         public async Task<List<UserDrawings>> GetSharedUsersAsync(string drawingId) {
@@ -279,28 +180,13 @@ namespace openld.Services {
             await _context.SaveChangesAsync();
         }
 
-        public async Task UpdateLastModifiedAsync(View view) {
-            try {
-                view = await _context.Views.Include(v => v.Drawing).FirstAsync(v => v.Id == view.Id);
-            } catch (InvalidOperationException) {
-                throw new KeyNotFoundException("View ID not found");
-            }
 
-            view.Drawing.LastModified = DateTime.Now;
-            await _context.SaveChangesAsync();
-        }
     }
 
     public interface IDrawingService {
         Task<string> CreateDrawingAsync(string userId, Drawing drawing);
         Task<Drawing> GetDrawingAsync(string id);
-        Task<Drawing> GetDrawingAsync(View view);
-        Task<Drawing> GetDrawingAsync(Structure structure);
         Task<bool> DrawingExistsAsync(string id);
-        Task<View> CreateViewAsync(View view);
-        Task DeleteViewAsync(string viewId);
-        Task<Structure> AddStructureAsync(Structure structure);
-        Task<Structure> SetStructureGeometryAsync(string structureId, Geometry geometry);
         Task<List<UserDrawings>> GetSharedUsersAsync(string drawingId);
         Task<UserDrawings> ShareWithUserAsync(string email, string drawingId);
         Task<string> UnshareWithUserAsync(string userDrawingId);
@@ -309,6 +195,5 @@ namespace openld.Services {
         Task<List<Drawing>> GetOwnedDrawingsAsync(string userId);
         Task<List<Drawing>> GetSharedDrawingsAsync(string userId);
         Task UpdateLastModifiedAsync(Drawing drawing);
-        Task UpdateLastModifiedAsync(View view);
     }
 }

@@ -78,6 +78,11 @@ export class Drawing extends Component {
             setTooltip = {this.setTooltip}
             setCursor = {this.props.setCursor}
             scale = {this.props.scale}
+            onStructureSelect = {this.props.onStructureSelect}
+            deselectObject = {this.props.deselectObject}
+            selectedObjectId = {this.props.selectedObjectId}
+            selectedObjectType = {this.props.selectedObjectType}
+            setStructureColour = {this.props.setStructureColour}
         />
         <Layer>
           <Tooltip
@@ -111,6 +116,8 @@ export class Drawing extends Component {
           }, () => {this.props.setIsDrawing(true)});
         }
       }
+    } else if (this.props.selectedObjectId !== "") {
+      this.props.deselectObject();
     }
   }
 

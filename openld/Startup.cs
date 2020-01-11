@@ -66,10 +66,12 @@ namespace openld {
                 configuration.RootPath = "client/build";
             });
 
+            services.AddTransient<IDrawingService, DrawingService>();
             services.AddTransient<IFixtureService, FixtureService>();
             services.AddTransient<IFixtureTypeService, FixtureTypeService>();
-            services.AddTransient<IDrawingService, DrawingService>();
+            services.AddTransient<IStructureService, StructureService>();
             services.AddTransient<IUserService, UserService>();
+            services.AddTransient<IViewService, ViewService>();
 
             services.AddControllers().AddNewtonsoftJson(options => {
                 // ignore loops when serialising

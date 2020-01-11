@@ -17,9 +17,9 @@ namespace openld.Controllers {
     public class DrawingController : ControllerBase {
         private readonly IDrawingService _drawingService;
         private readonly AuthUtils _authUtils;
-        public DrawingController(IDrawingService drawingService) {
+        public DrawingController(IDrawingService drawingService, IStructureService structureService, IViewService viewService) {
             _drawingService = drawingService;
-            _authUtils = new AuthUtils(drawingService);
+            _authUtils = new AuthUtils(drawingService, structureService, viewService);
         }
 
         [HttpPost]
@@ -62,23 +62,6 @@ namespace openld.Controllers {
             }
 
             return new JsonResponse<Drawing> { success = true, data = drawing };
-        }
-
-        [HttpPost]
-        [Authorize]
-        public async Task<ActionResult<JsonResponse<Structure>>> AddStructure(Structure structure) {
-            if (! await _authUtils.hasAccess(structure.View, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
-                return Unauthorized();
-            }
-
-            Structure newStructure;
-            try {
-                newStructure = await _drawingService.AddStructureAsync(structure);
-            } catch (Exception) {
-                return new JsonResponse<Structure> { success = false, msg = "Unknown error adding structure" };
-            }
-
-            return new JsonResponse<Structure> { success = true, data = newStructure };
         }
 
         [HttpGet("{drawingId}")]

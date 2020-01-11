@@ -23,10 +23,19 @@ export class View extends Component {
             onDragEnd = {this.props.onDragEnd}
             setCursor = {this.props.setCursor}
             scale = {this.props.scale}
+            onStructureSelect = {this.props.onStructureSelect}
+            deselectObject = {this.props.deselectObject}
+            selected = {this.props.selectedObjectId === structure.id && this.props.selectedObjectType === "structure"}
+            setStructureColour = {this.setStructureColour}
+            colour = {structure.colour}
           />
         )
       })}
     </Layer>);
+  }
+
+  setStructureColour = (id, colour) => {
+    this.props.setStructureColour(this.props.data.id, id, colour);
   }
 }
 
@@ -46,10 +55,10 @@ export class Structure extends Component {
 
     return (
       <Line
-        key={"l-" + this.props.id}
-        points={points}
-        stroke = "#000"
-        strokeWidth = {0.05}
+        key = {"l-" + this.props.id}
+        points = {points}
+        stroke = {this.props.colour}
+        strokeWidth = {this.props.selected ? 0.1 : 0.06}
         hitStrokeWidth = {1}
         draggable
         onDragStart = {this.handleDragStart}
@@ -57,6 +66,7 @@ export class Structure extends Component {
         onDragEnd = {this.handleDragEnd}
         onMouseOver = {this.onMouseOver}
         onMouseOut = {this.onMouseOut}
+        onClick = {this.onClick}
       />
     );
   }
@@ -96,9 +106,19 @@ export class Structure extends Component {
   }
 
   onMouseOut = (event) => {
-    event.target.strokeWidth(0.05);
-    event.target.draw();
+    if (!this.props.selected) {
+      event.target.strokeWidth(0.06);
+      event.target.draw();
+    }
+
     this.props.setCursor("grab");
+  }
+
+  onClick = (event) => {
+    event.cancelBubble = true;
+    this.props.deselectObject();
+    this.props.setStructureColour(this.props.id, "#007bff");
+    this.props.onStructureSelect(this.props.id);
   }
 }
 

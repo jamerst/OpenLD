@@ -15,6 +15,8 @@ namespace openld.Hubs {
     [Authorize]
     public class DrawingHub : Hub {
         private readonly IDrawingService _drawingService;
+        private readonly IViewService _viewService;
+        private readonly IStructureService _structureService;
         private readonly IUserService _userService;
         private readonly AuthUtils _authUtils;
         // store the assigned group name (drawing ID) for each connection ID
@@ -22,10 +24,12 @@ namespace openld.Hubs {
         // store the users for each drawing
         private static Dictionary<string, List<User>> drawingUsers = new Dictionary<string, List<User>>();
 
-        public DrawingHub(IDrawingService drawingService, IUserService userService) {
+        public DrawingHub(IDrawingService drawingService, IViewService viewService, IStructureService structureService, IUserService userService) {
             _drawingService = drawingService;
+            _viewService = viewService;
+            _structureService = structureService;
             _userService = userService;
-            _authUtils = new AuthUtils(drawingService);
+            _authUtils = new AuthUtils(drawingService, structureService, viewService);
         }
 
         public override async Task OnConnectedAsync() {
@@ -90,7 +94,7 @@ namespace openld.Hubs {
 
             Structure newStructure;
             try {
-                newStructure = await _drawingService.AddStructureAsync(structure);
+                newStructure = await _structureService.AddStructureAsync(structure);
             } catch (Exception) {
                 await Clients.Caller.SendAsync("AddStructureFailure");
                 return;
@@ -107,7 +111,7 @@ namespace openld.Hubs {
 
             Structure updated;
             try {
-                updated = await _drawingService.SetStructureGeometryAsync(structureId, geometry);
+                updated = await _structureService.SetStructureGeometryAsync(structureId, geometry);
             } catch (Exception) {
                 await Clients.Caller.SendAsync("UpdateStructureGeometryFailure");
                 return;
@@ -128,7 +132,7 @@ namespace openld.Hubs {
 
             View newView;
             try {
-                newView = await _drawingService.CreateViewAsync(view);
+                newView = await _viewService.CreateViewAsync(view);
             } catch (Exception) {
                 await Clients.Caller.SendAsync("CreateViewFailure");
                 return;
@@ -144,7 +148,7 @@ namespace openld.Hubs {
             }
 
             try {
-                await _drawingService.DeleteViewAsync(viewId);
+                await _viewService.DeleteViewAsync(viewId);
             } catch (Exception) {
                 await Clients.Caller.SendAsync("DeleteViewFailure");
                 return;
@@ -152,6 +156,33 @@ namespace openld.Hubs {
 
             await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SendAsync("DeleteView", viewId);
             await Clients.Caller.SendAsync("DeleteViewSuccess", viewId);
+        }
+
+        public async Task SelectStructure(string structureId) {
+            if (! await _authUtils.hasAccess(new Structure {Id = structureId}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                throw new HubException("401: Unauthorised");
+            }
+
+            await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId])
+                .SendAsync(
+                    "SelectStructure",
+                    (await _structureService.GetViewAsync(new Structure {Id = structureId})).Id,
+                    structureId,
+                    Context.User.FindFirst(ClaimTypes.NameIdentifier).Value
+                );
+        }
+
+        public async Task DeselectStructure(string structureId) {
+            if (! await _authUtils.hasAccess(new Structure {Id = structureId}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                throw new HubException("401: Unauthorised");
+            }
+
+            await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId])
+                .SendAsync(
+                    "DeselectStructure",
+                    (await _structureService.GetViewAsync(new Structure {Id = structureId})).Id,
+                    structureId
+                );
         }
     }
 }

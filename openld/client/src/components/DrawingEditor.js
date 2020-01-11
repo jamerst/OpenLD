@@ -50,7 +50,9 @@ export class DrawingEditor extends Component {
 
       alertContent: "",
       alertColour: "info",
-      alertOpen: false
+      alertOpen: false,
+
+      randomMc: require("random-material-color")
     }
   }
 
@@ -96,8 +98,14 @@ export class DrawingEditor extends Component {
           <div className="d-flex">
             {this.state.connectedUsers.map(u => {
               return (
-                <div key={"userCircle-" + u.id} className="bg-secondary text-light rounded-circle font-weight-bold d-flex align-items-center justify-content-center ml-2" style={{width: "2.5em", height: "2.5em"}}>
-                  <div id={"userCircle-" + u.id} style={{fontSize: "130%"}}>{u.userName.charAt(0).toUpperCase()}</div>
+                <div
+                  key={"userCircle-" + u.id}
+                  className={"rounded-circle font-weight-bold d-flex align-items-center justify-content-center ml-2 " + (u.lightText ? "text-dark" : "text-light")}
+                  style={{width: "2.5em", height: "2.5em", backgroundColor: u.colour}}
+                >
+                  <div id={"userCircle-" + u.id} style={{fontSize: "130%"}}>
+                    {u.userName.charAt(0).toUpperCase()}
+                  </div>
                   <UncontrolledTooltip placement="bottom" target={"userCircle-" + u.id}>{u.userName}</UncontrolledTooltip>
                 </div>
               );
@@ -118,7 +126,7 @@ export class DrawingEditor extends Component {
                 </Button>
               </ButtonGroup>
             </Col>
-            <Col id="stage-container" className="p-0 m-0 bg-secondary" xs="10">
+            <Col id="stage-container" className="p-0 m-0 bg-secondary" xs="8" xl="10">
               <div style={{position: "absolute", width: "100%", zIndex: "1000"}}>
                 <Alert color={this.state.alertColour} isOpen={this.state.alertOpen} toggle={this.toggleAlert}>{this.state.alertContent}</Alert>
               </div>
@@ -134,9 +142,13 @@ export class DrawingEditor extends Component {
                 isDrawing = {this.state.isDrawing}
                 selectedTool = {this.state.selectedTool}
                 cursor = {this.state.stageCursor}
+                selectedObjectId = {this.state.selectedObjectId}
+                selectedObjectType = {this.state.selectedObjectType}
 
                 onCreateStructure = {this.addStructure}
                 onMoveStructure = {this.moveStructure}
+                onStructureSelect = {this.selectStructure}
+                deselectObject = {this.deselectObject}
 
                 gridEnabled = {this.state.gridEnabled}
                 gridSize = {this.state.gridSize}
@@ -146,6 +158,7 @@ export class DrawingEditor extends Component {
                 setTool = {this.setTool}
                 setIsDrawing = {this.setIsDrawing}
                 setCursor = {this.setCursor}
+                setStructureColour = {this.setStructureColour}
               />
             </Col>
             <Sidebar
@@ -192,16 +205,18 @@ export class DrawingEditor extends Component {
     this.state.hub.on("UserJoined", user => this.userJoin(user));
     this.state.hub.on("UserLeft", user => this.userLeave(user));
 
-    this.state.hub.on("NewStructure", structure => this.insertNewStructure(structure));
-    this.state.hub.on("AddStructureSuccess", structure => this.addStructureSuccess(structure));
-    this.state.hub.on("AddStructureFailure", () => this.setAlertError("Failed to insert new structure"));
-
     this.state.hub.on("NewView", view => this.insertNewView(view));
     this.state.hub.on("CreateViewSuccess", view => this.insertNewView(view));
     this.state.hub.on("CreateViewFailure", () => this.setAlertError("Failed to create new view"));
     this.state.hub.on("DeleteView", view => this.deleteView(view));
     this.state.hub.on("DeleteViewSuccess", view => this.deleteView(view));
     this.state.hub.on("DeleteViewFailure", () => this.setAlertError("Failed to delete view"));
+
+    this.state.hub.on("NewStructure", structure => this.insertNewStructure(structure));
+    this.state.hub.on("AddStructureSuccess", structure => this.addStructureSuccess(structure));
+    this.state.hub.on("AddStructureFailure", () => this.setAlertError("Failed to insert new structure"));
+    this.state.hub.on("SelectStructure", (viewId, structureId, userId) => this.userSelectStructure(viewId, structureId, userId));
+    this.state.hub.on("DeselectStructure", (viewId, structureId) => this.userDeselectStructure(viewId, structureId));
 
     this.state.hub.on("UpdateStructureGeometry", structure => this.updateStructurePos(structure.view.id, structure.id, structure.geometry.points));
     this.state.hub.on("UpdateStructureGeometryFailure", () => this.setAlertError("Failed to move structure"));
@@ -224,6 +239,11 @@ export class DrawingEditor extends Component {
         this.initHubConnection();
         this.sizeStage(this.scaleStage);
         window.addEventListener("resize", this.sizeStage);
+        this.state.views.forEach(view => {
+          view.structures.forEach(structure => {
+            this.setStructureColour(view.id, structure.id, "#000");
+          });
+        })
       });
     } else if (response.status === 401) {
       this.setState({
@@ -254,12 +274,18 @@ export class DrawingEditor extends Component {
     ).catch(err => console.log(err));
   }
 
+  addStructureSuccess = (structure) => {
+    this.insertNewStructure(structure);
+    this.setState({newLinePoints: []});
+  }
+
   insertNewStructure = (structure) => {
     this.setState((prevState) => {
       let views = [...prevState.views];
       const modifiedIndex = views.findIndex(view => view.id === structure.view.id);
       const modifiedView = views[modifiedIndex]
 
+      structure.colour = "#000";
       const newView = {
         ...modifiedView,
         structures: [...modifiedView.structures, structure]
@@ -271,52 +297,6 @@ export class DrawingEditor extends Component {
         views: views
       };
     });
-  }
-
-  addStructureSuccess = (structure) => {
-    this.insertNewStructure(structure);
-    this.setState({newLinePoints: []});
-  }
-
-  insertNewView = (view) => {
-    this.setState(prevState => {
-      let views = [...prevState.views];
-      views.push(view);
-
-      return{
-        views: views
-      };
-    })
-  }
-
-  deleteView = (view) => {
-    this.setState(prevState => {
-      let views = [...prevState.views];
-      let currentView = prevState.currentView;
-      const removedIndex = views.findIndex(v => v.id === view);
-
-      if (removedIndex > -1) {
-        views.splice(removedIndex, 1);
-      }
-
-      if (view === this.state.currentView) {
-        this.setAlert("warning", "The view you were working on was deleted.")
-        currentView = views[0].id;
-      }
-
-      return {
-        views: views,
-        currentView: currentView
-      }
-    }, () => {
-      this.scaleStage();
-    });
-  }
-
-  switchView = (id) => {
-    this.setState({
-      currentView: id
-    }, this.scaleStage);
   }
 
   moveStructure = async (viewId, id, points) => {
@@ -356,6 +336,81 @@ export class DrawingEditor extends Component {
     });
   }
 
+  userSelectStructure = (viewId, structureId, userId) => {
+    this.setStructureColour(viewId, structureId, this.getUserColour(userId));
+  }
+
+  userDeselectStructure = (viewId, structureId) => {
+    if (this.state.selectedObjectType === "structure" && this.state.selectedObjectId === structureId) {
+      this.setStructureColour(viewId, structureId, "#007bff");
+    } else {
+      this.setStructureColour(viewId, structureId, "#000");
+    }
+  }
+
+  selectStructure = (id) => {
+    this.state.hub.invoke("SelectStructure", id).catch(err => console.error(err));
+    this.setState({
+      selectedObjectId: id,
+      selectedObjectType: "structure"
+    });
+  }
+
+  deselectObject = () => {
+    if (this.state.selectedObjectType === "structure") {
+      this.setStructureColour(this.state.currentView, this.state.selectedObjectId, "#000");
+
+      this.state.hub.invoke("DeselectStructure", this.state.selectedObjectId);
+    }
+
+    this.setState({
+      selectedObjectId: "",
+      selectedObjectType: "none"
+    })
+  }
+
+  insertNewView = (view) => {
+    this.setState(prevState => {
+      let views = [...prevState.views];
+      views.push(view);
+
+      return{
+        views: views
+      };
+    })
+  }
+
+  deleteView = (view) => {
+    this.setState(prevState => {
+      let views = [...prevState.views];
+      let currentView = prevState.currentView;
+      const removedIndex = views.findIndex(v => v.id === view);
+
+      if (removedIndex > -1) {
+        views.splice(removedIndex, 1);
+      }
+
+      if (view === this.state.currentView) {
+        this.setAlert("warning", "The view you were working on was deleted.")
+        currentView = views[0].id;
+      }
+
+      return {
+        views: views,
+        currentView: currentView
+      }
+    }, () => {
+      this.scaleStage();
+    });
+  }
+
+  switchView = (id) => {
+    this.deselectObject();
+    this.setState({
+      currentView: id
+    }, this.scaleStage);
+  }
+
   handleToolSelect = (tool) => {
     if (this.state.selectedTool === tool) {
       if (this.state.isDrawing === true) {
@@ -366,6 +421,40 @@ export class DrawingEditor extends Component {
     } else if (tool === "polygon") {
       this.setState({selectedTool: tool, stageCursor: "crosshair"});
     }
+  }
+
+  userJoin = (user) => {
+    this.setState(prevState => {
+      let users = [...prevState.connectedUsers];
+
+      const colour = this.state.randomMc.getColor({text: user.id});
+      const rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(colour);
+
+      user.colour = colour;
+      user.lightText = false;
+      if (parseInt(rgb[1], 16) * 0.299 + parseInt(rgb[2], 16) * 0.587 + parseInt(rgb[3], 16) * 0.114 > 186) {
+        user.lightText = true;
+      }
+
+      users.push(user);
+
+      return {connectedUsers: users};
+    })
+  }
+
+  userLeave = (user) => {
+    this.setState(prevState => {
+      const removedIndex = prevState.connectedUsers.findIndex(u => u.id === user);
+
+      let users = [...prevState.connectedUsers];
+      if (removedIndex > -1) {
+        users.splice(removedIndex, 1);
+      }
+
+      return {
+        connectedUsers: users
+      };
+    })
   }
 
   sizeStage = (callback) => {
@@ -406,33 +495,8 @@ export class DrawingEditor extends Component {
     });
   }
 
-  userJoin = (user) => {
-    this.setState(prevState => {
-      let users = [...prevState.connectedUsers];
-
-      users.push(user);
-
-      return {connectedUsers: users};
-    })
-  }
-
-  userLeave = (user) => {
-    this.setState(prevState => {
-      const removedIndex = prevState.connectedUsers.findIndex(u => u.id === user);
-
-      let users = [...prevState.connectedUsers];
-      if (removedIndex > -1) {
-        users.splice(removedIndex, 1);
-      }
-
-      return {
-        connectedUsers: users
-      };
-    })
-  }
-
   setConnectedUsers = (users) => {
-    this.setState({connectedUsers: users});
+    users.forEach(user => this.userJoin(user));
   }
 
   setScale = (scale) => {
@@ -449,6 +513,43 @@ export class DrawingEditor extends Component {
 
   setCursor = (cursor) => {
     this.setState({stageCursor: cursor});
+  }
+
+  setStructureColour = (viewId, structureId, colour) => {
+    this.setState(prevState => {
+      let views = [...prevState.views];
+      let viewIndex = views.findIndex(v => v.id === viewId);
+      if (viewIndex < 0) {
+        return;
+      }
+
+      let view = views[viewIndex];
+
+      let structures = [...view.structures];
+      let structureIndex = structures.findIndex(s => s.id === structureId);
+
+      if (structureIndex < 0) {
+        return;
+      }
+
+      let structure = structures[structureIndex];
+
+      structure.colour = colour;
+
+      structures[structureIndex] = structure;
+
+      view.structures = structures;
+
+      views[viewIndex] = view;
+
+      return {
+        views: views
+      };
+    })
+  }
+
+  getUserColour = (userId) => {
+    return this.state.connectedUsers.find(u => u.id === userId).colour;
   }
 
   setAlertError = (msg) => {
