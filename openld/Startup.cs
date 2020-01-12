@@ -1,4 +1,6 @@
 using System.Threading.Tasks;
+
+using AutoMapper;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.ApiAuthorization.IdentityServer;
@@ -72,6 +74,8 @@ namespace openld {
             services.AddTransient<IStructureService, StructureService>();
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<IViewService, ViewService>();
+
+            services.AddAutoMapper(typeof(Startup));
 
             services.AddControllers().AddNewtonsoftJson(options => {
                 // ignore loops when serialising

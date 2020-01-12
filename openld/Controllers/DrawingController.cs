@@ -16,9 +16,11 @@ namespace openld.Controllers {
     [Route("api/drawing/[action]")]
     public class DrawingController : ControllerBase {
         private readonly IDrawingService _drawingService;
+        private readonly IStructureService _structureService;
         private readonly AuthUtils _authUtils;
         public DrawingController(IDrawingService drawingService, IStructureService structureService, IViewService viewService) {
             _drawingService = drawingService;
+            _structureService = structureService;
             _authUtils = new AuthUtils(drawingService, structureService, viewService);
         }
 
@@ -140,6 +142,12 @@ namespace openld.Controllers {
             }
 
             return new JsonResponse<List<Drawing>> { success = true, data = drawings };
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<ActionResult<Structure>> UpdateStructureProp(Structure structure) {
+            return await _structureService.UpdateStructureProps(structure);
         }
     }
 }

@@ -184,5 +184,11 @@ namespace openld.Hubs {
                     structureId
                 );
         }
+
+        public async Task UpdateStructureProperty(Structure structure) {
+            if (! await _authUtils.hasAccess(structure, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                throw new HubException("401: Unauthorised");
+            }
+        }
     }
 }

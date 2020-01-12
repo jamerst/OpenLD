@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 
 using openld.Models;
@@ -12,10 +13,12 @@ namespace openld.Services {
         private readonly OpenLDContext _context;
         private readonly IDrawingService _drawingService;
         private readonly IViewService _viewService;
-        public StructureService(OpenLDContext context, IDrawingService drawingService, IViewService viewService) {
+        private readonly IMapper _mapper;
+        public StructureService(OpenLDContext context, IDrawingService drawingService, IViewService viewService, IMapper mapper) {
             _context = context;
             _drawingService = drawingService;
             _viewService = viewService;
+            _mapper = mapper;
         }
 
         public async Task<Drawing> GetDrawingAsync(Structure structure) {
@@ -72,6 +75,20 @@ namespace openld.Services {
             await _viewService.UpdateLastModifiedAsync(structure.View);
             return structure;
         }
+
+        public async Task<Structure> UpdateStructureProps(Structure structure) {
+            Structure existing;
+            try {
+                existing = await _context.Structures.FirstAsync(s => s.Id == structure.Id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("Structure ID not found");
+            }
+
+            _mapper.Map(structure, existing);
+            await _context.SaveChangesAsync();
+
+            return existing;
+        }
     }
 
     public interface IStructureService {
@@ -79,5 +96,6 @@ namespace openld.Services {
         Task<View> GetViewAsync(Structure structure);
         Task<Structure> AddStructureAsync(Structure structure);
         Task<Structure> SetStructureGeometryAsync(string structureId, Geometry geometry);
+        Task<Structure> UpdateStructureProps(Structure structure);
     }
 }
