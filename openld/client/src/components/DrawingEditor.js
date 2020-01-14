@@ -170,10 +170,13 @@ export class DrawingEditor extends Component {
               hub = {this.state.hub}
               gridEnabled = {this.state.gridEnabled}
               gridSize = {this.state.gridSize}
+              selectedObjectId = {this.state.selectedObjectId}
+              selectedObjectType = {this.state.selectedObjectType}
 
               onClickView = {this.switchView}
               toggleGrid = {this.toggleGrid}
               setGridSize = {this.setGridSize}
+              getStructure = {this.getStructure}
             />
           </Row>
         </Container>
@@ -582,5 +585,11 @@ export class DrawingEditor extends Component {
 
   getCurrentView = () => {
     return this.state.views.find(v => v.id === this.state.currentView);
+  }
+
+  getStructure = (viewId, structureId) => {
+    const view = this.state.views.find(v => v.id === viewId);
+
+    return view.structures.find(s => s.id === structureId);
   }
 }

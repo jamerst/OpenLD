@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 using AutoMapper;
@@ -30,7 +31,7 @@ namespace openld.Services {
                         .FirstAsync(s => s.Id == structure.Id);
 
             } catch (InvalidOperationException) {
-                throw new KeyNotFoundException("View ID not found");
+                throw new KeyNotFoundException("Structure ID not found");
             }
 
             return structure.View.Drawing;
@@ -51,6 +52,8 @@ namespace openld.Services {
             } catch (InvalidOperationException) {
                 throw new KeyNotFoundException("View ID not found");
             }
+
+            structure.Type = await GetStructureTypeByNameAsync("Bar");
 
             await _context.Structures.AddAsync(structure);
             await _context.SaveChangesAsync();
@@ -79,7 +82,7 @@ namespace openld.Services {
         public async Task<Structure> UpdateStructureProps(Structure structure) {
             Structure existing;
             try {
-                existing = await _context.Structures.FirstAsync(s => s.Id == structure.Id);
+                existing = await _context.Structures.Include(s => s.Type).FirstAsync(s => s.Id == structure.Id);
             } catch (InvalidOperationException) {
                 throw new KeyNotFoundException("Structure ID not found");
             }
@@ -89,6 +92,42 @@ namespace openld.Services {
 
             return existing;
         }
+
+        public async Task CreateTypesAsync(string[] types) {
+            foreach (string typeName in types) {
+                StructureType type = new StructureType();
+                type.Name = typeName;
+
+                await _context.StructureTypes.AddAsync(type);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<List<StructureType>> GetAllTypesAsync() {
+            return await _context.StructureTypes.AsNoTracking().OrderBy(t => t.Name).ToListAsync();
+        }
+
+        public async Task<StructureType> GetStructureTypeAsync(string id) {
+            StructureType type;
+            try {
+                type = await _context.StructureTypes.FirstAsync(st => st.Id == id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("StructureType ID not found");
+            }
+
+            return type;
+        }
+
+        public async Task<StructureType> GetStructureTypeByNameAsync(string name) {
+            StructureType type;
+            try {
+                type = await _context.StructureTypes.FirstAsync(st => st.Name == name);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("StructureType name not found");
+            }
+
+            return type;
+        }
     }
 
     public interface IStructureService {
@@ -97,5 +136,9 @@ namespace openld.Services {
         Task<Structure> AddStructureAsync(Structure structure);
         Task<Structure> SetStructureGeometryAsync(string structureId, Geometry geometry);
         Task<Structure> UpdateStructureProps(Structure structure);
+        Task CreateTypesAsync(string[] types);
+        Task<List<StructureType>> GetAllTypesAsync();
+        Task<StructureType> GetStructureTypeAsync(string structureTypeId);
+        Task<StructureType> GetStructureTypeByNameAsync(string name);
     }
 }

@@ -189,6 +189,24 @@ namespace openld.Hubs {
             if (! await _authUtils.hasAccess(structure, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 throw new HubException("401: Unauthorised");
             }
+
+            if (structure.Type != null && structure.Type.Id != "") {
+                structure.Type = await _structureService.GetStructureTypeAsync(structure.Type.Id);
+            }
+
+            Structure updated;
+            try {
+                updated = await _structureService.UpdateStructureProps(structure);
+            } catch (Exception) {
+                await Clients.Caller.SendAsync("UpdatePropertyFailure");
+                return;
+            }
+
+            await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId])
+                .SendAsync(
+                    "UpdateStructureProperty",
+                    updated
+                );
         }
     }
 }

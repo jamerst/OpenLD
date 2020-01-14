@@ -45,6 +45,9 @@ namespace openld.Services {
                 .Include(d => d.Views)
                     .ThenInclude(v => v.Structures)
                         .ThenInclude(s => s.Fixtures)
+                .Include(d => d.Views)
+                    .ThenInclude(v => v.Structures)
+                        .ThenInclude(s => s.Type)
                 .FirstAsync(d => d.Id == id);
             } catch (InvalidOperationException) {
                 throw new KeyNotFoundException("Drawing ID not found");
