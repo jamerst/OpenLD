@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -22,7 +22,7 @@ namespace openld.Hubs {
         // store the assigned group name (drawing ID) for each connection ID
         private static Dictionary<string, string> connectionDrawing = new Dictionary<string, string>();
         // store the users for each drawing
-        private static Dictionary<string, List<User>> drawingUsers = new Dictionary<string, List<User>>();
+        private static Dictionary<string, HashSet<User>> drawingUsers = new Dictionary<string, HashSet<User>>();
 
         public DrawingHub(IDrawingService drawingService, IViewService viewService, IStructureService structureService, IUserService userService) {
             _drawingService = drawingService;
@@ -47,7 +47,7 @@ namespace openld.Hubs {
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, connectionDrawing[Context.ConnectionId]);
 
                 // remove user list and connection drawing items
-                drawingUsers[connectionDrawing[Context.ConnectionId]].RemoveAll(u => u.Id == Context.User.FindFirst(ClaimTypes.NameIdentifier).Value);
+                drawingUsers[connectionDrawing[Context.ConnectionId]].RemoveWhere(u => u.Id == Context.User.FindFirst(ClaimTypes.NameIdentifier).Value);
                 connectionDrawing.Remove(Context.ConnectionId);
             }
 
@@ -73,12 +73,15 @@ namespace openld.Hubs {
 
             // create user list if doesn't exist
             if (!drawingUsers.ContainsKey(id)) {
-                drawingUsers.Add(id, new List<User>());
+                drawingUsers.Add(id, new HashSet<User>());
+            } else if (drawingUsers[id].Any(u => u.Id == Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                drawingUsers[id].RemoveWhere(u => u.Id == Context.User.FindFirst(ClaimTypes.NameIdentifier).Value);
             }
             await Clients.Caller.SendAsync("ConnectedUsers", drawingUsers[id]);
 
             // get user details for joining user from DB
             User newUser = await _userService.GetUserDetailsAsync(Context.User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
             drawingUsers[id].Add(newUser);
 
             // send joining user details to rest of group
@@ -100,7 +103,7 @@ namespace openld.Hubs {
                 return;
             }
 
-            await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SendAsync("NewStructure", newStructure);
+            await Clients.Group(connectionDrawing[Context.ConnectionId]).SendAsync("NewStructure", newStructure);
             await Clients.Caller.SendAsync("AddStructureSuccess", newStructure);
         }
 
@@ -202,11 +205,13 @@ namespace openld.Hubs {
                 return;
             }
 
-            await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId])
+            await Clients.Group(connectionDrawing[Context.ConnectionId])
                 .SendAsync(
                     "UpdateStructureProperty",
+                    (await _structureService.GetViewAsync(updated)).Id,
                     updated
                 );
+            await Clients.Caller.SendAsync("UpdateStructurePropertySuccess");
         }
     }
 }

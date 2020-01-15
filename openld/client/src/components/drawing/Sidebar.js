@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Col, Row,
-  Button, CustomInput, Form, Input,
+  Button, CustomInput, Form, Input, InputGroup, InputGroupAddon, InputGroupText,
   Card, CardHeader, CardBody,
   ListGroup, ListGroupItem, Label,
   Tooltip
@@ -20,14 +20,13 @@ export class Sidebar extends Component {
       createViewOpen: false,
       deleteViewOpen: false,
       deletedViewId: "",
-      deletedViewName: "test",
+      deletedViewName: "",
       gridTooltipOpen: false,
-      selectedId: "",
-      structureTypes: [],
-      structureName: "",
-      structureType: "",
-      structureRating: "",
-      structureNotes: ""
+      types: [],
+      name: "",
+      type: "",
+      rating: "",
+      notes: ""
     };
   }
 
@@ -35,20 +34,15 @@ export class Sidebar extends Component {
     this.fetchTypes();
   }
 
-  static getDerivedStateFromProps = (nextProps, prevState) => {
-    if (nextProps.selectedObjectId !== prevState.selectedId) {
-      if (nextProps.selectedObjectType === "structure") {
-        const structure = nextProps.getStructure(nextProps.currentView, nextProps.selectedObjectId);
-        console.log(structure);
-
-        return {
-          selectedId: nextProps.selectedObjectId,
-          structureName: structure.name,
-          structureType: structure.type,
-          structureRating: structure.rating,
-          structureNotes: structure.notes
-        };
-      }
+  static getDerivedStateFromProps = (nextProps) => {
+    // update state from props if current state has not been modified
+    if (!nextProps.modifiedCurrent && nextProps.selectedObjectType === "structure") {
+      return {
+        name: nextProps.structure.name,
+        type: nextProps.structure.type.id,
+        rating: nextProps.structure.rating,
+        notes: nextProps.structure.notes
+      };
     } else {
       return null;
     }
@@ -60,7 +54,7 @@ export class Sidebar extends Component {
         <Card className="rounded-0" style={{minHeight: "15%"}}>
           <CardHeader className="d-flex justify-content-between align-content-center pl-3 pr-3">
             <h5 className="mb-0">Views</h5>
-            <Button onClick={this.toggleCreateView} close><FontAwesomeIcon icon="plus-circle"/></Button>
+            <Button onClick={this.toggleCreateView} close disabled={!this.props.hubConnected}><FontAwesomeIcon icon="plus-circle"/></Button>
             <CreateViewForm
               isOpen = {this.state.createViewOpen}
               toggle = {this.toggleCreateView}
@@ -82,7 +76,7 @@ export class Sidebar extends Component {
                 let button;
                 if (this.props.views.length > 1) {
                   button = (
-                  <Button close>
+                  <Button close disabled={!this.props.hubConnected}>
                     <FontAwesomeIcon
                       icon="trash"
                       size="xs"
@@ -153,13 +147,13 @@ export class Sidebar extends Component {
             <Row form>
               <Col xs="12">
                 <Label for="name" className="mb-0">Name</Label>
-                <Input type="text" defaultValue={this.state.structureName} name="name" id="name" bsSize="sm" onBlur={this.handleStructurePropertyChange}/>
+                <Input type="text" value={this.state.name} name="name" id="name" bsSize="sm" onChange={this.handlePropertyChange}/>
               </Col>
 
               <Col xs="12" xl="8">
                 <Label for="type" className="mb-0 mt-2">Type</Label>
-                <CustomInput type="select" defaultValue={this.state.structureType.id} name="type" id="type" bsSize="sm" onBlur={this.handleStructurePropertyChange}>
-                  {this.state.structureTypes.map(type => {
+                <CustomInput type="select" value={this.state.type} name="type" id="type" bsSize="sm" onChange={this.handlePropertyChange}>
+                  {this.state.types.map(type => {
                     return (
                       <option key={type.id} value={type.id}>{type.name}</option>
                     )
@@ -168,12 +162,17 @@ export class Sidebar extends Component {
               </Col>
               <Col xs="12" xl="4">
                 <Label for="rating" className="mb-0 mt-2">Load Rating</Label>
-                <Input type="number" defaultValue={this.state.structureRating} name="rating" id="rating" bsSize="sm" step="0.1" min="0" onChange={this.handleStructurePropertyChange}/>
+                <InputGroup size="sm">
+                  <Input type="number" value={this.state.rating} name="rating" id="rating" step="0.1" min="0" onChange={this.handlePropertyChange}/>
+                  <InputGroupAddon addonType="append">
+                    <InputGroupText>kg</InputGroupText>
+                  </InputGroupAddon>
+                </InputGroup>
               </Col>
 
               <Col xs="12">
                 <Label for="notes" className="mb-0 mt-2">Notes</Label>
-                <Input type="textarea" defaultValue={this.state.structureNotes} name="notes" id="notes" rows="4" onBlur={this.handleStructurePropertyChange}/>
+                <Input type="textarea" value={this.state.notes} name="notes" id="notes" rows="4" onChange={this.handlePropertyChange}/>
               </Col>
             </Row>
           </Form>
@@ -192,6 +191,30 @@ export class Sidebar extends Component {
     }
   }
 
+  handlePropertyChange = (event) => {
+    this.props.setModifiedCurrent(true);
+    this.setState({
+      [event.target.name]: event.target.value
+    });
+
+    let data = {
+      id: this.props.structure.id,
+      [event.target.name]: event.target.value
+    };
+
+    if (event.target.name === "type") {
+      data = {
+        id: this.props.structure.id,
+        [event.target.name]: {id: event.target.value}
+      };
+    }
+
+    this.props.hub.invoke(
+      "UpdateStructureProperty",
+      data
+    ).catch(err => console.error(err));
+  }
+
   fetchTypes = async () => {
     const response = await fetch("api/structure/GetStructureTypes", {
       headers: await authService.generateHeader()
@@ -201,28 +224,9 @@ export class Sidebar extends Component {
       const data = await response.json();
 
       if (data.success) {
-        this.setState({structureTypes: data.data});
+        this.setState({types: data.data});
       }
     }
-  }
-
-  handleStructurePropertyChange = (event) => {
-    let data = {
-      id: this.state.selectedId,
-      [event.target.name]: event.target.value
-    };
-
-    if (event.target.name === "type") {
-      data = {
-        id: this.state.selectedId,
-        [event.target.name]: {id: event.target.value}
-      };
-    }
-
-    this.props.hub.invoke(
-      "UpdateStructureProperty",
-      data
-    ).catch(err => console.error(err));
   }
 
   toggleShareModal = () => {

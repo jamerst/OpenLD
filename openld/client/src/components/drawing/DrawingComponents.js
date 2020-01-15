@@ -1,6 +1,7 @@
 import React, { Component } from "react";
-import { Layer, Line, Rect, Label, Tag, Text } from "react-konva";
+import { Group, Layer, Line, Rect, Label, Tag, Text as KonvaText } from "react-konva";
 import { DrawingUtils } from "./DrawingUtils";
+import { Text } from "./KonvaNodes";
 
 export class View extends Component {
   render = () => {
@@ -15,6 +16,7 @@ export class View extends Component {
             key={"s-" + structure.id}
             id={structure.id}
             points={structure.geometry.points}
+            name={structure.name}
             snapGridSize = {this.props.snapGridSize}
             setTooltip = {this.props.setTooltip}
             updatePoints = {this.props.updatePoints}
@@ -28,6 +30,7 @@ export class View extends Component {
             selected = {this.props.selectedObjectId === structure.id && this.props.selectedObjectType === "structure"}
             setStructureColour = {this.setStructureColour}
             colour = {structure.colour}
+            hubConnected = {this.props.hubConnected}
           />
         )
       })}
@@ -44,30 +47,43 @@ export class Structure extends Component {
     super(props);
 
     this.state = {
-      originalPos: {x: 0, y: 0}
+      startPos: {x: 0, y: 0}
     }
   }
 
   render = () => {
     let points = typeof this.props.points !== "undefined" ?
     [].concat.apply([], this.props.points.map(p => [p.x, p.y]))
-    : [];
+    : []
 
     return (
-      <Line
-        key = {"l-" + this.props.id}
-        points = {points}
-        stroke = {this.props.colour}
-        strokeWidth = {this.props.selected ? 0.1 : 0.06}
-        hitStrokeWidth = {1}
-        draggable
+      <Group
+        draggable = {this.props.hubConnected}
         onDragStart = {this.handleDragStart}
         onDragMove = {this.handleDrag}
         onDragEnd = {this.handleDragEnd}
-        onMouseOver = {this.onMouseOver}
-        onMouseOut = {this.onMouseOut}
-        onClick = {this.onClick}
-      />
+      >
+        <Line
+          key = {"l-" + this.props.id}
+          points = {points}
+          stroke = {this.props.colour}
+          strokeWidth = {this.props.selected ? 0.1 : 0.06}
+          hitStrokeWidth = {1}
+          onMouseOver = {this.onMouseOver}
+          onMouseOut = {this.onMouseOut}
+          onClick = {this.onClick}
+        />
+        <Text
+          key={"sl-" + this.props.id}
+          x = {this.props.points[0].x}
+          y = {this.props.points[0].y}
+          rotation = {DrawingUtils.lineAngle(this.props.points[1], this.props.points[0])}
+          padding = {2}
+          text = {this.props.name}
+          textScale = {0.05}
+          fill = "#000"
+        />
+      </Group>
     );
   }
 
@@ -78,8 +94,7 @@ export class Structure extends Component {
   handleDrag = (event) => {
     const pos = event.target.position();
     const change = DrawingUtils.getDifference(pos, this.state.startPos);
-    const points = event.target.points();
-    const newPoint = {x: points[0] + change.x, y: points[1] + change.y};
+    const newPoint = {x: this.props.points[0].x + change.x, y: this.props.points[0].y + change.y};
 
     const snapPos = DrawingUtils.getNearestSnapPos(newPoint, this.props.snapGridSize);
 
@@ -115,10 +130,12 @@ export class Structure extends Component {
   }
 
   onClick = (event) => {
-    event.cancelBubble = true;
-    this.props.deselectObject();
-    this.props.setStructureColour(this.props.id, "#007bff");
-    this.props.onStructureSelect(this.props.id);
+    if (this.props.hubConnected) {
+      event.cancelBubble = true;
+      this.props.deselectObject();
+      this.props.setStructureColour(this.props.id, "#007bff");
+      this.props.onStructureSelect(this.props.id);
+    }
   }
 }
 
@@ -180,7 +197,7 @@ export class Tooltip extends Component {
         visible = {this.props.visible}
       >
         <Tag fill="#ddd"/>
-        <Text
+        <KonvaText
           key = "tooltip"
           text = {this.props.text}
           fill = "#000"

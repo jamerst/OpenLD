@@ -39,4 +39,10 @@ export class DrawingUtils {
 
         return newPoints;
     }
+
+    static lineAngle(point1, point2) {
+        const dx = point1.x - point2.x;
+        const dy = point1.y - point2.y;
+        return Math.atan2(dy, dx) * 180 / Math.PI;
+    }
 }

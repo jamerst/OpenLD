@@ -3,6 +3,7 @@ import authService from '../api-authorization/AuthorizeService';
 import { Alert,
   Col, Container, Row,
   Button, CustomInput, Form, FormGroup, Input, Label,
+  InputGroup, InputGroupAddon, InputGroupText,
   Modal, ModalHeader, ModalBody, ModalFooter,
   Spinner } from 'reactstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -59,12 +60,22 @@ export class AddFixtureForm extends Component {
 
             <FormGroup row>
               <Col xs="6">
-                <Label for="addPower">Power (W)</Label>
-                <Input type="number" id="addPower" value={this.state.newFixture.power} name="power" min="0"/>
+                <Label for="addPower">Power</Label>
+                <InputGroup>
+                  <Input type="number" id="addPower" value={this.state.newFixture.power} name="power" min="0"/>
+                  <InputGroupAddon addonType="append">
+                    <InputGroupText>W</InputGroupText>
+                  </InputGroupAddon>
+                </InputGroup>
               </Col>
               <Col xs="6">
-                <Label for="addWeight">Weight (kg)</Label>
-                <Input type="number" id="addWeight" value={this.state.newFixture.weight} name="weight" step="0.1" min="0"/>
+                <Label for="addWeight">Weight</Label>
+                <InputGroup>
+                  <Input type="number" id="addWeight" value={this.state.newFixture.weight} name="weight" step="0.1" min="0"/>
+                  <InputGroupAddon addonType="append">
+                    <InputGroupText>kg</InputGroupText>
+                  </InputGroupAddon>
+                </InputGroup>
               </Col>
             </FormGroup>
 

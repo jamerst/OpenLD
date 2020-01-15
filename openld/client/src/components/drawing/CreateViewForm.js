@@ -98,7 +98,7 @@ export class CreateViewForm extends Component {
         height: this.state.height
       }
     ).catch(err => {
-      console.log(err);
+      console.error(err);
       this.setState({error: true, errorMsg: err});
     }).then(() => {
       this.props.toggle();

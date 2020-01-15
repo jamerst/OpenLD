@@ -44,7 +44,7 @@ export class Drawing extends Component {
         onMouseMove = {this.handleStageMouseMove}
         onClick = {this.handleStageClick}
         onDblClick = {this.handleStageDblClick}
-        onDragStart = {() => this.props.setCursor("grabbing")}
+        onDragStart = {() => this.props.setCursor("move")}
         onDragEnd = {() => this.props.setCursor("grab")}
 
         style={{cursor: this.props.cursor}}
@@ -83,6 +83,7 @@ export class Drawing extends Component {
             selectedObjectId = {this.props.selectedObjectId}
             selectedObjectType = {this.props.selectedObjectType}
             setStructureColour = {this.props.setStructureColour}
+            hubConnected = {this.props.hubConnected}
         />
         <Layer>
           <Tooltip
@@ -97,7 +98,7 @@ export class Drawing extends Component {
   }
 
   handleStageClick = (event) => {
-    if (this.props.selectedTool === "polygon") {
+    if (this.props.selectedTool === "polygon" && this.props.hubConnected) {
       const stage = event.target.getStage();
       const point = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.props.snapGridSize);
 
@@ -122,7 +123,7 @@ export class Drawing extends Component {
   }
 
   handleStageDblClick = (event) => {
-    if (this.props.selectedTool === "polygon") {
+    if (this.props.selectedTool === "polygon" && this.props.hubConnected) {
       this.setState({
         lastLinePoint: [],
         nextLinePoint: [],
@@ -133,8 +134,16 @@ export class Drawing extends Component {
         this.props.setTool("none");
       });
 
-      if (this.state.newLinePoints.length > 4) {
-        this.props.onCreateStructure(this.state.newLinePoints);
+      if (this.state.newLinePoints.length > 2) {
+        let points = DrawingUtils.arrayPointsToObject(this.state.newLinePoints);
+
+        this.props.hub.invoke(
+          "AddStructure",
+          {
+            view: {id: this.props.viewData.id},
+            geometry: {points: points}
+          }
+        ).catch(err => console.error(err));
       }
 
       this.setState({
@@ -144,7 +153,7 @@ export class Drawing extends Component {
   }
 
   handleStageMouseMove = (event) => {
-    if (this.props.selectedTool === "polygon") {
+    if (this.props.selectedTool === "polygon" && this.props.hubConnected) {
       const stage = event.target.getStage();
       const snapPos = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.props.snapGridSize);
 

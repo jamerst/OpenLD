@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Alert,
@@ -7,9 +7,8 @@ import {
   Navbar, NavbarBrand, NavLink,
   Spinner, UncontrolledTooltip } from 'reactstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { HubConnectionBuilder } from "@aspnet/signalr";
+import { HubConnectionBuilder } from "@microsoft/signalr";
 
-import { DrawingUtils } from './drawing/DrawingUtils';
 import { Drawing } from "./drawing/Drawing";
 import { Sidebar } from "./drawing/Sidebar";
 import authService from './api-authorization/AuthorizeService';
@@ -40,6 +39,8 @@ export class DrawingEditor extends Component {
       isDrawing: false,
       selectedObjectType: "none",
       selectedObjectId: "",
+      selectedStructure: {id: "", name: "", type: "", rating: "", notes: ""},
+      modifiedCurrent: false,
 
       drawingData: {},
       currentView: "",
@@ -47,7 +48,9 @@ export class DrawingEditor extends Component {
       connectedUsers: [],
 
       hub: null,
+      hubConnected: false,
 
+      alertIcon: "",
       alertContent: "",
       alertColour: "info",
       alertOpen: false,
@@ -117,18 +120,39 @@ export class DrawingEditor extends Component {
           <Row className="d-flex flex-grow-1">
             <Col xs="auto" className="pr-0 bg-light">
               <ButtonGroup vertical>
-                <Button outline color="primary" size="lg" className="rounded-0" onClick={() => this.handleToolSelect("polygon")} active={this.state.selectedTool === "polygon"}>
+                <Button
+                  outline
+                  color="primary"
+                  size="lg"
+                  className="rounded-0"
+                  onClick={() => this.handleToolSelect("polygon")}
+                  active={this.state.selectedTool === "polygon"}
+                  disabled={!this.state.hubConnected}
+                >
                   <FontAwesomeIcon icon="draw-polygon"/>
                 </Button>
 
-                <Button outline color="danger" size="lg" className="rounded-0" onClick={() => this.handleToolSelect("eraser")} active={this.state.selectedTool === "eraser"}>
+                <Button
+                  outline
+                  color="danger"
+                  size="lg"
+                  className="rounded-0"
+                  onClick={() => this.handleToolSelect("eraser")}
+                  active={this.state.selectedTool === "eraser"}
+                  disabled={!this.state.hubConnected}
+                >
                   <FontAwesomeIcon icon="eraser"/>
                 </Button>
               </ButtonGroup>
             </Col>
             <Col id="stage-container" className="p-0 m-0 bg-secondary" xs="8" xl="10">
               <div style={{position: "absolute", width: "100%", zIndex: "1000"}}>
-                <Alert color={this.state.alertColour} isOpen={this.state.alertOpen} toggle={this.toggleAlert}>{this.state.alertContent}</Alert>
+                <Alert color={this.state.alertColour} isOpen={this.state.alertOpen} toggle={this.toggleAlert} className="d-flex justify-content-center align-content-center">
+                  <div>
+                    <span className="mr-3">{this.state.alertIcon}</span>
+                    <span className="h5">{this.state.alertContent}</span>
+                  </div>
+                </Alert>
               </div>
               <Drawing
                 width = {this.state.stageWidth}
@@ -144,8 +168,9 @@ export class DrawingEditor extends Component {
                 cursor = {this.state.stageCursor}
                 selectedObjectId = {this.state.selectedObjectId}
                 selectedObjectType = {this.state.selectedObjectType}
+                hub = {this.state.hub}
+                hubConnected = {this.state.hubConnected}
 
-                onCreateStructure = {this.addStructure}
                 onMoveStructure = {this.moveStructure}
                 onStructureSelect = {this.selectStructure}
                 deselectObject = {this.deselectObject}
@@ -168,15 +193,19 @@ export class DrawingEditor extends Component {
               views = {this.state.views}
               currentView = {this.state.currentView}
               hub = {this.state.hub}
+              hubConnected = {this.state.hubConnected}
               gridEnabled = {this.state.gridEnabled}
               gridSize = {this.state.gridSize}
+              structure = {this.state.selectedStructure}
               selectedObjectId = {this.state.selectedObjectId}
               selectedObjectType = {this.state.selectedObjectType}
+              modifiedCurrent = {this.state.modifiedCurrent}
 
               onClickView = {this.switchView}
               toggleGrid = {this.toggleGrid}
               setGridSize = {this.setGridSize}
               getStructure = {this.getStructure}
+              setModifiedCurrent = {this.setModifiedCurrent}
             />
           </Row>
         </Container>
@@ -190,16 +219,22 @@ export class DrawingEditor extends Component {
     this.setState({
       hub: new HubConnectionBuilder()
         .withUrl("/api/drawing/hub", { accessTokenFactory: () => token })
+        .withAutomaticReconnect([0, 1000, 1000, 2000, 2000, 5000, 5000, 5000, 10000, 10000, 20000])
         .build()
     }, () => {
       this.state.hub
         .start()
         .then(() => {
           this.addHubHandlers();
+          this.setState({hubConnected: true});
           this.state.hub.invoke("OpenDrawing", this.state.drawingData.id)
             .catch(err => console.error(err.toString()));
         })
-        .catch(err => console.log("Hub error: " + err));
+        .catch(err => console.error("Hub error: " + err));
+
+      this.state.hub.onreconnecting(this.onHubReconnecting);
+      this.state.hub.onreconnected(this.onHubReconnect);
+      this.state.hub.onclose(this.onHubDisconnect)
     });
   }
 
@@ -216,13 +251,33 @@ export class DrawingEditor extends Component {
     this.state.hub.on("DeleteViewFailure", () => this.setAlertError("Failed to delete view"));
 
     this.state.hub.on("NewStructure", structure => this.insertNewStructure(structure));
-    this.state.hub.on("AddStructureSuccess", structure => this.addStructureSuccess(structure));
+    this.state.hub.on("AddStructureSuccess", structure => this.setState({newLinePoints: []}));
     this.state.hub.on("AddStructureFailure", () => this.setAlertError("Failed to insert new structure"));
     this.state.hub.on("SelectStructure", (viewId, structureId, userId) => this.userSelectStructure(viewId, structureId, userId));
     this.state.hub.on("DeselectStructure", (viewId, structureId) => this.userDeselectStructure(viewId, structureId));
 
     this.state.hub.on("UpdateStructureGeometry", structure => this.updateStructurePos(structure.view.id, structure.id, structure.geometry.points));
     this.state.hub.on("UpdateStructureGeometryFailure", () => this.setAlertError("Failed to move structure"));
+    this.state.hub.on("UpdateStructureProperty", (viewId, structure) => this.setStructure(viewId, structure));
+    this.state.hub.on("UpdateStructurePropertySuccess", () => this.setModifiedCurrent(false));
+  }
+
+  onHubDisconnect = () => {
+    this.setAlertIcon("danger", "Lost connection to OpenLD. Please reconnect to make changes.", "exclamation");
+    this.setState({hubConnected: false});
+  }
+
+  onHubReconnecting = () => {
+    this.setAlertSpinner("info", "Reconnecting to OpenLD..");
+    this.setState({hubConnected: false});
+  }
+
+  onHubReconnect = () => {
+    this.setAlertIcon("success", "Successfully reconnected to OpenLD.", "check");
+    window.setTimeout(() => this.setState({alertOpen: false}), 10000);
+    this.setState({hubConnected: true});
+    this.state.hub.invoke("OpenDrawing", this.state.drawingData.id)
+      .catch(err => console.error(err.toString()));
   }
 
   fetchDrawing = async () => {
@@ -265,23 +320,6 @@ export class DrawingEditor extends Component {
     }
   }
 
-  addStructure = async (addedPoints) => {
-    let points = DrawingUtils.arrayPointsToObject(addedPoints);
-
-    this.state.hub.invoke(
-      "AddStructure",
-      {
-        view: {id: this.state.currentView},
-        geometry: {points: points}
-      }
-    ).catch(err => console.log(err));
-  }
-
-  addStructureSuccess = (structure) => {
-    this.insertNewStructure(structure);
-    this.setState({newLinePoints: []});
-  }
-
   insertNewStructure = (structure) => {
     this.setState((prevState) => {
       let views = [...prevState.views];
@@ -307,7 +345,7 @@ export class DrawingEditor extends Component {
       "UpdateStructureGeometry",
         id,
         {points: points}
-    ).catch(err => console.log(err))
+    ).catch(err => console.error(err))
     .then(() => this.updateStructurePos(viewId, id, points));
   }
 
@@ -355,7 +393,9 @@ export class DrawingEditor extends Component {
     this.state.hub.invoke("SelectStructure", id).catch(err => console.error(err));
     this.setState({
       selectedObjectId: id,
-      selectedObjectType: "structure"
+      selectedObjectType: "structure",
+      selectedStructure: this.getStructure(this.state.currentView, id),
+      modifiedCurrent: false
     });
   }
 
@@ -368,7 +408,8 @@ export class DrawingEditor extends Component {
 
     this.setState({
       selectedObjectId: "",
-      selectedObjectType: "none"
+      selectedObjectType: "none",
+      modifiedCurrent: false
     })
   }
 
@@ -394,7 +435,7 @@ export class DrawingEditor extends Component {
       }
 
       if (view === this.state.currentView) {
-        this.setAlert("warning", "The view you were working on was deleted.")
+        this.setAlertIcon("warning", "The view you were working on was deleted.", "exclamation")
         currentView = views[0].id;
       }
 
@@ -521,7 +562,7 @@ export class DrawingEditor extends Component {
   setStructureColour = (viewId, structureId, colour) => {
     this.setState(prevState => {
       let views = [...prevState.views];
-      let viewIndex = views.findIndex(v => v.id === viewId);
+      const viewIndex = views.findIndex(v => v.id === viewId);
       if (viewIndex < 0) {
         return;
       }
@@ -529,8 +570,7 @@ export class DrawingEditor extends Component {
       let view = views[viewIndex];
 
       let structures = [...view.structures];
-      let structureIndex = structures.findIndex(s => s.id === structureId);
-
+      const structureIndex = structures.findIndex(s => s.id === structureId);
       if (structureIndex < 0) {
         return;
       }
@@ -551,6 +591,48 @@ export class DrawingEditor extends Component {
     })
   }
 
+  setStructure = (viewId, structure) => {
+    this.setState(prevState => {
+      let views = [...prevState.views];
+      const viewIndex = views.findIndex(v => v.id === viewId);
+      if (viewIndex < 0) {
+        console.error("setStructure error: view ID '" + viewId + "' not found");
+        return;
+      }
+
+      let view = views[viewIndex];
+
+      let structures = [...view.structures];
+      const structureIndex = structures.findIndex(s => s.id === structure.id);
+      if (structureIndex < 0) {
+        console.error("setStructure error: structure ID'" + structure.id + "' not found");
+        return;
+      }
+      const colour = structures[structureIndex].colour;
+      structure.colour = colour;
+
+      structures[structureIndex] = structure;
+
+      view.structures = structures;
+
+      views[viewIndex] = view;
+
+      return {
+        views: views,
+      };
+    }, () => {
+      if (this.state.selectedObjectType === "structure" && this.state.selectedObjectId === structure.id) {
+        this.setState({
+          selectedStructure: this.getStructure(viewId, structure.id)
+        });
+      }
+    });
+  }
+
+  setModifiedCurrent = (value) => {
+    this.setState({modifiedCurrent: value});
+  }
+
   getUserColour = (userId) => {
     return this.state.connectedUsers.find(u => u.id === userId).colour;
   }
@@ -559,16 +641,27 @@ export class DrawingEditor extends Component {
     this.setState({
       alertColour: "danger",
       alertContent: "Error: " + msg,
+      alertIcon: "exclamation",
       alertOpen: "true"
     })
   }
 
-  setAlert = (colour, msg) => {
+  setAlertIcon = (colour, msg, icon) => {
     this.setState({
       alertColour: colour,
       alertContent: msg,
+      alertIcon: <FontAwesomeIcon icon={icon} className="h5"/>,
       alertOpen: "true"
-    })
+    });
+  }
+
+  setAlertSpinner = (colour, msg) => {
+    this.setState({
+      alertColour: colour,
+      alertContent: msg,
+      alertIcon: <Spinner style={{width: "1.5em", height: "1.5em"}}/>,
+      alertOpen: "true"
+    });
   }
 
   toggleGrid = () => {
