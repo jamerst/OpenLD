@@ -19,6 +19,7 @@ export class View extends Component {
             name={structure.name}
             snapGridSize = {this.props.snapGridSize}
             setTooltip = {this.props.setTooltip}
+            setHintText = {this.props.setHintText}
             updatePoints = {this.props.updatePoints}
             onDragStart = {this.props.onDragStart}
             onDragMove = {this.props.onDragMove}
@@ -89,6 +90,7 @@ export class Structure extends Component {
 
   handleDragStart = (event) => {
     this.setState({startPos: event.target.position()});
+    this.props.setHintText("Release to confirm position");
   }
 
   handleDrag = (event) => {
@@ -112,18 +114,21 @@ export class Structure extends Component {
 
     event.target.getLayer().draw();
     this.props.setTooltip({x: 0, y: 0}, false, "");
+    this.props.setHintText("");
   }
 
   onMouseOver = (event) => {
     event.target.strokeWidth(0.1);
     event.target.draw();
     this.props.setCursor("pointer");
+    this.props.setHintText("Click to select structure.\nClick and hold to move structure.")
   }
 
   onMouseOut = (event) => {
     if (!this.props.selected) {
       event.target.strokeWidth(0.06);
       event.target.draw();
+      this.props.setHintText("");
     }
 
     this.props.setCursor("grab");
@@ -135,6 +140,7 @@ export class Structure extends Component {
       this.props.deselectObject();
       this.props.setStructureColour(this.props.id, "#007bff");
       this.props.onStructureSelect(this.props.id);
+      this.props.setHintText("Modify structure properties above.\nPress delete to remove structure.")
     }
   }
 }

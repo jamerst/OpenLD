@@ -55,6 +55,8 @@ export class DrawingEditor extends Component {
       alertColour: "info",
       alertOpen: false,
 
+      hintText: "Use the buttons on the left to select a tool",
+
       randomMc: require("random-material-color")
     }
   }
@@ -128,6 +130,8 @@ export class DrawingEditor extends Component {
                   onClick={() => this.handleToolSelect("polygon")}
                   active={this.state.selectedTool === "polygon"}
                   disabled={!this.state.hubConnected}
+                  onMouseEnter = {() => this.setHintText("Insert new structure")}
+                  onMouseLeave = {this.onToolButtonLeave}
                 >
                   <FontAwesomeIcon icon="draw-polygon"/>
                 </Button>
@@ -140,12 +144,14 @@ export class DrawingEditor extends Component {
                   onClick={() => this.handleToolSelect("eraser")}
                   active={this.state.selectedTool === "eraser"}
                   disabled={!this.state.hubConnected}
+                  onMouseEnter = {() => this.setHintText("Remove object")}
+                  onMouseLeave = {this.onToolButtonLeave}
                 >
                   <FontAwesomeIcon icon="eraser"/>
                 </Button>
               </ButtonGroup>
             </Col>
-            <Col id="stage-container" className="p-0 m-0 bg-secondary" xs="8" xl="10">
+            <Col id="stage-container" className="p-0 m-0 bg-secondary">
               <div style={{position: "absolute", width: "100%", zIndex: "1000"}}>
                 <Alert color={this.state.alertColour} isOpen={this.state.alertOpen} toggle={this.toggleAlert} className="d-flex justify-content-center align-content-center">
                   <div>
@@ -184,12 +190,15 @@ export class DrawingEditor extends Component {
                 setIsDrawing = {this.setIsDrawing}
                 setCursor = {this.setCursor}
                 setStructureColour = {this.setStructureColour}
+                setHintText = {this.setHintText}
               />
             </Col>
             <Sidebar
               drawingId = {this.state.drawingData.id}
 
               height = {this.state.stageHeight}
+              width = "22em"
+
               views = {this.state.views}
               currentView = {this.state.currentView}
               hub = {this.state.hub}
@@ -200,6 +209,7 @@ export class DrawingEditor extends Component {
               selectedObjectId = {this.state.selectedObjectId}
               selectedObjectType = {this.state.selectedObjectType}
               modifiedCurrent = {this.state.modifiedCurrent}
+              hintText = {this.state.hintText}
 
               onClickView = {this.switchView}
               toggleGrid = {this.toggleGrid}
@@ -463,7 +473,13 @@ export class DrawingEditor extends Component {
 
       this.setState({selectedTool: "none", stageCursor: "grab", tooltipVisible: false});
     } else if (tool === "polygon") {
-      this.setState({selectedTool: tool, stageCursor: "crosshair"});
+      this.setState({selectedTool: tool, stageCursor: "crosshair", hintText: "Click to create a point.\nDouble click to create final point.\nPress escape to cancel."});
+    }
+  }
+
+  onToolButtonLeave = () => {
+    if (this.state.selectedTool === "none") {
+      this.setHintText("");
     }
   }
 
@@ -662,6 +678,14 @@ export class DrawingEditor extends Component {
       alertIcon: <Spinner style={{width: "1.5em", height: "1.5em"}}/>,
       alertOpen: "true"
     });
+  }
+
+  setHintText = (msg) => {
+    if (msg === "") {
+      this.setState({hintText: "Use the buttons on the left to select a tool"})
+    } else {
+      this.setState({hintText: msg});
+    }
   }
 
   toggleGrid = () => {

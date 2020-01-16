@@ -32,6 +32,7 @@ export class Sidebar extends Component {
 
   componentDidMount() {
     this.fetchTypes();
+    this.setState({gridTooltipOpen: true});
   }
 
   static getDerivedStateFromProps = (nextProps) => {
@@ -50,91 +51,96 @@ export class Sidebar extends Component {
 
   render = () => {
     return (
-      <Col xs={this.props.xs} md={this.props.md} lg={this.props.lg} className="p-0 d-flex flex-column align-items-stretch bg-light" style={{maxHeight: this.props.height}}>
-        <Card className="rounded-0" style={{minHeight: "15%"}}>
-          <CardHeader className="d-flex justify-content-between align-content-center pl-3 pr-3">
-            <h5 className="mb-0">Views</h5>
-            <Button onClick={this.toggleCreateView} close disabled={!this.props.hubConnected}><FontAwesomeIcon icon="plus-circle"/></Button>
-            <CreateViewForm
-              isOpen = {this.state.createViewOpen}
-              toggle = {this.toggleCreateView}
-              hub = {this.props.hub}
-              drawingId = {this.props.drawingId}
-            />
-            <DeleteViewModal
-              isOpen = {this.state.deleteViewOpen}
-              toggle = {this.toggleDeleteView}
-              hub = {this.props.hub}
-              viewId = {this.state.deletedViewId}
-              viewName = {this.state.deletedViewName}
-            />
-          </CardHeader>
+      <Col className="p-0 d-flex flex-column align-items-stretch bg-light" style={{maxHeight: this.props.height, minWidth: this.props.width, maxWidth: this.props.width}}>
+        <Col className="p-0 overflow-auto">
+          <Card className="rounded-0" style={{minHeight: "12em"}}>
+            <CardHeader className="d-flex justify-content-between align-content-center pl-3 pr-3">
+              <h5 className="mb-0">Views</h5>
+              <Button onClick={this.toggleCreateView} close disabled={!this.props.hubConnected}><FontAwesomeIcon icon="plus-circle"/></Button>
+              <CreateViewForm
+                isOpen = {this.state.createViewOpen}
+                toggle = {this.toggleCreateView}
+                hub = {this.props.hub}
+                drawingId = {this.props.drawingId}
+              />
+              <DeleteViewModal
+                isOpen = {this.state.deleteViewOpen}
+                toggle = {this.toggleDeleteView}
+                hub = {this.props.hub}
+                viewId = {this.state.deletedViewId}
+                viewName = {this.state.deletedViewName}
+              />
+            </CardHeader>
 
-          <CardBody className="overflow-y-auto p-0">
-            <ListGroup>
-              {this.props.views.map(view => {
-                let button;
-                if (this.props.views.length > 1) {
-                  button = (
-                  <Button close disabled={!this.props.hubConnected}>
-                    <FontAwesomeIcon
-                      icon="trash"
-                      size="xs"
-                      className={this.props.currentView === view.id ? "text-white" : ""}
-                      onClick={event => {
-                        event.stopPropagation();
-                        this.handleClickDelete(view.id, view.name);
-                      }}
-                    />
-                  </Button>);
-                }
+            <CardBody className="p-0">
+              <ListGroup>
+                {this.props.views.map(view => {
+                  let button;
+                  if (this.props.views.length > 1) {
+                    button = (
+                    <Button close disabled={!this.props.hubConnected}>
+                      <FontAwesomeIcon
+                        icon="trash"
+                        size="xs"
+                        className={this.props.currentView === view.id ? "text-white" : ""}
+                        onClick={event => {
+                          event.stopPropagation();
+                          this.handleClickDelete(view.id, view.name);
+                        }}
+                      />
+                    </Button>);
+                  }
 
-                return (
-                  <ListGroupItem
-                    key = {"list-" + view.id}
-                    className="rounded-0 p-1 border-left-0 border-right-0 d-flex justify-content-between text-break"
-                    onClick={() => this.props.onClickView(view.id)}
-                    active={this.props.currentView === view.id}
-                    style={{cursor: "pointer"}}
-                  >
-                    <div>{view.name}</div>
-                    {button}
-                  </ListGroupItem>
-                );
-              })}
-            </ListGroup>
+                  return (
+                    <ListGroupItem
+                      key = {"list-" + view.id}
+                      className="rounded-0 p-1 border-left-0 border-right-0 d-flex justify-content-between text-break"
+                      onClick={() => this.props.onClickView(view.id)}
+                      active={this.props.currentView === view.id}
+                      style={{cursor: "pointer"}}
+                    >
+                      <div>{view.name}</div>
+                      {button}
+                    </ListGroupItem>
+                  );
+                })}
+              </ListGroup>
+            </CardBody>
+          </Card>
+
+          <Card className="rounded-0" style={{minHeight: "12em"}}>
+            <CardHeader className="pl-3 pr-3"><h5 className="mb-0">Selected Object</h5></CardHeader>
+            <CardBody className="d-flex align-items-center justify-content-center">
+              {this.renderObjectProps()}
+            </CardBody>
+          </Card>
+
+          <Card className="rounded-0" style={{minHeight: "12em"}}>
+            <CardHeader className="pl-3 pr-3"><h5 className="mb-0">Drawing Properties</h5></CardHeader>
+            <CardBody>
+              <Button color="primary" size="sm" onClick={this.toggleShareModal} className="mb-3">Sharing Settings</Button>
+
+              <CustomInput type="switch" onChange={this.props.toggleGrid} checked={this.props.gridEnabled} id="grid-toggle" label="Show Grid"/>
+
+              <Label for="grid-size" className="mb-0">Grid Size ({this.props.gridSize}m)</Label>
+              <CustomInput
+                type="range" min="1" max="20" step="1" name="gridSize" id="grid-size"
+                value={this.props.gridSize}
+                onChange={event => this.props.setGridSize(parseInt(event.target.value))}
+              />
+            </CardBody>
+          </Card>
+          <ShareDrawing
+            isOpen = {this.state.shareModalOpen}
+            drawingId = {this.props.drawingId}
+            toggle = {this.toggleShareModal}
+          />
+        </Col>
+        <Card className="rounded-0 bg-light" style={{justifySelf: "flex-end", maxHeight: "10%"}}>
+          <CardBody className="overflow-auto small p-2" style={{whiteSpace: "pre-line"}}>
+            {this.props.hintText}
           </CardBody>
         </Card>
-
-        <Card className="rounded-0" style={{minHeight: "15%"}}>
-          <CardHeader className="pl-3 pr-3"><h5 className="mb-0">Selected Object</h5></CardHeader>
-          <CardBody className="overflow-auto">
-            {this.renderObjectProps()}
-          </CardBody>
-        </Card>
-
-        <Card className="rounded-0" style={{minHeight: "15%"}}>
-          <CardHeader className="pl-3 pr-3"><h5 className="mb-0">Drawing Properties</h5></CardHeader>
-          <CardBody className="overflow-auto">
-            <Button color="primary" size="sm" onClick={this.toggleShareModal}>Sharing Settings</Button>
-            <CustomInput type="switch" onChange={this.props.toggleGrid} checked={this.props.gridEnabled} id="grid-toggle" label="Show Grid"/>
-
-            <Label for="grid-size">Grid Size</Label>
-            <CustomInput
-              type="range" min="1" max="20" step="1" name="gridSize" id="grid-size"
-              value={this.props.gridSize}
-              onChange={event => this.props.setGridSize(parseInt(event.target.value))}
-            />
-            <Tooltip isOpen={this.state.gridTooltipOpen} target="grid-size" toggle={this.toggleGridTooltip} hideArrow>
-              {this.props.gridSize}m
-            </Tooltip>
-          </CardBody>
-        </Card>
-        <ShareDrawing
-          isOpen = {this.state.shareModalOpen}
-          drawingId = {this.props.drawingId}
-          toggle = {this.toggleShareModal}
-        />
       </Col>
     );
   }
@@ -184,9 +190,7 @@ export class Sidebar extends Component {
       case "none":
       default:
         return (
-          <div className="text-center">
-            <em>No object selected</em>
-          </div>
+          <em>No object selected</em>
         );
     }
   }

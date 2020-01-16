@@ -77,6 +77,7 @@ export class Drawing extends Component {
             updatePoints = {this.props.onMoveStructure}
             setTooltip = {this.setTooltip}
             setCursor = {this.props.setCursor}
+            setHintText = {this.props.setHintText}
             scale = {this.props.scale}
             onStructureSelect = {this.props.onStructureSelect}
             deselectObject = {this.props.deselectObject}
@@ -119,6 +120,7 @@ export class Drawing extends Component {
       }
     } else if (this.props.selectedObjectId !== "") {
       this.props.deselectObject();
+      this.props.setHintText("");
     }
   }
 
@@ -149,6 +151,7 @@ export class Drawing extends Component {
       this.setState({
         newLinePoints: []
       });
+      this.props.setHintText("");
     }
   }
 
@@ -185,11 +188,12 @@ export class Drawing extends Component {
         lastLinePoint: [],
         nextLinePoint: [],
         tooltipVisible: false,
-        stageCursor: "grab",
         newLinePoints: []
       }, () => {
         this.props.setIsDrawing(false);
         this.props.setTool("none");
+        this.props.setCursor("grab");
+        this.props.setHintText("");
       });
     }
   }
