@@ -199,7 +199,7 @@ namespace openld.Hubs {
 
             Structure updated;
             try {
-                updated = await _structureService.UpdateStructureProps(structure);
+                updated = await _structureService.UpdateStructurePropsAsync(structure);
             } catch (Exception) {
                 await Clients.Caller.SendAsync("UpdatePropertyFailure");
                 return;
@@ -212,6 +212,32 @@ namespace openld.Hubs {
                     updated
                 );
             await Clients.Caller.SendAsync("UpdateStructurePropertySuccess");
+        }
+
+        public async Task DeleteStructure(string structureId, string viewId) {
+            if (! await _authUtils.hasAccess(new Structure {Id = structureId}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                throw new HubException("401: Unauthorised");
+            }
+
+            try {
+                await _structureService.DeleteStructureAsync(structureId);
+            } catch (Exception) {
+                await Clients.Caller.SendAsync("DeleteStructureFailure");
+                return;
+            }
+
+            await Clients.Caller.SendAsync(
+                "DeleteStructureSuccess",
+                    viewId,
+                    structureId
+                );
+
+            await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId])
+                .SendAsync(
+                    "DeleteStructure",
+                    viewId,
+                    structureId
+                );
         }
     }
 }

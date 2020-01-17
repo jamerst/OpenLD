@@ -25,6 +25,12 @@ namespace openld.Data {
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
 
+            builder.Entity<Drawing>()
+                .HasMany(d => d.UserDrawings)
+                .WithOne(ud => ud.Drawing)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
             builder.Entity<View>()
                 .HasMany(v => v.Structures)
                 .WithOne(s => s.View)
@@ -36,10 +42,16 @@ namespace openld.Data {
                 .WithOne(f => f.Structure)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Fixture>()
+                .HasMany(f => f.Modes)
+                .WithOne(m => m.Fixture)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
         }
 
         public override DbSet<User> Users { get; set; }
-        public DbSet<UserDrawings> UserDrawings { get; set; }
+        public DbSet<UserDrawing> UserDrawings { get; set; }
         public DbSet<Drawing> Drawings { get; set; }
         public DbSet<View> Views { get; set; }
         public DbSet<Structure> Structures { get; set; }

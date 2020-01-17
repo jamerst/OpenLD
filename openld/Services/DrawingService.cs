@@ -60,18 +60,18 @@ namespace openld.Services {
             return await _context.Drawings.Where(d => d.Id == id).AnyAsync();
         }
 
-        public async Task<List<UserDrawings>> GetSharedUsersAsync(string drawingId) {
-            List<UserDrawings> userDrawings;
-            userDrawings =  await _context.UserDrawings
+        public async Task<List<UserDrawing>> GetSharedUsersAsync(string drawingId) {
+            List<UserDrawing> UserDrawing;
+            UserDrawing =  await _context.UserDrawings
                 .AsNoTracking()
                 .Where(ud => ud.Drawing.Id == drawingId)
                 .Include(ud => ud.User)
                 .ToListAsync();
 
-            return userDrawings;
+            return UserDrawing;
         }
 
-        public async Task<UserDrawings> ShareWithUserAsync(string email, string drawingId) {
+        public async Task<UserDrawing> ShareWithUserAsync(string email, string drawingId) {
             User user;
             try {
                 user = await _context.Users.FirstAsync(u => u.Email == email);
@@ -92,7 +92,7 @@ namespace openld.Services {
                 throw new InvalidOperationException("Drawing already shared with user");
             }
 
-            UserDrawings ud = new UserDrawings();
+            UserDrawing ud = new UserDrawing();
             ud.Drawing = drawing;
             ud.User = user;
 
@@ -104,7 +104,7 @@ namespace openld.Services {
         }
 
         public async Task<string> UnshareWithUserAsync(string userDrawingId) {
-            UserDrawings ud;
+            UserDrawing ud;
             try {
                 ud = await _context.UserDrawings.FirstAsync(ud => ud.Id == userDrawingId);
             } catch (InvalidOperationException) {
@@ -190,8 +190,8 @@ namespace openld.Services {
         Task<string> CreateDrawingAsync(string userId, Drawing drawing);
         Task<Drawing> GetDrawingAsync(string id);
         Task<bool> DrawingExistsAsync(string id);
-        Task<List<UserDrawings>> GetSharedUsersAsync(string drawingId);
-        Task<UserDrawings> ShareWithUserAsync(string email, string drawingId);
+        Task<List<UserDrawing>> GetSharedUsersAsync(string drawingId);
+        Task<UserDrawing> ShareWithUserAsync(string email, string drawingId);
         Task<string> UnshareWithUserAsync(string userDrawingId);
         Task<bool> IsSharedWithAsync(string drawingId, string userId);
         Task<bool> IsOwnerAsync(string drawingId, string userId);

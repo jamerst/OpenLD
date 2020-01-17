@@ -1,12 +1,14 @@
 import React, { Component } from "react";
 import authService from '../api-authorization/AuthorizeService';
-import { Alert,
+import { Alert, Collapse,
   Col, Container, Row,
+  Card,
   Button, CustomInput, Form, FormGroup, Input, Label,
   InputGroup, InputGroupAddon, InputGroupText,
   Modal, ModalHeader, ModalBody, ModalFooter,
   Spinner } from 'reactstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { FixtureModesForm } from "./FixtureModesForm";
 
 export class AddFixtureForm extends Component {
   constructor(props) {
@@ -20,7 +22,9 @@ export class AddFixtureForm extends Component {
       uploadAlertTitle: "Uploading file..",
       uploadAlertText: "",
       addFormError: false,
-      addFormErrorMessage: ""
+      addFormErrorMessage: "",
+      dmx: false,
+      modes: [{name: "Mode 1", channels: [""]}]
     }
   }
 
@@ -44,16 +48,16 @@ export class AddFixtureForm extends Component {
         </Alert>
           <ModalBody>
             <FormGroup>
-              <Input type="text" value={this.state.newFixture.name} name="name" placeholder="Name"/>
+              <Input type="text" value={this.state.newFixture.name} name="name" placeholder="Name" required/>
             </FormGroup>
 
             <FormGroup>
-              <Input type="text" value={this.state.newFixture.manufacturer} name="manufacturer" placeholder="Manufacturer"/>
+              <Input type="text" value={this.state.newFixture.manufacturer} name="manufacturer" placeholder="Manufacturer" required/>
             </FormGroup>
 
             <FormGroup>
               <Label for="addType">Fixture Type</Label>
-              <CustomInput type="select" name="type" id="addType" value={this.state.newFixture.type.id}>
+              <CustomInput type="select" name="type" id="addType" value={this.state.newFixture.type.id} required>
                 {this.props.renderedTypes}
               </CustomInput>
             </FormGroup>
@@ -79,6 +83,26 @@ export class AddFixtureForm extends Component {
               </Col>
             </FormGroup>
 
+            <FormGroup check>
+              <Label check for="dmx">
+                <Input type="checkbox" id="dmx" checked={this.state.dmx} onChange={() => this.setState({dmx: !this.state.dmx})}/>
+                Configure DMX Information
+              </Label>
+            </FormGroup>
+
+            <Collapse isOpen={this.state.dmx}>
+              <FixtureModesForm
+                enabled = {this.state.dmx}
+                modes = {this.state.modes}
+
+                setModeName = {this.setModeName}
+                setChannelName = {this.setChannelName}
+
+                addMode = {this.addMode}
+                addChannel = {this.addChannel}
+              />
+            </Collapse>
+
             <FormGroup>
               <Label for="addImage">Fixture Image</Label>
               <Alert isOpen={this.state.uploading} color={this.state.uploadAlertColour} style={{ fontSize: "11pt", padding: ".25rem 1rem" }}>
@@ -94,7 +118,7 @@ export class AddFixtureForm extends Component {
                   </Row>
                 </Container>
               </Alert>
-              <Input type="file" id="addImage" name="image" onChange={this.handleImageChange}/>
+              <Input type="file" id="addImage" name="image" onChange={this.handleImageChange} required/>
             </FormGroup>
           </ModalBody>
           <ModalFooter>
@@ -162,28 +186,40 @@ export class AddFixtureForm extends Component {
 
     this.setState({ addFormError: false });
 
+    let fixtureData = this.state.newFixture;
+    if (this.state.dmx) {
+      fixtureData = {...fixtureData, ...{modes: this.state.modes}};
+    }
+
     const response = await fetch('api/library/CreateFixture', {
       method: "POST",
       headers: await authService.generateHeader({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify(this.state.newFixture)
+      body: JSON.stringify(fixtureData)
     });
 
-    const data = await response.json();
-    if (data.success === true) {
-      this.setState({
-        newFixture: new NewFixture(),
-        uploading: false,
-        uploadAlertColor: "secondary",
-        uploadAlertIcon: <Spinner size="sm"/>,
-        uploadAlertTitle: "Uploading file.."
-      });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success === true) {
+        this.setState({
+          newFixture: new NewFixture(),
+          uploading: false,
+          uploadAlertColor: "secondary",
+          uploadAlertIcon: <Spinner size="sm"/>,
+          uploadAlertTitle: "Uploading file.."
+        });
 
-      this.props.onSubmitSuccess();
+        this.props.onSubmitSuccess();
+      } else {
+        this.setState({
+          addFormError: true,
+          addFormErrorMessage: data.msg
+        });
+      }
     } else {
       this.setState({
         addFormError: true,
-        addFormErrorMessage: data.msg
-      })
+        addFormErrorMessage: `Unknown error adding fixture (code ${response.status})`
+      });
     }
   }
 
@@ -193,6 +229,64 @@ export class AddFixtureForm extends Component {
 
     this.setState({
       newFixture: fixture
+    });
+  }
+
+  setModeName = (index, name) => {
+    this.setState(() => {
+      let modes = [...this.state.modes];
+      let mode = modes[index];
+
+      mode.name = name;
+      modes[index] = mode;
+
+      return {
+        modes: modes
+      };
+    })
+  }
+
+  setChannelName = (mIndex, cIndex, name) => {
+    this.setState(() => {
+      let modes = [...this.state.modes];
+      let mode = modes[mIndex];
+
+      let channels = [...mode.channels];
+      channels[cIndex] = name;
+
+      mode.channels = channels;
+
+      modes[mIndex] = mode;
+
+      return {
+        modes: modes
+      };
+    })
+  }
+
+  addMode = () => {
+    this.setState(prevState => {
+      let modes = [...prevState.modes];
+
+      modes.push({name: "Mode", channels: [""]});
+
+      return {
+        modes: modes
+      };
+    });
+  }
+
+  addChannel = (modeIndex) => {
+    this.setState(prevState => {
+      let modes = [...prevState.modes];
+      let mode = modes[modeIndex];
+
+      mode.channels.push("");
+      modes[modeIndex] = mode;
+
+      return {
+        modes: modes
+      };
     });
   }
 }

@@ -6,7 +6,7 @@ import {
   Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-export class DeleteViewModal extends Component {
+export class DeleteStructureModal extends Component {
   constructor(props) {
     super(props);
 
@@ -19,7 +19,7 @@ export class DeleteViewModal extends Component {
   render = () => {
     return (
       <Modal isOpen={this.props.isOpen} toggle={this.props.toggle} autoFocus={false} centered>
-        <ModalHeader toggle={this.props.toggle}>Delete View</ModalHeader>
+        <ModalHeader toggle={this.props.toggle}>Delete Structure</ModalHeader>
         <Alert color="danger" isOpen={this.state.error}>
           <Container>
             <Row className="align-items-center">
@@ -34,9 +34,9 @@ export class DeleteViewModal extends Component {
           </Container>
         </Alert>
         <ModalBody className="text-center">
-          Are you sure you want to delete the view "{this.props.viewName}"?
+          Are you sure you want to delete this structure?
           <p className="font-weight-bold h5 text-danger">
-            This cannot be undone, all contents will be lost permanently!
+            This cannot be undone, all data will be lost permanently!
           </p>
         </ModalBody>
         <ModalFooter>
@@ -49,7 +49,8 @@ export class DeleteViewModal extends Component {
 
   handleConfirm = () => {
     this.props.hub.invoke(
-      "DeleteView",
+      "DeleteStructure",
+      this.props.structureId,
       this.props.viewId
     ).catch(err => {
       this.setState({error: true, errorMsg: err});

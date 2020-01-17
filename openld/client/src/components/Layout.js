@@ -22,7 +22,7 @@ export class DrawingLayout extends Component {
 
   render = () => {
     return (
-      <Container fluid className="p-0 h-100">
+      <Container fluid className="p-0 h-100 overflow-hidden">
         {this.props.children}
       </Container>
     );

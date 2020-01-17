@@ -79,7 +79,7 @@ namespace openld.Services {
             return structure;
         }
 
-        public async Task<Structure> UpdateStructureProps(Structure structure) {
+        public async Task<Structure> UpdateStructurePropsAsync(Structure structure) {
             Structure existing;
             try {
                 existing = await _context.Structures.Include(s => s.Type).FirstAsync(s => s.Id == structure.Id);
@@ -91,6 +91,18 @@ namespace openld.Services {
             await _context.SaveChangesAsync();
 
             return existing;
+        }
+
+        public async Task DeleteStructureAsync(string structureId) {
+            Structure structure;
+            try {
+                structure = await _context.Structures.FirstAsync(s => s.Id == structureId);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("Structure ID not found");
+            }
+
+            _context.Structures.Remove(structure);
+            await _context.SaveChangesAsync();
         }
 
         public async Task CreateTypesAsync(string[] types) {
@@ -135,7 +147,8 @@ namespace openld.Services {
         Task<View> GetViewAsync(Structure structure);
         Task<Structure> AddStructureAsync(Structure structure);
         Task<Structure> SetStructureGeometryAsync(string structureId, Geometry geometry);
-        Task<Structure> UpdateStructureProps(Structure structure);
+        Task<Structure> UpdateStructurePropsAsync(Structure structure);
+        Task DeleteStructureAsync(string structureID);
         Task CreateTypesAsync(string[] types);
         Task<List<StructureType>> GetAllTypesAsync();
         Task<StructureType> GetStructureTypeAsync(string structureTypeId);

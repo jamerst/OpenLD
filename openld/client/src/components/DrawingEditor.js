@@ -1,4 +1,4 @@
-import React, { Component, Fragment } from 'react';
+import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Alert,
@@ -111,7 +111,7 @@ export class DrawingEditor extends Component {
                   <div id={"userCircle-" + u.id} style={{fontSize: "130%"}}>
                     {u.userName.charAt(0).toUpperCase()}
                   </div>
-                  <UncontrolledTooltip placement="bottom" target={"userCircle-" + u.id}>{u.userName}</UncontrolledTooltip>
+                  <UncontrolledTooltip placement="bottom" target={"userCircle-" + u.id} style={{zIndex: 1000}}>{u.userName}</UncontrolledTooltip>
                 </div>
               );
             })}
@@ -153,11 +153,9 @@ export class DrawingEditor extends Component {
             </Col>
             <Col id="stage-container" className="p-0 m-0 bg-secondary">
               <div style={{position: "absolute", width: "100%", zIndex: "1000"}}>
-                <Alert color={this.state.alertColour} isOpen={this.state.alertOpen} toggle={this.toggleAlert} className="d-flex justify-content-center align-content-center">
-                  <div>
-                    <span className="mr-3">{this.state.alertIcon}</span>
-                    <span className="h5">{this.state.alertContent}</span>
-                  </div>
+                <Alert color={this.state.alertColour} isOpen={this.state.alertOpen} toggle={this.toggleAlert} className="d-flex justify-content-center align-items-center">
+                  <span className="mr-3">{this.state.alertIcon}</span>
+                  <span className="h5 m-0">{this.state.alertContent}</span>
                 </Alert>
               </div>
               <Drawing
@@ -256,7 +254,7 @@ export class DrawingEditor extends Component {
     this.state.hub.on("NewView", view => this.insertNewView(view));
     this.state.hub.on("CreateViewSuccess", view => this.insertNewView(view));
     this.state.hub.on("CreateViewFailure", () => this.setAlertError("Failed to create new view"));
-    this.state.hub.on("DeleteView", view => this.deleteView(view));
+    this.state.hub.on("DeleteView", view => this.onDeleteView(view));
     this.state.hub.on("DeleteViewSuccess", view => this.deleteView(view));
     this.state.hub.on("DeleteViewFailure", () => this.setAlertError("Failed to delete view"));
 
@@ -270,6 +268,9 @@ export class DrawingEditor extends Component {
     this.state.hub.on("UpdateStructureGeometryFailure", () => this.setAlertError("Failed to move structure"));
     this.state.hub.on("UpdateStructureProperty", (viewId, structure) => this.setStructure(viewId, structure));
     this.state.hub.on("UpdateStructurePropertySuccess", () => this.setModifiedCurrent(false));
+    this.state.hub.on("DeleteStructure", (viewId, structureId) => this.onStructureRemoved(viewId, structureId));
+    this.state.hub.on("DeleteStructureSuccess", (viewId, structureId) => this.removeStructure(viewId, structureId));
+    this.state.hub.on("DeleteStructureFailure", () => this.setAlertError("Failed to delete structure"));
   }
 
   onHubDisconnect = () => {
@@ -399,6 +400,46 @@ export class DrawingEditor extends Component {
     }
   }
 
+  onStructureRemoved = (viewId, structureId) => {
+    if (this.state.selectedObjectType === "structure" && this.state.selectedObjectId === structureId) {
+      this.setAlertIcon("warning", "The structure you were working on was deleted.", "exclamation");
+    }
+
+    this.removeStructure(viewId, structureId);
+  }
+
+  removeStructure = (viewId, structureId) => {
+    if (this.state.selectedObjectType === "structure" && this.state.selectedObjectId === structureId) {
+      this.setState({selectedObjectType: "none", selectedObjectId: ""});
+      this.setHintText("");
+    }
+
+    this.setState(prevState => {
+      let views = [...prevState.views];
+      const viewIndex = views.findIndex(v => v.id === viewId);
+      if (viewIndex < 0) {
+        return;
+      }
+
+      let view = views[viewIndex];
+
+      let structures = [...view.structures];
+      const structureIndex = structures.findIndex(s => s.id === structureId);
+      if (structureIndex < 0) {
+        return;
+      }
+
+      structures.splice(structureIndex, 1);
+
+      view.structures = structures;
+      views[viewIndex] = view;
+
+      return {
+        views: views
+      };
+    })
+  }
+
   selectStructure = (id) => {
     this.state.hub.invoke("SelectStructure", id).catch(err => console.error(err));
     this.setState({
@@ -434,6 +475,14 @@ export class DrawingEditor extends Component {
     })
   }
 
+  onDeleteView = (view) => {
+    if (view === this.state.currentView) {
+      this.setAlertIcon("warning", "The view you were working on was deleted.", "exclamation")
+    }
+
+    this.deleteView(view);
+  }
+
   deleteView = (view) => {
     this.setState(prevState => {
       let views = [...prevState.views];
@@ -444,8 +493,7 @@ export class DrawingEditor extends Component {
         views.splice(removedIndex, 1);
       }
 
-      if (view === this.state.currentView) {
-        this.setAlertIcon("warning", "The view you were working on was deleted.", "exclamation")
+      if (view === currentView) {
         currentView = views[0].id;
       }
 
@@ -666,7 +714,7 @@ export class DrawingEditor extends Component {
     this.setState({
       alertColour: colour,
       alertContent: msg,
-      alertIcon: <FontAwesomeIcon icon={icon} className="h5"/>,
+      alertIcon: <FontAwesomeIcon icon={icon} className="h5 m-0"/>,
       alertOpen: "true"
     });
   }

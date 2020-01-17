@@ -6,6 +6,6 @@ namespace openld.Models {
         public string Id { get; set; }
         public string Name { get; set; }
         public Fixture Fixture { get; set; }
-        public string[] Addresses { get; set; }
+        public string[] Channels { get; set; }
     }
 }

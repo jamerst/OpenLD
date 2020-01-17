@@ -31,6 +31,7 @@ namespace openld.Controllers {
         public async Task<ActionResult<JsonResponse<object>>> CreateFixture(Fixture fixture) {
             try {
                 await _fixtureService.CreateFixtureAsync(fixture);
+
             } catch (KeyNotFoundException e) {
                 return new JsonResponse<object> { success = false, msg = e.Message };
             } catch (Exception) {

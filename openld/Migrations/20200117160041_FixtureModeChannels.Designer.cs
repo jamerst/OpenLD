@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using openld.Data;
@@ -10,9 +11,10 @@ using openld.Models;
 namespace openld.Migrations
 {
     [DbContext(typeof(OpenLDContext))]
-    partial class OpenLDContextModelSnapshot : ModelSnapshot
+    [Migration("20200117160041_FixtureModeChannels")]
+    partial class FixtureModeChannels
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -307,7 +309,6 @@ namespace openld.Migrations
                         .HasColumnType("text[]");
 
                     b.Property<string>("FixtureId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
@@ -502,14 +503,13 @@ namespace openld.Migrations
                     b.ToTable("AspNetUsers");
                 });
 
-            modelBuilder.Entity("openld.Models.UserDrawing", b =>
+            modelBuilder.Entity("openld.Models.UserDrawings", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("text");
 
                     b.Property<string>("DrawingId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("UserId")
@@ -626,9 +626,7 @@ namespace openld.Migrations
                 {
                     b.HasOne("openld.Models.Fixture", "Fixture")
                         .WithMany("Modes")
-                        .HasForeignKey("FixtureId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("FixtureId");
                 });
 
             modelBuilder.Entity("openld.Models.RiggedFixture", b =>
@@ -661,13 +659,11 @@ namespace openld.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("openld.Models.UserDrawing", b =>
+            modelBuilder.Entity("openld.Models.UserDrawings", b =>
                 {
                     b.HasOne("openld.Models.Drawing", "Drawing")
-                        .WithMany("UserDrawings")
-                        .HasForeignKey("DrawingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .WithMany()
+                        .HasForeignKey("DrawingId");
 
                     b.HasOne("openld.Models.User", "User")
                         .WithMany()

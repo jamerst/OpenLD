@@ -199,7 +199,13 @@ export class AuthorizeService {
         });
 
         this.userManager.events.addAccessTokenExpired(async () => {
-            const user = await this.userManager.signinSilent();
+            let user;
+            try {
+                user = await this.userManager.signinSilent();
+            } catch {
+                await this.userManager.signinRedirect();
+                return;
+            }
             this.updateState(user);
         });
     }

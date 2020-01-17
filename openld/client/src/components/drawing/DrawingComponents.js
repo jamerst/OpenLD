@@ -127,7 +127,10 @@ export class Structure extends Component {
   onMouseOut = (event) => {
     if (!this.props.selected) {
       event.target.strokeWidth(0.06);
-      event.target.draw();
+      // prevent exception when object deleted whilst hovering on
+      try {
+        event.target.draw();
+      } catch {}
       this.props.setHintText("");
     }
 

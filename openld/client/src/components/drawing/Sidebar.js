@@ -2,8 +2,7 @@ import React, { Component } from "react";
 import { Col, Row,
   Button, CustomInput, Form, Input, InputGroup, InputGroupAddon, InputGroupText,
   Card, CardHeader, CardBody,
-  ListGroup, ListGroupItem, Label,
-  Tooltip
+  ListGroup, ListGroupItem, Label
 } from "reactstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { ShareDrawing } from "./ShareDrawing";
@@ -122,12 +121,20 @@ export class Sidebar extends Component {
 
               <CustomInput type="switch" onChange={this.props.toggleGrid} checked={this.props.gridEnabled} id="grid-toggle" label="Show Grid"/>
 
-              <Label for="grid-size" className="mb-0">Grid Size ({this.props.gridSize}m)</Label>
-              <CustomInput
-                type="range" min="1" max="20" step="1" name="gridSize" id="grid-size"
-                value={this.props.gridSize}
-                onChange={event => this.props.setGridSize(parseInt(event.target.value))}
-              />
+              <Label for="grid-size" className="mb-0">Grid Size</Label>
+              <Row>
+                <Col xs="10" className="d-flex align-items-center">
+                  <CustomInput
+                    type="range" min="1" max="20" step="1" name="gridSize" id="grid-size"
+                    value={this.props.gridSize}
+                    onChange={event => this.props.setGridSize(parseInt(event.target.value))}
+                  />
+                </Col>
+                <Col xs="2" className="p-0">
+                  {this.props.gridSize}m
+                </Col>
+
+              </Row>
             </CardBody>
           </Card>
           <ShareDrawing

@@ -68,24 +68,24 @@ namespace openld.Controllers {
 
         [HttpGet("{drawingId}")]
         [Authorize]
-        public async Task<ActionResult<JsonResponse<List<UserDrawings>>>> GetSharedUsers(string drawingId) {
+        public async Task<ActionResult<JsonResponse<List<UserDrawing>>>> GetSharedUsers(string drawingId) {
             if (! await _authUtils.hasAccess(drawingId, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 return Unauthorized();
             }
 
-            List<UserDrawings> users;
+            List<UserDrawing> users;
             try {
                 users = await _drawingService.GetSharedUsersAsync(drawingId);
             } catch (Exception) {
-                return new JsonResponse<List<UserDrawings>> { success = false, msg = "Unknown error fetching users" };
+                return new JsonResponse<List<UserDrawing>> { success = false, msg = "Unknown error fetching users" };
             }
 
-            return new JsonResponse<List<UserDrawings>> { success = true, data = users };
+            return new JsonResponse<List<UserDrawing>> { success = true, data = users };
         }
 
         [HttpPost]
         [Authorize]
-        public async Task<ActionResult<JsonResponse<UserDrawings>>> ShareWith(UserDrawings ud) {
+        public async Task<ActionResult<JsonResponse<UserDrawing>>> ShareWith(UserDrawing ud) {
             if (! await _authUtils.hasAccess(ud.Drawing.Id, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 return Unauthorized();
             }
@@ -93,17 +93,17 @@ namespace openld.Controllers {
             try {
                 ud = await _drawingService.ShareWithUserAsync(ud.User.Email, ud.Drawing.Id);
             } catch (Exception e) when (e is KeyNotFoundException || e is InvalidOperationException) {
-                return new JsonResponse<UserDrawings> { success = false, msg = e.Message };
+                return new JsonResponse<UserDrawing> { success = false, msg = e.Message };
             } catch (Exception) {
-                return new JsonResponse<UserDrawings> { success = false, msg = "Unknown error sharing with user" };
+                return new JsonResponse<UserDrawing> { success = false, msg = "Unknown error sharing with user" };
             }
 
-            return new JsonResponse<UserDrawings> { success = true, data = ud };
+            return new JsonResponse<UserDrawing> { success = true, data = ud };
         }
 
         [HttpPost]
         [Authorize]
-        public async Task<ActionResult<JsonResponse<string>>> UnshareWith(UserDrawings ud) {
+        public async Task<ActionResult<JsonResponse<string>>> UnshareWith(UserDrawing ud) {
             if (! await _authUtils.hasAccess(ud.Drawing.Id, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 return Unauthorized();
             }
@@ -147,7 +147,7 @@ namespace openld.Controllers {
         [HttpPost]
         [Authorize]
         public async Task<ActionResult<Structure>> UpdateStructureProp(Structure structure) {
-            return await _structureService.UpdateStructureProps(structure);
+            return await _structureService.UpdateStructurePropsAsync(structure);
         }
     }
 }

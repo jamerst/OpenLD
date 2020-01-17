@@ -1,8 +1,9 @@
-import React, { Component } from "react";
+import React, { Component, Fragment } from "react";
 import { Layer, Line, Stage } from 'react-konva';
 
 import { DrawingUtils } from './DrawingUtils';
 import { View, Grid, Tooltip } from "./DrawingComponents";
+import { DeleteStructureModal } from "./DeleteStructureModal";
 
 export class Drawing extends Component {
   constructor(props) {
@@ -16,7 +17,8 @@ export class Drawing extends Component {
       nextLinePoint: [],
       tooltipVisible: false,
       tooltipPos: {x: 0, y: 0},
-      tooltipText: ""
+      tooltipText: "",
+      deleteModalOpen: false
     };
   }
 
@@ -30,71 +32,81 @@ export class Drawing extends Component {
 
   render = () => {
     return (
-      <Stage
-        x = {0}
-        y = {0}
-        width = {this.props.width}
-        height = {this.props.height}
-        scale = {{x: this.props.scale, y: -this.props.scale}}
-        offsetY = {this.props.y}
-        draggable
-        position = {this.props.position}
+      <Fragment>
 
-        onWheel = {this.handleStageWheel}
-        onMouseMove = {this.handleStageMouseMove}
-        onClick = {this.handleStageClick}
-        onDblClick = {this.handleStageDblClick}
-        onDragStart = {() => this.props.setCursor("move")}
-        onDragEnd = {() => this.props.setCursor("grab")}
+        <Stage
+          x = {0}
+          y = {0}
+          width = {this.props.width}
+          height = {this.props.height}
+          scale = {{x: this.props.scale, y: -this.props.scale}}
+          offsetY = {this.props.y}
+          draggable
+          position = {this.props.position}
 
-        style={{cursor: this.props.cursor}}
-      >
-        <Grid
-          enabled = {this.props.gridEnabled}
-          xLim = {this.props.viewData.width}
-          yLim = {this.props.viewData.height}
-          gridSize = {this.props.gridSize}
-          lineWidth = {1 / this.props.scale}
-        />
-        <Layer>
-            <Line
-              key = "new-line"
-              points = {this.state.newLinePoints}
-              position = {this.state.newLinePos}
-              stroke = "#000"
-              strokeWidth = {0.05}
-            />
-            <Line
-              key = "line-preview"
-              points = {[...this.state.lastLinePoint, ...this.state.nextLinePoint]}
-              stroke = "#ddd"
-              strokeWidth = {0.05}
-            />
-        </Layer>
-        <View
-            data={this.props.viewData}
-            snapGridSize = {this.props.snapGridSize}
-            updatePoints = {this.props.onMoveStructure}
-            setTooltip = {this.setTooltip}
-            setCursor = {this.props.setCursor}
-            setHintText = {this.props.setHintText}
-            scale = {this.props.scale}
-            onStructureSelect = {this.props.onStructureSelect}
-            deselectObject = {this.props.deselectObject}
-            selectedObjectId = {this.props.selectedObjectId}
-            selectedObjectType = {this.props.selectedObjectType}
-            setStructureColour = {this.props.setStructureColour}
-            hubConnected = {this.props.hubConnected}
-        />
-        <Layer>
-          <Tooltip
-            position = {this.state.tooltipPos}
-            visible = {this.state.tooltipVisible}
-            text = {this.state.tooltipText}
-            scale = {1.25 / this.props.scale}
+          onWheel = {this.handleStageWheel}
+          onMouseMove = {this.handleStageMouseMove}
+          onClick = {this.handleStageClick}
+          onDblClick = {this.handleStageDblClick}
+          onDragStart = {() => this.props.setCursor("move")}
+          onDragEnd = {() => this.props.setCursor("grab")}
+
+          style={{cursor: this.props.cursor}}
+        >
+          <Grid
+            enabled = {this.props.gridEnabled}
+            xLim = {this.props.viewData.width}
+            yLim = {this.props.viewData.height}
+            gridSize = {this.props.gridSize}
+            lineWidth = {1 / this.props.scale}
           />
-        </Layer>
-      </Stage>
+          <Layer>
+              <Line
+                key = "new-line"
+                points = {this.state.newLinePoints}
+                position = {this.state.newLinePos}
+                stroke = "#000"
+                strokeWidth = {0.05}
+              />
+              <Line
+                key = "line-preview"
+                points = {[...this.state.lastLinePoint, ...this.state.nextLinePoint]}
+                stroke = "#ddd"
+                strokeWidth = {0.05}
+              />
+          </Layer>
+          <View
+              data={this.props.viewData}
+              snapGridSize = {this.props.snapGridSize}
+              updatePoints = {this.props.onMoveStructure}
+              setTooltip = {this.setTooltip}
+              setCursor = {this.props.setCursor}
+              setHintText = {this.props.setHintText}
+              scale = {this.props.scale}
+              onStructureSelect = {this.props.onStructureSelect}
+              deselectObject = {this.props.deselectObject}
+              selectedObjectId = {this.props.selectedObjectId}
+              selectedObjectType = {this.props.selectedObjectType}
+              setStructureColour = {this.props.setStructureColour}
+              hubConnected = {this.props.hubConnected}
+          />
+          <Layer>
+            <Tooltip
+              position = {this.state.tooltipPos}
+              visible = {this.state.tooltipVisible}
+              text = {this.state.tooltipText}
+              scale = {1.25 / this.props.scale}
+            />
+          </Layer>
+        </Stage>
+        <DeleteStructureModal
+          structureId = {this.props.selectedObjectId}
+          viewId = {this.props.viewData.id}
+          hub = {this.props.hub}
+          isOpen = {this.state.deleteModalOpen}
+          toggle = {this.toggleDeleteModal}
+        />
+      </Fragment>
     );
   }
 
@@ -195,6 +207,10 @@ export class Drawing extends Component {
         this.props.setCursor("grab");
         this.props.setHintText("");
       });
+    } else if (this.props.selectedObjectType === "structure" && event.keyCode === 46) {
+      if (this.props.hubConnected === true && this.state.deleteModalOpen === false) {
+        this.toggleDeleteModal();
+      }
     }
   }
 
@@ -204,5 +220,9 @@ export class Drawing extends Component {
       tooltipVisible: visible,
       tooltipText: text
     });
+  }
+
+  toggleDeleteModal = () => {
+    this.setState({deleteModalOpen: !this.state.deleteModalOpen});
   }
 }
