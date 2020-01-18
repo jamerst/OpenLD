@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Group, Layer, Line, Rect, Label, Tag, Text as KonvaText } from "react-konva";
+import { Group, Layer, Line, Rect, Label, Tag, Text as KonvaText, Circle } from "react-konva";
 import { DrawingUtils } from "./DrawingUtils";
 import { Text } from "./KonvaNodes";
 
@@ -27,11 +27,16 @@ export class View extends Component {
             setCursor = {this.props.setCursor}
             scale = {this.props.scale}
             onStructureSelect = {this.props.onStructureSelect}
+            onStructureDelete = {this.props.onStructureDelete}
             deselectObject = {this.props.deselectObject}
             selected = {this.props.selectedObjectId === structure.id && this.props.selectedObjectType === "structure"}
             setStructureColour = {this.setStructureColour}
             colour = {structure.colour}
             hubConnected = {this.props.hubConnected}
+            selectedTool = {this.props.selectedTool}
+            setTool = {this.props.setTool}
+            setValidPosition = {this.props.setValidPosition}
+            setHoveredStructure = {this.props.setHoveredStructure}
           />
         )
       })}
@@ -48,22 +53,39 @@ export class Structure extends Component {
     super(props);
 
     this.state = {
-      startPos: {x: 0, y: 0}
+      startPos: {x: 0, y: 0},
+      singlePoint: this.props.points !== null && this.props.points.length === 1
     }
   }
 
   render = () => {
-    let points = typeof this.props.points !== "undefined" ?
-    [].concat.apply([], this.props.points.map(p => [p.x, p.y]))
-    : []
+    const points = this.props.points !== null && typeof this.props.points !== "undefined" ?
+      [].concat.apply([], this.props.points.map(p => [p.x, p.y]))
+      : [];
 
-    return (
-      <Group
-        draggable = {this.props.hubConnected}
-        onDragStart = {this.handleDragStart}
-        onDragMove = {this.handleDrag}
-        onDragEnd = {this.handleDragEnd}
-      >
+    const angle = this.props.points !== null && typeof this.props.points !== "undefined" ?
+      DrawingUtils.lineAngle(this.props.points[1], this.props.points[0])
+      : 0;
+
+    let structure;
+
+    if (this.state.singlePoint) {
+      structure = (
+        <Circle
+          key = {"c-" + this.props.id}
+          x = {points[0]}
+          y = {points[1]}
+          fill = {this.props.colour}
+          radius = {this.props.selected ? 0.3 : 0.2}
+          strokeWidth = {0}
+          hitStrokeWidth = {1}
+          onMouseOver = {this.onMouseOver}
+          onMouseOut = {this.onMouseOut}
+          onClick = {this.onClick}
+        />
+      )
+    } else {
+      structure = (
         <Line
           key = {"l-" + this.props.id}
           points = {points}
@@ -74,11 +96,22 @@ export class Structure extends Component {
           onMouseOut = {this.onMouseOut}
           onClick = {this.onClick}
         />
+      )
+    }
+
+    return (
+      <Group
+        draggable = {this.props.hubConnected}
+        onDragStart = {this.handleDragStart}
+        onDragMove = {this.handleDrag}
+        onDragEnd = {this.handleDragEnd}
+      >
+        {structure}
         <Text
           key={"sl-" + this.props.id}
-          x = {this.props.points[0].x}
-          y = {this.props.points[0].y}
-          rotation = {DrawingUtils.lineAngle(this.props.points[1], this.props.points[0])}
+          x = {points[0]}
+          y = {points[1] - 0.1}
+          rotation = {angle}
           padding = {2}
           text = {this.props.name}
           textScale = {0.05}
@@ -118,15 +151,33 @@ export class Structure extends Component {
   }
 
   onMouseOver = (event) => {
-    event.target.strokeWidth(0.1);
+    if (this.state.singlePoint) {
+      event.target.radius(0.3);
+    } else {
+      event.target.strokeWidth(0.1);
+    }
+
     event.target.draw();
     this.props.setCursor("pointer");
-    this.props.setHintText("Click to select structure.\nClick and hold to move structure.")
+    if (this.props.selectedTool === "none") {
+      this.props.setHintText("Click to select structure.\nClick and hold to move structure.")
+    } else if (this.props.selectedTool === "add-fixture") {
+      console.log(event);
+      this.props.setValidPosition(true);
+      this.props.setHoveredStructure(this.props.id);
+    } else if (this.props.selectedTool === "eraser") {
+      this.props.setHintText("Click to remove structure.")
+    }
   }
 
   onMouseOut = (event) => {
     if (!this.props.selected) {
-      event.target.strokeWidth(0.06);
+      if (this.state.singlePoint) {
+        event.target.radius(0.2);
+      } else {
+        event.target.strokeWidth(0.06);
+      }
+
       // prevent exception when object deleted whilst hovering on
       try {
         event.target.draw();
@@ -134,16 +185,28 @@ export class Structure extends Component {
       this.props.setHintText("");
     }
 
-    this.props.setCursor("grab");
+    if (this.props.selectedTool === "add-fixture") {
+      this.props.setValidPosition(false);
+      this.props.setHoveredStructure("");
+    } else {
+      this.props.setCursor("grab");
+    }
+
   }
 
   onClick = (event) => {
     if (this.props.hubConnected) {
       event.cancelBubble = true;
       this.props.deselectObject();
-      this.props.setStructureColour(this.props.id, "#007bff");
       this.props.onStructureSelect(this.props.id);
-      this.props.setHintText("Modify structure properties above.\nPress delete to remove structure.")
+
+      if (this.props.selectedTool === "eraser") {
+        this.props.onStructureDelete();
+        this.props.setTool("none");
+      } else if (this.props.selectedTool === "none") {
+        this.props.setStructureColour(this.props.id, "#007bff");
+        this.props.setHintText("Modify structure properties above.\nPress delete to remove structure.")
+      }
     }
   }
 }

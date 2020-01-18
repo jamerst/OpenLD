@@ -1,12 +1,10 @@
-import React, { Component, Fragment } from "react";
-import { Alert, Collapse,
-  Col, Container, Row,
-  Card, CardHeader, CardBody,
-  Button, CustomInput, Form, FormGroup, Input, Label,
+import React, { Component } from "react";
+import { Col, Row,
+  Card,
+  Button, Input, Label,
   InputGroup, InputGroupAddon, InputGroupText,
-  Modal, ModalHeader, ModalBody, ModalFooter,
-  Nav, NavItem, NavLink, TabContent, TabPane,
-  Spinner } from 'reactstrap';
+  Nav, NavItem, NavLink,
+  TabContent, TabPane } from 'reactstrap';
 
 export class FixtureModesForm extends Component {
   constructor(props) {

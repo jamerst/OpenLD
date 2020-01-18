@@ -34,6 +34,7 @@ export class DrawingEditor extends Component {
       stageY: 0,
       stagePosition: {x: 0, y: 0},
       stageCursor: "grab",
+      tooltipVisible: false,
 
       selectedTool: "none",
       isDrawing: false,
@@ -138,6 +139,20 @@ export class DrawingEditor extends Component {
 
                 <Button
                   outline
+                  color="primary"
+                  size="lg"
+                  className="rounded-0"
+                  onClick={() => this.handleToolSelect("add-fixture")}
+                  active={this.state.selectedTool === "add-fixture"}
+                  disabled={!this.state.hubConnected}
+                  onMouseEnter = {() => this.setHintText("Insert new fixture")}
+                  onMouseLeave = {this.onToolButtonLeave}
+                >
+                  <FontAwesomeIcon icon="plus-circle"/>
+                </Button>
+
+                <Button
+                  outline
                   color="danger"
                   size="lg"
                   className="rounded-0"
@@ -174,6 +189,7 @@ export class DrawingEditor extends Component {
                 selectedObjectType = {this.state.selectedObjectType}
                 hub = {this.state.hub}
                 hubConnected = {this.state.hubConnected}
+                tooltipVisible = {this.state.tooltipVisible}
 
                 onMoveStructure = {this.moveStructure}
                 onStructureSelect = {this.selectStructure}
@@ -189,6 +205,7 @@ export class DrawingEditor extends Component {
                 setCursor = {this.setCursor}
                 setStructureColour = {this.setStructureColour}
                 setHintText = {this.setHintText}
+                setTooltipVisible = {this.setTooltipVisible}
               />
             </Col>
             <Sidebar
@@ -522,6 +539,10 @@ export class DrawingEditor extends Component {
       this.setState({selectedTool: "none", stageCursor: "grab", tooltipVisible: false});
     } else if (tool === "polygon") {
       this.setState({selectedTool: tool, stageCursor: "crosshair", hintText: "Click to create a point.\nDouble click to create final point.\nPress escape to cancel."});
+    } else if (tool === "add-fixture") {
+      this.setState({selectedTool: tool, hintText: "Click to place fixture on structure"});
+    } else if (tool === "eraser") {
+      this.setState({selectedTool: tool, stageCursor: "copy", hintText: "Click an object to remove."});
     }
   }
 
@@ -734,6 +755,10 @@ export class DrawingEditor extends Component {
     } else {
       this.setState({hintText: msg});
     }
+  }
+
+  setTooltipVisible = (visible) => {
+    this.setState({tooltipVisible: visible});
   }
 
   toggleGrid = () => {

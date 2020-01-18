@@ -15,10 +15,11 @@ export class Drawing extends Component {
       newLinePos: {x: 0, y: 0},
       lastLinePoint: [],
       nextLinePoint: [],
-      tooltipVisible: false,
       tooltipPos: {x: 0, y: 0},
       tooltipText: "",
-      deleteModalOpen: false
+      deleteModalOpen: false,
+      validPosition: false,
+      hoveredStructure: ""
     };
   }
 
@@ -71,7 +72,7 @@ export class Drawing extends Component {
               <Line
                 key = "line-preview"
                 points = {[...this.state.lastLinePoint, ...this.state.nextLinePoint]}
-                stroke = "#ddd"
+                stroke = "#999"
                 strokeWidth = {0.05}
               />
           </Layer>
@@ -84,16 +85,21 @@ export class Drawing extends Component {
               setHintText = {this.props.setHintText}
               scale = {this.props.scale}
               onStructureSelect = {this.props.onStructureSelect}
+              onStructureDelete = {this.toggleDeleteModal}
               deselectObject = {this.props.deselectObject}
               selectedObjectId = {this.props.selectedObjectId}
               selectedObjectType = {this.props.selectedObjectType}
               setStructureColour = {this.props.setStructureColour}
               hubConnected = {this.props.hubConnected}
+              selectedTool = {this.props.selectedTool}
+              setTool = {this.props.setTool}
+              setValidPosition = {this.setValidPosition}
+              setHoveredStructure = {this.setHoveredStructure}
           />
           <Layer>
             <Tooltip
               position = {this.state.tooltipPos}
-              visible = {this.state.tooltipVisible}
+              visible = {this.props.tooltipVisible}
               text = {this.state.tooltipText}
               scale = {1.25 / this.props.scale}
             />
@@ -111,28 +117,34 @@ export class Drawing extends Component {
   }
 
   handleStageClick = (event) => {
-    if (this.props.selectedTool === "polygon" && this.props.hubConnected) {
-      const stage = event.target.getStage();
-      const point = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.props.snapGridSize);
+    if (this.props.hubConnected === true && event.evt.detail === 1) {
+      if (this.props.selectedTool === "polygon") {
+        const stage = event.target.getStage();
+        const point = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.props.snapGridSize);
 
-      if (point.x >= 0 && point.x <= this.props.viewData.width &&
-      point.y >= 0 && point.y <= this.props.viewData.height) {
-        if (this.props.isDrawing === true) {
-          this.setState({
-            newLinePoints: [...this.state.newLinePoints, ...[point.x, point.y]],
-            lastLinePoint: [point.x, point.y]
-          });
-        } else {
-          this.setState({
-            newLinePoints: [point.x, point.y],
-            newLinePos: [point.x, point.y],
-            lastLinePoint: [point.x, point.y]
-          }, () => {this.props.setIsDrawing(true)});
+        if (point.x === this.state.lastLinePoint[0] && point.y === this.state.lastLinePoint[1]) {
+          return;
         }
+
+        if (point.x >= 0 && point.x <= this.props.viewData.width &&
+        point.y >= 0 && point.y <= this.props.viewData.height) {
+          if (this.props.isDrawing === true) {
+            this.setState({
+              newLinePoints: [...this.state.newLinePoints, ...[point.x, point.y]],
+              lastLinePoint: [point.x, point.y]
+            });
+          } else {
+            this.setState({
+              newLinePoints: [point.x, point.y],
+              newLinePos: [point.x, point.y],
+              lastLinePoint: [point.x, point.y]
+            }, () => {this.props.setIsDrawing(true)});
+          }
+        }
+      } else if (this.props.selectedObjectId !== "") {
+        this.props.deselectObject();
+        this.props.setHintText("");
       }
-    } else if (this.props.selectedObjectId !== "") {
-      this.props.deselectObject();
-      this.props.setHintText("");
     }
   }
 
@@ -141,24 +153,29 @@ export class Drawing extends Component {
       this.setState({
         lastLinePoint: [],
         nextLinePoint: [],
-        tooltipVisible: false,
         stageCursor: "grab"
       }, () => {
+        this.props.setTooltipVisible(false);
         this.props.setIsDrawing(false);
         this.props.setTool("none");
       });
 
-      if (this.state.newLinePoints.length > 2) {
-        let points = DrawingUtils.arrayPointsToObject(this.state.newLinePoints);
+      let points;
 
-        this.props.hub.invoke(
-          "AddStructure",
-          {
-            view: {id: this.props.viewData.id},
-            geometry: {points: points}
-          }
-        ).catch(err => console.error(err));
+      if (this.state.newLinePoints.length > 2) {
+        points = DrawingUtils.arrayPointsToObject(this.state.newLinePoints);
+      } else {
+        const stage = event.target.getStage();
+        points = [DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.props.snapGridSize)];
       }
+
+      this.props.hub.invoke(
+        "AddStructure",
+        {
+          view: {id: this.props.viewData.id},
+          geometry: {points: points}
+        }
+      ).catch(err => console.error(err));
 
       this.setState({
         newLinePoints: []
@@ -168,22 +185,30 @@ export class Drawing extends Component {
   }
 
   handleStageMouseMove = (event) => {
-    if (this.props.selectedTool === "polygon" && this.props.hubConnected) {
-      const stage = event.target.getStage();
-      const snapPos = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.props.snapGridSize);
+    if (this.props.hubConnected === true) {
+      if (this.props.selectedTool === "polygon") {
+        const stage = event.target.getStage();
+        const snapPos = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.props.snapGridSize);
 
-      if (snapPos.x < 0 || snapPos.x > this.props.viewData.width ||
-      snapPos.y < 0 || snapPos.y > this.props.viewData.height) {
+        if (snapPos.x < 0 || snapPos.x > this.props.viewData.width ||
+        snapPos.y < 0 || snapPos.y > this.props.viewData.height) {
+            this.props.setCursor("not-allowed");
+        } else {
+          this.props.setCursor("crosshair");
+        }
+        this.setState({
+          tooltipPos: {x: snapPos.x - 0.5, y: snapPos.y - 0.5},
+          tooltipText: "(" + snapPos.x.toFixed(1) + "," + snapPos.y.toFixed(1) + ")",
+          nextLinePoint: [snapPos.x, snapPos.y]
+        });
+        this.props.setTooltipVisible(true);
+      } else if (this.props.selectedTool === "add-fixture") {
+        if (this.state.validPosition === true) {
+          this.props.setCursor("crosshair");
+        } else {
           this.props.setCursor("not-allowed");
-      } else {
-        this.props.setCursor("crosshair");
+        }
       }
-      this.setState({
-        tooltipPos: {x: snapPos.x - 0.5, y: snapPos.y - 0.5},
-        tooltipText: "(" + snapPos.x.toFixed(1) + "," + snapPos.y.toFixed(1) + ")",
-        tooltipVisible: true,
-        nextLinePoint: [snapPos.x, snapPos.y]
-      });
     }
   }
 
@@ -199,9 +224,9 @@ export class Drawing extends Component {
       this.setState({
         lastLinePoint: [],
         nextLinePoint: [],
-        tooltipVisible: false,
         newLinePoints: []
       }, () => {
+        this.props.setTooltipVisible(false);
         this.props.setIsDrawing(false);
         this.props.setTool("none");
         this.props.setCursor("grab");
@@ -215,11 +240,20 @@ export class Drawing extends Component {
   }
 
   setTooltip = (pos, visible, text) => {
+    this.props.setTooltipVisible(visible);
     this.setState({
       tooltipPos: pos,
-      tooltipVisible: visible,
       tooltipText: text
     });
+  }
+
+  setValidPosition = (valid) => {
+    this.setState({validPosition: valid});
+  }
+
+  setHoveredStructure = (structure) => {
+    this.setState({hoveredStructure: structure});
+    console.log(structure);
   }
 
   toggleDeleteModal = () => {

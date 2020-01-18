@@ -18,7 +18,7 @@ export class DeleteStructureModal extends Component {
 
   render = () => {
     return (
-      <Modal isOpen={this.props.isOpen} toggle={this.props.toggle} autoFocus={false} centered>
+      <Modal isOpen={this.props.isOpen} toggle={this.props.toggle} autoFocus={false} centered fade={false}>
         <ModalHeader toggle={this.props.toggle}>Delete Structure</ModalHeader>
         <Alert color="danger" isOpen={this.state.error}>
           <Container>
