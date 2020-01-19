@@ -79,6 +79,26 @@ namespace openld.Services {
             return structure;
         }
 
+        public async Task<List<RiggedFixture>> SetRiggedFixturePositionsAsync(string structureId, List<Point> points) {
+            Structure structure;
+            try {
+                structure = await _context.Structures
+                    .Include(s => s.Fixtures)
+                    .FirstAsync(s => s.Id == structureId);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("Structure ID not found");
+            }
+
+            for(int i = 0; i < structure.Fixtures.Count; i++) {
+                structure.Fixtures[i].Position = points[i];
+            }
+
+            await _context.SaveChangesAsync();
+
+            return structure.Fixtures;
+        }
+
+
         public async Task<Structure> UpdateStructurePropsAsync(Structure structure) {
             Structure existing;
             try {
@@ -147,6 +167,7 @@ namespace openld.Services {
         Task<View> GetViewAsync(Structure structure);
         Task<Structure> AddStructureAsync(Structure structure);
         Task<Structure> SetStructureGeometryAsync(string structureId, Geometry geometry);
+        Task<List<RiggedFixture>> SetRiggedFixturePositionsAsync(string structureId, List<Point> points);
         Task<Structure> UpdateStructurePropsAsync(Structure structure);
         Task DeleteStructureAsync(string structureID);
         Task CreateTypesAsync(string[] types);

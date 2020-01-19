@@ -16,6 +16,7 @@ namespace openld.Hubs {
     public class DrawingHub : Hub {
         private readonly IDrawingService _drawingService;
         private readonly IViewService _viewService;
+        private readonly IRiggedFixtureService _rFixtureService;
         private readonly IStructureService _structureService;
         private readonly IUserService _userService;
         private readonly AuthUtils _authUtils;
@@ -24,9 +25,10 @@ namespace openld.Hubs {
         // store the users for each drawing
         private static Dictionary<string, HashSet<User>> drawingUsers = new Dictionary<string, HashSet<User>>();
 
-        public DrawingHub(IDrawingService drawingService, IViewService viewService, IStructureService structureService, IUserService userService) {
+        public DrawingHub(IDrawingService drawingService, IViewService viewService, IRiggedFixtureService rFixtureService, IStructureService structureService, IUserService userService) {
             _drawingService = drawingService;
             _viewService = viewService;
+            _rFixtureService = rFixtureService;
             _structureService = structureService;
             _userService = userService;
             _authUtils = new AuthUtils(drawingService, structureService, viewService);
@@ -107,7 +109,7 @@ namespace openld.Hubs {
             await Clients.Caller.SendAsync("AddStructureSuccess", newStructure);
         }
 
-        public async Task UpdateStructureGeometry(string structureId, Geometry geometry) {
+        public async Task UpdateStructureGeometry(string structureId, Geometry geometry, List<RiggedFixture> fixtures) {
             if (! await _authUtils.hasAccess(new Structure {Id = structureId}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 throw new HubException("401: Unauthorised");
             }
@@ -115,6 +117,13 @@ namespace openld.Hubs {
             Structure updated;
             try {
                 updated = await _structureService.SetStructureGeometryAsync(structureId, geometry);
+            } catch (Exception) {
+                await Clients.Caller.SendAsync("UpdateStructureGeometryFailure");
+                return;
+            }
+
+            try {
+                await _structureService.SetRiggedFixturePositionsAsync(structureId, fixtures.Select(f => f.Position).ToList());
             } catch (Exception) {
                 await Clients.Caller.SendAsync("UpdateStructureGeometryFailure");
                 return;
@@ -238,6 +247,25 @@ namespace openld.Hubs {
                     viewId,
                     structureId
                 );
+        }
+
+        public async Task AddFixture(RiggedFixture fixture) {
+            if (! await _authUtils.hasAccess(new Structure {Id = fixture.Structure.Id}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                throw new HubException("401: Unauthorised");
+            }
+
+            try {
+                fixture = await _rFixtureService.AddRiggedFixtureAsync(fixture);
+            } catch (Exception) {
+                await Clients.Caller.SendAsync("AddFixtureFailure");
+                return;
+            }
+
+            await Clients.Group(connectionDrawing[Context.ConnectionId]).SendAsync(
+                "AddFixture",
+                (await _structureService.GetViewAsync(fixture.Structure)).Id,
+                fixture
+            );
         }
     }
 }

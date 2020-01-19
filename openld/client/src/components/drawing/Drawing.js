@@ -4,6 +4,7 @@ import { Layer, Line, Stage } from 'react-konva';
 import { DrawingUtils } from './DrawingUtils';
 import { View, Grid, Tooltip } from "./DrawingComponents";
 import { DeleteStructureModal } from "./DeleteStructureModal";
+import { AddFixtureModal } from "./AddFixtureModal";
 
 export class Drawing extends Component {
   constructor(props) {
@@ -19,7 +20,9 @@ export class Drawing extends Component {
       tooltipText: "",
       deleteModalOpen: false,
       validPosition: false,
-      hoveredStructure: ""
+      addFixtureModalOpen: false,
+      newFixtureStructure: "",
+      newFixturePos: {x: 0, y: 0}
     };
   }
 
@@ -93,8 +96,7 @@ export class Drawing extends Component {
               hubConnected = {this.props.hubConnected}
               selectedTool = {this.props.selectedTool}
               setTool = {this.props.setTool}
-              setValidPosition = {this.setValidPosition}
-              setHoveredStructure = {this.setHoveredStructure}
+              onFixturePlace = {this.onFixturePlace}
           />
           <Layer>
             <Tooltip
@@ -111,6 +113,11 @@ export class Drawing extends Component {
           hub = {this.props.hub}
           isOpen = {this.state.deleteModalOpen}
           toggle = {this.toggleDeleteModal}
+        />
+        <AddFixtureModal
+          isOpen = {this.state.addFixtureModalOpen}
+          toggle = {this.toggleAddFixtureModal}
+          onChoose = {this.addFixture}
         />
       </Fragment>
     );
@@ -202,12 +209,6 @@ export class Drawing extends Component {
           nextLinePoint: [snapPos.x, snapPos.y]
         });
         this.props.setTooltipVisible(true);
-      } else if (this.props.selectedTool === "add-fixture") {
-        if (this.state.validPosition === true) {
-          this.props.setCursor("crosshair");
-        } else {
-          this.props.setCursor("not-allowed");
-        }
       }
     }
   }
@@ -239,6 +240,27 @@ export class Drawing extends Component {
     }
   }
 
+  onFixturePlace = (structureId, position) => {
+    this.setState({newFixtureStructure: structureId, newFixturePos: position, addFixtureModalOpen: true});
+  }
+
+  addFixture = (fixtureId) => {
+    if (this.props.hubConnected) {
+      this.props.hub.invoke(
+        "AddFixture",
+        {
+          fixture: {id: fixtureId},
+          structure: {id: this.state.newFixtureStructure},
+          position: this.state.newFixturePos
+        }
+      ).catch(err => console.error(err));
+    }
+  }
+
+  getStructure = (structureId) => {
+    return this.props.viewData.structures.find(s => s.id === structureId);
+  }
+
   setTooltip = (pos, visible, text) => {
     this.props.setTooltipVisible(visible);
     this.setState({
@@ -247,16 +269,11 @@ export class Drawing extends Component {
     });
   }
 
-  setValidPosition = (valid) => {
-    this.setState({validPosition: valid});
-  }
-
-  setHoveredStructure = (structure) => {
-    this.setState({hoveredStructure: structure});
-    console.log(structure);
-  }
-
   toggleDeleteModal = () => {
     this.setState({deleteModalOpen: !this.state.deleteModalOpen});
+  }
+
+  toggleAddFixtureModal = () => {
+    this.setState({addFixtureModalOpen: !this.state.addFixtureModalOpen});
   }
 }

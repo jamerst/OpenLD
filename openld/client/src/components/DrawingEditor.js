@@ -288,6 +288,8 @@ export class DrawingEditor extends Component {
     this.state.hub.on("DeleteStructure", (viewId, structureId) => this.onStructureRemoved(viewId, structureId));
     this.state.hub.on("DeleteStructureSuccess", (viewId, structureId) => this.removeStructure(viewId, structureId));
     this.state.hub.on("DeleteStructureFailure", () => this.setAlertError("Failed to delete structure"));
+
+    this.state.hub.on("AddFixture", (viewId, fixture) => this.insertNewFixture(viewId, fixture));
   }
 
   onHubDisconnect = () => {
@@ -368,11 +370,12 @@ export class DrawingEditor extends Component {
     });
   }
 
-  moveStructure = async (viewId, id, points) => {
+  moveStructure = async (viewId, id, points, fixtures) => {
     this.state.hub.invoke(
       "UpdateStructureGeometry",
         id,
-        {points: points}
+        {points: points},
+        fixtures
     ).catch(err => console.error(err))
     .then(() => this.updateStructurePos(viewId, id, points));
   }
@@ -528,6 +531,36 @@ export class DrawingEditor extends Component {
     this.setState({
       currentView: id
     }, this.scaleStage);
+  }
+
+  insertNewFixture = (viewId, fixture) => {
+    this.setState(prevState => {
+      let views = [...prevState.views];
+      const viewIndex = views.findIndex(v => v.id === viewId);
+
+      if (viewIndex < 0) {
+        return;
+      }
+
+      let view = views[viewIndex];
+      let structures = [...view.structures];
+      const structureIndex = structures.findIndex(s => s.id === fixture.structure.id);
+
+      if (structureIndex < 0) {
+        return;
+      }
+
+      let structure = structures[structureIndex];
+      structure.fixtures.push(fixture);
+      structures[structureIndex] = structure;
+
+      view.structures = structures;
+      views[viewIndex] = view;
+
+      return {
+        views: views
+      };
+    })
   }
 
   handleToolSelect = (tool) => {

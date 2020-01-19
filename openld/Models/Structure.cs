@@ -9,7 +9,7 @@ namespace openld.Models {
         public View View { get; set; }
         [Column(TypeName = "jsonb")]
         public Geometry Geometry { get; set; }
-        public List<RiggedFixture> Fixtures { get; set; }
+        public List<RiggedFixture> Fixtures { get; set; } = new List<RiggedFixture>();
         public string Name { get; set; }
         public float Rating { get; set; }
         public StructureType Type { get; set; }

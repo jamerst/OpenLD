@@ -49,4 +49,62 @@ export class DrawingUtils {
         const dy = point1.y - point2.y;
         return Math.atan2(dy, dx) * 180 / Math.PI;
     }
+
+    static nearestLinePoint(linePoints, point) {
+        let nearestDistance = Infinity
+        let nearestPoint = linePoints[0];
+
+        // find the nearest point by checking each segment individually
+        for (let i = 0; i < linePoints.length - 1; i++) {
+            const intersection = this.intersection(linePoints[i], linePoints[i+1], point);
+            const distance = this.vectorLen(intersection, point);
+
+            if (distance < nearestDistance) {
+                nearestPoint = intersection;
+                nearestDistance = distance;
+            }
+        }
+
+        return nearestPoint;
+    }
+
+    static intersection(A, B, P) {
+        if (typeof B === "undefined") {
+            return A;
+        }
+
+        // distance A->B
+        const AB = {
+            x: B.x - A.x,
+            y: B.y - A.y
+        };
+
+        // fraction along A->B that intersection occurs at
+        const k = ((P.x - A.x) * AB.x + (P.y - A.y) * AB.y) / (AB.x * AB.x + AB.y * AB.y);
+
+        // if intersection is outside AB, return nearest end point
+        if (k < 0) {
+            return A;
+        } else if (k > 1) {
+            return B;
+        }
+
+        // return starting point + fraction * total length
+        return {
+            x: A.x + k * AB.x,
+            y: A.y + k * AB.y
+          };
+    }
+
+    static vectorLen(A, B) {
+        return Math.sqrt(Math.pow(A.x - B.x, 2) + Math.pow(A.y - B.y, 2));
+    }
+
+    static moveFixtures(fixtures, change) {
+        fixtures.forEach((f, index, fixtures) => {
+            fixtures[index].position = {x: f.position.x + change.x, y: f.position.y + change.y}
+        })
+
+        return fixtures;
+    }
 }

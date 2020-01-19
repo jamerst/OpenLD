@@ -2,7 +2,6 @@ import React, { Component } from "react";
 import authService from '../api-authorization/AuthorizeService';
 import { Alert, Collapse,
   Col, Container, Row,
-  Card,
   Button, CustomInput, Form, FormGroup, Input, Label,
   InputGroup, InputGroupAddon, InputGroupText,
   Modal, ModalHeader, ModalBody, ModalFooter,

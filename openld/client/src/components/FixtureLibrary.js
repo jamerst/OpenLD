@@ -30,10 +30,10 @@ export class FixtureLibrary extends Component {
 
   componentDidMount = () => {
     this.renderAddButton();
-    const params = this.props.location.search;
-    this.setState({ searchParams: new SearchParams(params) });
     document.title = "OpenLD Fixture Library";
-    if (this.props.match.params.term) {
+    if (!this.props.embedded && this.props.match.params.term) {
+      const params = this.props.location.search;
+      this.setState({ searchParams: new SearchParams(params) });
       this.setState({ searchTerm: this.props.match.params.term });
       this.fetchFixtures(this.props.match.params.term);
     } else {
@@ -42,28 +42,50 @@ export class FixtureLibrary extends Component {
     this.fetchFixtureTypes();
   }
 
+  static defaultProps = {
+    embedded: false,
+    xs: "12",
+    md: "4",
+    cardImgSize: "30rem",
+    height: "100%",
+    onCardClick: () => void(0)
+  };
+
   render = () => {
     const toggle = () => this.setState({ advancedSearch: !this.state.advancedSearch });
 
     let contents = this.state.loading
       ? <div className="text-center"><Spinner style={{width: "5em", height: "5em"}}/></div>
-      : <FixtureResults results={this.state.results} onCardClick={this.handleClick}/>;
+      : <FixtureResults
+        results={this.state.results}
+        onCardClick={this.props.onCardClick}
+        xs={this.props.xs}
+        md={this.props.md}
+        cardImgSize = {this.props.cardImgSize}
+        height = {this.props.height}
+      />;
 
     let types = this.renderTypes();
 
+    let header = !this.props.embedded ?
+      (
+        <Container className="p-0">
+        <Row className="justify-content-between align-items-center m-0">
+          <Col className="p-0">
+            <h1>Fixture Library</h1>
+          </Col>
+
+          <Col xs="12" md="auto" className="p-0 mb-1 mb-md-0">
+            {this.state.addButton}
+          </Col>
+        </Row>
+      </Container>
+    )
+    : null;
+
     return (
       <Fragment>
-        <Container className="p-0">
-          <Row className="justify-content-between align-items-center m-0">
-            <Col className="p-0">
-              <h1>Fixture Library</h1>
-            </Col>
-
-            <Col xs="12" md="auto" className="p-0 mb-1 mb-md-0">
-              {this.state.addButton}
-            </Col>
-          </Row>
-        </Container>
+        {header}
 
         <Form onSubmit={this.handleSearchSubmit} onChange={this.handleSearchChange} >
           <FormGroup row>
@@ -111,10 +133,6 @@ export class FixtureLibrary extends Component {
     );
   }
 
-  handleClick = (id) => {
-    console.log(id);
-  }
-
   handleSearchChange = (event) => {
     let params = this.state.searchParams;
     params[event.target.name] = event.target.value;
@@ -124,7 +142,9 @@ export class FixtureLibrary extends Component {
   handleSearchSubmit = (event) => {
     event.preventDefault();
     this.fetchFixtures(this.state.searchTerm);
-    this.props.history.push("/library" + this.state.searchParams.getQueryString());
+    if (!this.props.embedded) {
+      this.props.history.push("/library" + this.state.searchParams.getQueryString());
+    }
   }
 
   handleAddToggle = () => {
