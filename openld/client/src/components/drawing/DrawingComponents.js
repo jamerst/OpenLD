@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Group, Layer, Line, Rect, Label, Tag, Text as KonvaText, Circle } from "react-konva";
+import { Group, Layer, Line, Rect, Label, Tag, Text as KonvaText, Circle, Image } from "react-konva";
 import { DrawingUtils } from "./DrawingUtils";
 import { Text } from "./KonvaNodes";
 
@@ -126,6 +126,7 @@ export class Structure extends Component {
               key = {"rf-" + fixture.id}
               id = {fixture.id}
               position = {fixture.position}
+              fixtureId = {fixture.fixture.id}
             />
           )
         })}
@@ -258,17 +259,61 @@ export class Structure extends Component {
 }
 
 export class RiggedFixture extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      symbol: null,
+      symbolWidth: 0,
+      symbolHeight: 0
+    }
+  }
+
+  componentDidMount() {
+    const image = new window.Image();
+    image.src = "/api/fixture/GetSymbol/" + this.props.fixtureId;
+    image.onload = () => {
+      let width, height;
+      if (image.width >= image.height) {
+        height = 1;
+        width = image.width * height / image.height
+      } else {
+        width = 1;
+        height = image.height * width / image.width
+      }
+
+      this.setState({
+        symbol: image,
+        symbolWidth: width,
+        symbolHeight: height
+      });
+    }
+  }
+
   render = () => {
     return (
-      <Circle
+      <Image
         x = {this.props.position.x}
         y = {this.props.position.y}
-        fill = "#fff"
-        radius = {0.5}
-        stroke = "#000"
-        strokeWidth = {0.05}
+        offset = {{x: this.state.symbolWidth/2, y: this.state.symbolHeight/2}}
+        scaleY = {-1}
+        width = {this.state.symbolWidth}
+        height = {this.state.symbolHeight}
+        image = {this.state.symbol}
+        onMouseEnter = {this.handleMouseEnter}
+        onMouseLeave = {this.handleMouseLeave}
       />
     );
+  }
+
+  handleMouseEnter = (event) => {
+    event.target.scale({x: 1.1, y: -1.1});
+    event.target.getLayer().draw();
+  }
+
+  handleMouseLeave = (event) => {
+    event.target.scale({x: 1, y: -1});
+    event.target.getLayer().draw();
   }
 }
 

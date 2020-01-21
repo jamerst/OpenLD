@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Mvc;
@@ -18,14 +19,27 @@ namespace openld.Controllers {
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetImage(string id) {
-            Fixture fixture = await _context.Fixtures.Include(f => f.Image).FirstOrDefaultAsync(f => f.Id == id);
-
-            if (fixture == default(Fixture)) {
+            Fixture fixture;
+            try {
+                fixture = await _context.Fixtures.Include(f => f.Image).FirstAsync(f => f.Id == id);
+            } catch (InvalidOperationException) {
                 return NotFound();
             }
 
             var image = System.IO.File.OpenRead(fixture.Image.Path);
             return File(image, "image/jpeg");
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetSymbol(string id) {
+            Fixture fixture;
+            try {
+                fixture = await _context.Fixtures.Include(f => f.Image).FirstAsync(f => f.Id == id);
+            } catch (InvalidOperationException) {
+                return NotFound();
+            }
+
+            return Content(fixture.Symbol, "image/svg+xml");
         }
     }
 

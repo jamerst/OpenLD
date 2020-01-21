@@ -45,6 +45,7 @@ namespace openld.Services {
                 .Include(d => d.Views)
                     .ThenInclude(v => v.Structures)
                         .ThenInclude(s => s.Fixtures)
+                            .ThenInclude(f => f.Fixture)
                 .Include(d => d.Views)
                     .ThenInclude(v => v.Structures)
                         .ThenInclude(s => s.Type)
