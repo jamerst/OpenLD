@@ -31,7 +31,7 @@ namespace openld.Hubs {
             _rFixtureService = rFixtureService;
             _structureService = structureService;
             _userService = userService;
-            _authUtils = new AuthUtils(drawingService, structureService, viewService);
+            _authUtils = new AuthUtils(drawingService, rFixtureService, structureService, viewService);
         }
 
         public override async Task OnConnectedAsync() {
@@ -170,31 +170,67 @@ namespace openld.Hubs {
             await Clients.Caller.SendAsync("DeleteViewSuccess", viewId);
         }
 
-        public async Task SelectStructure(string structureId) {
-            if (! await _authUtils.hasAccess(new Structure {Id = structureId}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
-                throw new HubException("401: Unauthorised");
-            }
+        public async Task SelectObject(string type, string id) {
+            if (type == "structure") {
+                if (! await _authUtils.hasAccess(new Structure {Id = id}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                    throw new HubException("401: Unauthorised");
+                }
 
-            await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId])
-                .SendAsync(
-                    "SelectStructure",
-                    (await _structureService.GetViewAsync(new Structure {Id = structureId})).Id,
-                    structureId,
-                    Context.User.FindFirst(ClaimTypes.NameIdentifier).Value
-                );
+                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId])
+                    .SendAsync(
+                        "SelectObject",
+                        type,
+                        (await _structureService.GetViewAsync(new Structure {Id = id})).Id,
+                        id,
+                        "",
+                        Context.User.FindFirst(ClaimTypes.NameIdentifier).Value
+                    );
+            } else if (type == "fixture") {
+                if (! await _authUtils.hasAccess(new RiggedFixture {Id = id}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                    throw new HubException("401: Unauthorised");
+                }
+
+                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId])
+                    .SendAsync(
+                        "SelectObject",
+                        type,
+                        (await _rFixtureService.GetViewAsync(new RiggedFixture {Id = id})).Id,
+                        (await _rFixtureService.GetStructureAsync(new RiggedFixture {Id = id})).Id,
+                        id,
+                        Context.User.FindFirst(ClaimTypes.NameIdentifier).Value
+                    );
+            }
         }
 
-        public async Task DeselectStructure(string structureId) {
-            if (! await _authUtils.hasAccess(new Structure {Id = structureId}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
-                throw new HubException("401: Unauthorised");
-            }
+        public async Task DeselectObject(string type, string id) {
+            if (type == "structure") {
+                if (! await _authUtils.hasAccess(new Structure {Id = id}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                    throw new HubException("401: Unauthorised");
+                }
 
-            await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId])
-                .SendAsync(
-                    "DeselectStructure",
-                    (await _structureService.GetViewAsync(new Structure {Id = structureId})).Id,
-                    structureId
-                );
+                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId])
+                    .SendAsync(
+                        "DeselectObject",
+                        type,
+                        (await _structureService.GetViewAsync(new Structure {Id = id})).Id,
+                        id,
+                        ""
+                    );
+
+            } else if (type == "fixture") {
+                if (! await _authUtils.hasAccess(new RiggedFixture {Id = id}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                    throw new HubException("401: Unauthorised");
+                }
+
+                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId])
+                    .SendAsync(
+                        "DeselectObject",
+                        type,
+                        (await _rFixtureService.GetViewAsync(new RiggedFixture {Id = id})).Id,
+                        (await _rFixtureService.GetStructureAsync(new RiggedFixture {Id = id})).Id,
+                        id
+                    );
+            }
         }
 
         public async Task UpdateStructureProperty(Structure structure) {

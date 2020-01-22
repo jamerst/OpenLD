@@ -22,7 +22,8 @@ export class Drawing extends Component {
       validPosition: false,
       addFixtureModalOpen: false,
       newFixtureStructure: "",
-      newFixturePos: {x: 0, y: 0}
+      newFixturePos: {x: 0, y: 0},
+      selectedFixtureStructure: ""
     };
   }
 
@@ -87,12 +88,15 @@ export class Drawing extends Component {
               setCursor = {this.props.setCursor}
               setHintText = {this.props.setHintText}
               scale = {this.props.scale}
-              onStructureSelect = {this.props.onStructureSelect}
+              onSelectObject = {this.props.onSelectObject}
               onStructureDelete = {this.toggleDeleteModal}
               deselectObject = {this.props.deselectObject}
               selectedObjectId = {this.props.selectedObjectId}
               selectedObjectType = {this.props.selectedObjectType}
               setStructureColour = {this.props.setStructureColour}
+              setFixtureColour = {this.props.setFixtureColour}
+              selectedFixtureStructure = {this.state.selectedFixtureStructure}
+              setSelectedFixtureStructure = {this.setSelectedFixtureStructure}
               hubConnected = {this.props.hubConnected}
               selectedTool = {this.props.selectedTool}
               setTool = {this.props.setTool}
@@ -149,7 +153,7 @@ export class Drawing extends Component {
           }
         }
       } else if (this.props.selectedObjectId !== "") {
-        this.props.deselectObject();
+        this.props.deselectObject(this.state.selectedFixtureStructure);
         this.props.setHintText("");
       }
     }
@@ -267,6 +271,10 @@ export class Drawing extends Component {
       tooltipPos: pos,
       tooltipText: text
     });
+  }
+
+  setSelectedFixtureStructure = (id) => {
+    this.setState({selectedFixtureStructure: id});
   }
 
   toggleDeleteModal = () => {

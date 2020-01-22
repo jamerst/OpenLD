@@ -25,7 +25,14 @@ export class Sidebar extends Component {
       name: "",
       type: "",
       rating: "",
-      notes: ""
+      notes: "",
+      fixture: "",
+      angle: "",
+      address: "",
+      universe: "",
+      mode: "",
+      notes: "",
+      colour: ""
     };
   }
 
@@ -43,6 +50,17 @@ export class Sidebar extends Component {
         rating: nextProps.structure.rating,
         notes: nextProps.structure.notes
       };
+    } else if (!nextProps.modifiedCurrent && nextProps.selectedObjectType === "fixture") {
+      return {
+        name: nextProps.fixture.name,
+        fixture: nextProps.fixture.fixture.id,
+        angle: nextProps.fixture.angle,
+        address: nextProps.fixture.address,
+        universe: nextProps.fixture.universe,
+        mode: nextProps.fixture.mode.id,
+        notes: nextProps.fixture.notes,
+        colour: nextProps.fixture.colour
+      }
     } else {
       return null;
     }

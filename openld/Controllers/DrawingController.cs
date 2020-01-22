@@ -18,10 +18,10 @@ namespace openld.Controllers {
         private readonly IDrawingService _drawingService;
         private readonly IStructureService _structureService;
         private readonly AuthUtils _authUtils;
-        public DrawingController(IDrawingService drawingService, IStructureService structureService, IViewService viewService) {
+        public DrawingController(IDrawingService drawingService, IRiggedFixtureService rFixtureService, IStructureService structureService, IViewService viewService) {
             _drawingService = drawingService;
             _structureService = structureService;
-            _authUtils = new AuthUtils(drawingService, structureService, viewService);
+            _authUtils = new AuthUtils(drawingService, rFixtureService, structureService, viewService);
         }
 
         [HttpPost]

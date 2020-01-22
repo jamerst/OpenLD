@@ -27,11 +27,16 @@ export class View extends Component {
             onDragEnd = {this.props.onDragEnd}
             setCursor = {this.props.setCursor}
             scale = {this.props.scale}
-            onStructureSelect = {this.props.onStructureSelect}
+            onSelectObject = {this.props.onSelectObject}
             onStructureDelete = {this.props.onStructureDelete}
             deselectObject = {this.props.deselectObject}
             selected = {this.props.selectedObjectId === structure.id && this.props.selectedObjectType === "structure"}
+            selectedObjectType = {this.props.selectedObjectType}
+            selectedObjectId = {this.props.selectedObjectId}
             setStructureColour = {this.setStructureColour}
+            setFixtureColour = {this.setFixtureColour}
+            selectedFixtureStructure = {this.props.selectedFixtureStructure}
+            setSelectedFixtureStructure = {this.props.setSelectedFixtureStructure}
             colour = {structure.colour}
             hubConnected = {this.props.hubConnected}
             selectedTool = {this.props.selectedTool}
@@ -45,6 +50,10 @@ export class View extends Component {
 
   setStructureColour = (id, colour) => {
     this.props.setStructureColour(this.props.data.id, id, colour);
+  }
+
+  setFixtureColour = (structureId, fixtureId, colour) => {
+    this.props.setFixtureColour(this.props.data.id, structureId, fixtureId, colour);
   }
 }
 
@@ -70,6 +79,7 @@ export class Structure extends Component {
       : 0;
 
     let structure;
+    const colour = typeof this.props.colour === "undefined" ? "#000" : this.props.colour;
 
     if (this.state.singlePoint) {
       structure = (
@@ -77,7 +87,7 @@ export class Structure extends Component {
           key = {"c-" + this.props.id}
           x = {points[0]}
           y = {points[1]}
-          fill = {this.props.colour}
+          fill = {colour}
           radius = {this.props.selected ? 0.3 : 0.2}
           strokeWidth = {0}
           hitStrokeWidth = {1}
@@ -92,7 +102,7 @@ export class Structure extends Component {
         <Line
           key = {"l-" + this.props.id}
           points = {points}
-          stroke = {this.props.colour}
+          stroke = {colour}
           strokeWidth = {this.props.selected ? 0.1 : 0.06}
           hitStrokeWidth = {1}
           onMouseOver = {this.onMouseOver}
@@ -126,7 +136,20 @@ export class Structure extends Component {
               key = {"rf-" + fixture.id}
               id = {fixture.id}
               position = {fixture.position}
+              angle = {fixture.angle}
+              structureId = {this.props.id}
               fixtureId = {fixture.fixture.id}
+              selected = {this.props.selectedObjectId === fixture.id && this.props.selectedObjectType === "fixture"}
+              onSelectObject = {this.props.onSelectObject}
+              deselectObject = {this.props.deselectObject}
+              hubConnected = {this.props.hubConnected}
+              setFixtureColour = {this.setFixtureColour}
+              selectedTool = {this.props.selectedTool}
+              colour = {fixture.colour}
+              setSelectedFixtureStructure = {this.props.setSelectedFixtureStructure}
+              selectedFixtureStructure = {this.props.selectedFixtureStructure}
+              setCursor = {this.props.setCursor}
+              setHintText = {this.props.setHintText}
             />
           )
         })}
@@ -238,8 +261,8 @@ export class Structure extends Component {
   onClick = (event) => {
     if (this.props.hubConnected) {
       event.cancelBubble = true;
-      this.props.deselectObject();
-      this.props.onStructureSelect(this.props.id);
+      this.props.deselectObject(this.props.selectedFixtureStructure);
+      this.props.onSelectObject("structure", this.props.id, "");
 
       if (this.props.selectedTool === "eraser") {
         this.props.onStructureDelete();
@@ -255,6 +278,10 @@ export class Structure extends Component {
         this.props.setHintText("Modify structure properties above.\nPress delete to remove structure.")
       }
     }
+  }
+
+  setFixtureColour = (id, colour) => {
+    this.props.setFixtureColour(this.props.id, id, colour);
   }
 }
 
@@ -275,11 +302,11 @@ export class RiggedFixture extends Component {
     image.onload = () => {
       let width, height;
       if (image.width >= image.height) {
-        height = 1;
-        width = image.width * height / image.height
-      } else {
-        width = 1;
+        width = 1.25;
         height = image.height * width / image.width
+      } else {
+        height = 1.25;
+        width = image.width * height / image.height
       }
 
       this.setState({
@@ -291,29 +318,77 @@ export class RiggedFixture extends Component {
   }
 
   render = () => {
+    const colour = typeof this.props.colour === "undefined" ? "#000" : this.props.colour;
+
+    let highlight;
+    if (colour !== "#000") {
+      highlight = (
+        <Circle
+          x = {this.props.position.x}
+          y = {this.props.position.y}
+          width = {1.75}
+          height = {1.75}
+          fill = {colour}
+          opacity = {.5}
+        />
+      );
+    }
+
     return (
-      <Image
-        x = {this.props.position.x}
-        y = {this.props.position.y}
-        offset = {{x: this.state.symbolWidth/2, y: this.state.symbolHeight/2}}
-        scaleY = {-1}
-        width = {this.state.symbolWidth}
-        height = {this.state.symbolHeight}
-        image = {this.state.symbol}
-        onMouseEnter = {this.handleMouseEnter}
-        onMouseLeave = {this.handleMouseLeave}
-      />
+      <Group>
+        {highlight}
+        <Image
+          x = {this.props.position.x}
+          y = {this.props.position.y}
+          offset = {{x: this.state.symbolWidth/2, y: this.state.symbolHeight/2}}
+          scaleY = {-1}
+          width = {this.state.symbolWidth}
+          height = {this.state.symbolHeight}
+          image = {this.state.symbol}
+          onMouseEnter = {this.handleMouseEnter}
+          onMouseLeave = {this.handleMouseLeave}
+          onClick = {this.handleClick}
+          rotation = {360-this.props.angle}
+        />
+      </Group>
     );
   }
 
   handleMouseEnter = (event) => {
     event.target.scale({x: 1.1, y: -1.1});
     event.target.getLayer().draw();
+
+    if (this.props.selectedTool === "none" && !this.props.selected) {
+      this.props.setCursor("pointer");
+      this.props.setHintText("Click to select fixture");
+    }
   }
 
   handleMouseLeave = (event) => {
     event.target.scale({x: 1, y: -1});
     event.target.getLayer().draw();
+
+    if (this.props.selectedTool === "none") {
+      this.props.setCursor("grab");
+
+      if (!this.props.selected) {
+        this.props.setHintText("");
+      }
+    }
+  }
+
+  handleClick = (event) => {
+    if (this.props.hubConnected) {
+      event.cancelBubble = true;
+      this.props.deselectObject(this.props.selectedFixtureStructure);
+      this.props.setSelectedFixtureStructure(this.props.structureId);
+      this.props.onSelectObject("fixture", this.props.structureId, this.props.id);
+
+      if (this.props.selectedTool === "none") {
+        this.props.setFixtureColour(this.props.id, "#007bff");
+        this.props.setHintText("Modify fixture properties above.\nPress delete to remove fixture.")
+      }
+    }
   }
 }
 
@@ -352,13 +427,22 @@ export class Grid extends Component {
           fill = "#fff"
         />
         {grid.map((line, index) => {
+          const text = line[0] === 0 ? line[1] : line[0];
           return (
-            <Line
-              key = {"grid-" + index}
-              points = {line}
-              stroke = "#ddd"
-              strokeWidth = {this.props.lineWidth}
-            />
+            <Group key = {"grid-" + index}>
+              <Line
+                points = {line}
+                stroke = "#ddd"
+                strokeWidth = {this.props.lineWidth}
+              />
+              <Text
+                x = {line[0] + 0.05}
+                y = {line[1] + 0.25}
+                text = {text + "m"}
+                textScale = {0.025}
+                fill = "#999"
+              />
+            </Group>
           );
         })}
       </Layer>

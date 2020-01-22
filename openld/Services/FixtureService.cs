@@ -45,6 +45,11 @@ namespace openld.Services {
                 throw new KeyNotFoundException("Image not found");
             }
 
+            if (fixture.Modes == null || fixture.Modes.Count == 0) {
+                fixture.Modes = new List<FixtureMode>();
+                fixture.Modes.Add(new FixtureMode { Name = "Default", Channels = new[] {"1"} });
+            }
+
             await _context.Fixtures.AddAsync(fixture);
             await _context.SaveChangesAsync();
         }

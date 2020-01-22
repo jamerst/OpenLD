@@ -6,11 +6,13 @@ using openld.Services;
 namespace openld.Utils {
     public class AuthUtils {
         private readonly IDrawingService _drawingService;
-        private readonly IViewService _viewService;
+        private readonly IRiggedFixtureService _rFixtureService;
         private readonly IStructureService _structureService;
+        private readonly IViewService _viewService;
 
-        public AuthUtils(IDrawingService drawingService, IStructureService structureService, IViewService viewService) {
+        public AuthUtils(IDrawingService drawingService, IRiggedFixtureService rFixtureService, IStructureService structureService, IViewService viewService) {
             _drawingService = drawingService;
+            _rFixtureService = rFixtureService;
             _structureService = structureService;
             _viewService = viewService;
         }
@@ -30,6 +32,11 @@ namespace openld.Utils {
 
         public async Task<bool> hasAccess(Structure structure, string userId) {
             Drawing drawing = await _structureService.GetDrawingAsync(structure);
+            return await _drawingService.IsOwnerAsync(drawing.Id, userId) || await _drawingService.IsSharedWithAsync(drawing.Id, userId);
+        }
+
+        public async Task<bool> hasAccess(RiggedFixture fixture, string userId) {
+            Drawing drawing = await _rFixtureService.GetDrawingAsync(fixture);
             return await _drawingService.IsOwnerAsync(drawing.Id, userId) || await _drawingService.IsSharedWithAsync(drawing.Id, userId);
         }
     }

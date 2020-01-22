@@ -41,6 +41,7 @@ export class DrawingEditor extends Component {
       selectedObjectType: "none",
       selectedObjectId: "",
       selectedStructure: {id: "", name: "", type: "", rating: "", notes: ""},
+      selectedFixture: {id: "", name: "", fixture: "", address: "", universe: "", mode: "", notes: "", colour: "", angle: ""},
       modifiedCurrent: false,
 
       drawingData: {},
@@ -192,7 +193,7 @@ export class DrawingEditor extends Component {
                 tooltipVisible = {this.state.tooltipVisible}
 
                 onMoveStructure = {this.moveStructure}
-                onStructureSelect = {this.selectStructure}
+                onSelectObject = {this.selectObject}
                 deselectObject = {this.deselectObject}
 
                 gridEnabled = {this.state.gridEnabled}
@@ -204,6 +205,7 @@ export class DrawingEditor extends Component {
                 setIsDrawing = {this.setIsDrawing}
                 setCursor = {this.setCursor}
                 setStructureColour = {this.setStructureColour}
+                setFixtureColour = {this.setFixtureColour}
                 setHintText = {this.setHintText}
                 setTooltipVisible = {this.setTooltipVisible}
               />
@@ -221,6 +223,7 @@ export class DrawingEditor extends Component {
               gridEnabled = {this.state.gridEnabled}
               gridSize = {this.state.gridSize}
               structure = {this.state.selectedStructure}
+              fixture = {this.state.selectedFixture}
               selectedObjectId = {this.state.selectedObjectId}
               selectedObjectType = {this.state.selectedObjectType}
               modifiedCurrent = {this.state.modifiedCurrent}
@@ -275,11 +278,12 @@ export class DrawingEditor extends Component {
     this.state.hub.on("DeleteViewSuccess", view => this.deleteView(view));
     this.state.hub.on("DeleteViewFailure", () => this.setAlertError("Failed to delete view"));
 
+    this.state.hub.on("SelectObject", (type, viewId, structureId, fixtureId, userId) => this.userSelectObject(type, viewId, structureId, fixtureId, userId));
+    this.state.hub.on("DeselectObject", (type, viewId, structureId, fixtureId) => this.userDeselectObject(type, viewId, structureId, fixtureId));
+
     this.state.hub.on("NewStructure", structure => this.insertNewStructure(structure));
     this.state.hub.on("AddStructureSuccess", structure => this.setState({newLinePoints: []}));
     this.state.hub.on("AddStructureFailure", () => this.setAlertError("Failed to insert new structure"));
-    this.state.hub.on("SelectStructure", (viewId, structureId, userId) => this.userSelectStructure(viewId, structureId, userId));
-    this.state.hub.on("DeselectStructure", (viewId, structureId) => this.userDeselectStructure(viewId, structureId));
 
     this.state.hub.on("UpdateStructureGeometry", structure => this.updateStructurePos(structure.view.id, structure.id, structure.geometry.points));
     this.state.hub.on("UpdateStructureGeometryFailure", () => this.setAlertError("Failed to move structure"));
@@ -327,11 +331,6 @@ export class DrawingEditor extends Component {
         this.initHubConnection();
         this.sizeStage(this.scaleStage);
         window.addEventListener("resize", this.sizeStage);
-        this.state.views.forEach(view => {
-          view.structures.forEach(structure => {
-            this.setStructureColour(view.id, structure.id, "#000");
-          });
-        })
       });
     } else if (response.status === 401) {
       this.setState({
@@ -408,15 +407,27 @@ export class DrawingEditor extends Component {
     });
   }
 
-  userSelectStructure = (viewId, structureId, userId) => {
-    this.setStructureColour(viewId, structureId, this.getUserColour(userId));
+  userSelectObject = (type, viewId, structureId, fixtureId, userId) => {
+    if (type === "structure") {
+      this.setStructureColour(viewId, structureId, this.getUserColour(userId));
+    } else if (type === "fixture") {
+      this.setFixtureColour(viewId, structureId, fixtureId, this.getUserColour(userId));
+    }
   }
 
-  userDeselectStructure = (viewId, structureId) => {
-    if (this.state.selectedObjectType === "structure" && this.state.selectedObjectId === structureId) {
-      this.setStructureColour(viewId, structureId, "#007bff");
-    } else {
-      this.setStructureColour(viewId, structureId, "#000");
+  userDeselectObject = (type, viewId, structureId, fixtureId) => {
+    if (type === "structure") {
+      if (this.state.selectedObjectType === "structure" && this.state.selectedObjectId === structureId) {
+        this.setStructureColour(viewId, structureId, "#007bff");
+      } else {
+        this.setStructureColour(viewId, structureId, "#000");
+      }
+    } else if (type === "fixture") {
+      if (this.state.selectedObjectType === "fixture" && this.state.selectedObjectId === fixtureId) {
+        this.setFixtureColour(viewId, structureId, fixtureId, "#007bff");
+      } else {
+        this.setFixtureColour(viewId, structureId, fixtureId, "#000");
+      }
     }
   }
 
@@ -460,21 +471,37 @@ export class DrawingEditor extends Component {
     })
   }
 
-  selectStructure = (id) => {
-    this.state.hub.invoke("SelectStructure", id).catch(err => console.error(err));
+  selectObject = (type, structureId, fixtureId) => {
+    if (type === "structure") {
+      this.state.hub.invoke("SelectObject", type, structureId).catch(err => console.error(err));
+      this.setState({
+        selectedStructure: this.getStructure(this.state.currentView, structureId),
+        selectedObjectId: structureId
+      });
+
+    } else if (type === "fixture") {
+      this.state.hub.invoke("SelectObject", type, fixtureId).catch(err => console.error(err));
+      this.setState({
+        selectedFixture: this.getFixture(this.state.currentView, structureId, fixtureId),
+        selectedObjectId: fixtureId
+      });
+    }
+
     this.setState({
-      selectedObjectId: id,
-      selectedObjectType: "structure",
-      selectedStructure: this.getStructure(this.state.currentView, id),
+      selectedObjectType: type,
       modifiedCurrent: false
     });
   }
 
-  deselectObject = () => {
+  deselectObject = (structureId) => {
     if (this.state.selectedObjectType === "structure") {
       this.setStructureColour(this.state.currentView, this.state.selectedObjectId, "#000");
 
-      this.state.hub.invoke("DeselectStructure", this.state.selectedObjectId);
+      this.state.hub.invoke("DeselectObject", "structure", this.state.selectedObjectId).catch(err => console.error(err));
+    } else if (this.state.selectedObjectType === "fixture") {
+      this.setFixtureColour(this.state.currentView, structureId, this.state.selectedObjectId);
+
+      this.state.hub.invoke("DeselectObject", "fixture", this.state.selectedObjectId).catch(err => console.error(err));
     }
 
     this.setState({
@@ -682,6 +709,7 @@ export class DrawingEditor extends Component {
       let views = [...prevState.views];
       const viewIndex = views.findIndex(v => v.id === viewId);
       if (viewIndex < 0) {
+        console.error(`setStructureColour error: view ID "${viewId}" not found`);
         return;
       }
 
@@ -690,17 +718,12 @@ export class DrawingEditor extends Component {
       let structures = [...view.structures];
       const structureIndex = structures.findIndex(s => s.id === structureId);
       if (structureIndex < 0) {
+        console.error(`setStructureColour error: structure ID "${structureId}" not found`);
         return;
       }
 
-      let structure = structures[structureIndex];
-
-      structure.colour = colour;
-
-      structures[structureIndex] = structure;
-
+      structures[structureIndex].colour = colour;
       view.structures = structures;
-
       views[viewIndex] = view;
 
       return {
@@ -714,25 +737,22 @@ export class DrawingEditor extends Component {
       let views = [...prevState.views];
       const viewIndex = views.findIndex(v => v.id === viewId);
       if (viewIndex < 0) {
-        console.error("setStructure error: view ID '" + viewId + "' not found");
+        console.error(`setStructure error: view ID "${viewId}" not found`);
         return;
       }
-
       let view = views[viewIndex];
 
       let structures = [...view.structures];
       const structureIndex = structures.findIndex(s => s.id === structure.id);
       if (structureIndex < 0) {
-        console.error("setStructure error: structure ID'" + structure.id + "' not found");
+        console.error(`setStructure error: structure ID "${structure.id}" not found`);
         return;
       }
       const colour = structures[structureIndex].colour;
       structure.colour = colour;
 
       structures[structureIndex] = structure;
-
       view.structures = structures;
-
       views[viewIndex] = view;
 
       return {
@@ -745,6 +765,43 @@ export class DrawingEditor extends Component {
         });
       }
     });
+  }
+
+  setFixtureColour = (viewId, structureId, fixtureId, colour) => {
+    this.setState(prevState => {
+      let views = [...prevState.views];
+      const viewIndex = views.findIndex(v => v.id === viewId);
+      if (viewIndex < 0) {
+        console.error(`setFixtureColour error: view ID "${viewId}" not found`);
+        return;
+      }
+      let view = views[viewIndex];
+
+      let structures = [...view.structures];
+      const structureIndex = structures.findIndex(s => s.id === structureId);
+      if (structureIndex < 0) {
+        console.error(`setFixtureColour error: structure ID "${structureId}" not found`);
+        return;
+      }
+      let structure = structures[structureIndex];
+
+      let fixtures = [...structure.fixtures];
+      const fixtureIndex = fixtures.findIndex(f => f.id === fixtureId);
+      if (fixtureIndex < 0) {
+        console.error(`setFixtureColour error: fixture ID "${fixtureId}" not found`);
+        return;
+      }
+      fixtures[fixtureIndex].colour = colour;
+
+      structure.fixtures = fixtures;
+      structures[structureIndex] = structure;
+      view.structures = structures;
+      views[viewIndex] = view;
+
+      return {
+        views: views
+      };
+    })
   }
 
   setModifiedCurrent = (value) => {
@@ -814,5 +871,12 @@ export class DrawingEditor extends Component {
     const view = this.state.views.find(v => v.id === viewId);
 
     return view.structures.find(s => s.id === structureId);
+  }
+
+  getFixture = (viewId, structureId, fixtureId) => {
+    const structure = this.getStructure(viewId, structureId);
+    console.log(structure);
+
+    return structure.fixtures.find(f => f.id === fixtureId);
   }
 }

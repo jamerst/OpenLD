@@ -37,9 +37,51 @@ namespace openld.Services {
 
             return fixture;
         }
+
+        public async Task<Drawing> GetDrawingAsync(RiggedFixture fixture) {
+            try {
+                fixture = await _context.RiggedFixtures
+                    .Include(rf => rf.Structure)
+                        .ThenInclude(s => s.View)
+                            .ThenInclude(v => v.Drawing)
+                    .FirstAsync(rf => rf.Id == fixture.Id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("RiggedFixture ID not found");
+            }
+
+            return fixture.Structure.View.Drawing;
+        }
+
+        public async Task<View> GetViewAsync(RiggedFixture fixture) {
+            try {
+                fixture = await _context.RiggedFixtures
+                    .Include(rf => rf.Structure)
+                        .ThenInclude(s => s.View)
+                    .FirstAsync(rf => rf.Id == fixture.Id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("RiggedFixture ID not found");
+            }
+
+            return fixture.Structure.View;
+        }
+
+        public async Task<Structure> GetStructureAsync(RiggedFixture fixture) {
+            try {
+                fixture = await _context.RiggedFixtures
+                    .Include(rf => rf.Structure)
+                    .FirstAsync(rf => rf.Id == fixture.Id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("RiggedFixture ID not found");
+            }
+
+            return fixture.Structure;
+        }
     }
 
     public interface IRiggedFixtureService {
         Task<RiggedFixture> AddRiggedFixtureAsync(RiggedFixture fixture);
+        Task<Drawing> GetDrawingAsync(RiggedFixture fixture);
+        Task<View> GetViewAsync(RiggedFixture fixture);
+        Task<Structure> GetStructureAsync(RiggedFixture fixture);
     }
 }

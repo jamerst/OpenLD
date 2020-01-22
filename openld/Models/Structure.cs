@@ -13,6 +13,6 @@ namespace openld.Models {
         public string Name { get; set; }
         public float Rating { get; set; }
         public StructureType Type { get; set; }
-        public string Notes { get; set; }
+        public string Notes { get; set; } = "";
     }
 }

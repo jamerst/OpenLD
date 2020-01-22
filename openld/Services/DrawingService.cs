@@ -48,6 +48,10 @@ namespace openld.Services {
                             .ThenInclude(f => f.Fixture)
                 .Include(d => d.Views)
                     .ThenInclude(v => v.Structures)
+                        .ThenInclude(s => s.Fixtures)
+                            .ThenInclude(f => f.Mode)
+                .Include(d => d.Views)
+                    .ThenInclude(v => v.Structures)
                         .ThenInclude(s => s.Type)
                 .FirstAsync(d => d.Id == id);
             } catch (InvalidOperationException) {
