@@ -12,8 +12,10 @@ using openld.Data;
 namespace openld.Services {
     public class RiggedFixtureService : IRiggedFixtureService {
         private readonly OpenLDContext _context;
-        public RiggedFixtureService(OpenLDContext context) {
+        private readonly IMapper _mapper;
+        public RiggedFixtureService(OpenLDContext context, IMapper mapper) {
             _context = context;
+            _mapper = mapper;
         }
         public async Task<RiggedFixture> AddRiggedFixtureAsync(RiggedFixture fixture) {
             try {
@@ -31,6 +33,8 @@ namespace openld.Services {
             if (fixture.Fixture.Modes.Count > 0) {
                 fixture.Mode = fixture.Fixture.Modes[0];
             }
+
+            fixture.Angle = 0;
 
             await _context.RiggedFixtures.AddAsync(fixture);
             await _context.SaveChangesAsync();
@@ -76,6 +80,32 @@ namespace openld.Services {
 
             return fixture.Structure;
         }
+
+        public async Task<RiggedFixture> UpdatePropsAsync(RiggedFixture fixture) {
+            RiggedFixture existing;
+            try {
+                existing = await _context.RiggedFixtures.Include(f => f.Mode).FirstAsync(f => f.Id == fixture.Id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("Structure ID not found");
+            }
+
+            _mapper.Map(fixture, existing);
+            await _context.SaveChangesAsync();
+
+            return existing;
+        }
+
+        public async Task DeleteAsync(string id) {
+            RiggedFixture fixture;
+            try {
+                fixture = await _context.RiggedFixtures.FirstAsync(f => f.Id == id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("Structure ID not found");
+            }
+
+            _context.RiggedFixtures.Remove(fixture);
+            await _context.SaveChangesAsync();
+        }
     }
 
     public interface IRiggedFixtureService {
@@ -83,5 +113,7 @@ namespace openld.Services {
         Task<Drawing> GetDrawingAsync(RiggedFixture fixture);
         Task<View> GetViewAsync(RiggedFixture fixture);
         Task<Structure> GetStructureAsync(RiggedFixture fixture);
+        Task<RiggedFixture> UpdatePropsAsync(RiggedFixture fixture);
+        Task DeleteAsync(string id);
     }
 }

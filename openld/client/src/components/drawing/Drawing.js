@@ -2,8 +2,10 @@ import React, { Component, Fragment } from "react";
 import { Layer, Line, Stage } from 'react-konva';
 
 import { DrawingUtils } from './DrawingUtils';
-import { View, Grid, Tooltip } from "./DrawingComponents";
-import { DeleteStructureModal } from "./DeleteStructureModal";
+import { View } from "./View";
+import { Grid } from "./Grid";
+import { Tooltip } from "./Tooltip";
+import { DeleteObjectModal } from "./DeleteObjectModal";
 import { AddFixtureModal } from "./AddFixtureModal";
 
 export class Drawing extends Component {
@@ -38,7 +40,6 @@ export class Drawing extends Component {
   render = () => {
     return (
       <Fragment>
-
         <Stage
           x = {0}
           y = {0}
@@ -111,9 +112,9 @@ export class Drawing extends Component {
             />
           </Layer>
         </Stage>
-        <DeleteStructureModal
-          structureId = {this.props.selectedObjectId}
-          viewId = {this.props.viewData.id}
+        <DeleteObjectModal
+          selectedId = {this.props.selectedObjectId}
+          type = {this.props.selectedObjectType}
           hub = {this.props.hub}
           isOpen = {this.state.deleteModalOpen}
           toggle = {this.toggleDeleteModal}
@@ -237,7 +238,7 @@ export class Drawing extends Component {
         this.props.setCursor("grab");
         this.props.setHintText("");
       });
-    } else if (this.props.selectedObjectType === "structure" && event.keyCode === 46) {
+    } else if ((this.props.selectedObjectType === "structure" || this.props.selectedObjectType === "fixture") && event.keyCode === 46) {
       if (this.props.hubConnected === true && this.state.deleteModalOpen === false) {
         this.toggleDeleteModal();
       }

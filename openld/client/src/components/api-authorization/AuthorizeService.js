@@ -207,6 +207,7 @@ export class AuthorizeService {
                 return;
             }
             this.updateState(user);
+            window.location.reload();
         });
     }
 

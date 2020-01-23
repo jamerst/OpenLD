@@ -5,6 +5,8 @@ import { Col, Row,
   ListGroup, ListGroupItem, Label
 } from "reactstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import AwesomeDebouncePromise from "awesome-debounce-promise";
+
 import { ShareDrawing } from "./ShareDrawing";
 import { CreateViewForm } from "./CreateViewForm";
 import { DeleteViewModal } from "./DeleteViewModal";
@@ -31,7 +33,6 @@ export class Sidebar extends Component {
       address: "",
       universe: "",
       mode: "",
-      notes: "",
       colour: ""
     };
   }
@@ -53,7 +54,7 @@ export class Sidebar extends Component {
     } else if (!nextProps.modifiedCurrent && nextProps.selectedObjectType === "fixture") {
       return {
         name: nextProps.fixture.name,
-        fixture: nextProps.fixture.fixture.id,
+        fixture: nextProps.fixture.fixture,
         angle: nextProps.fixture.angle,
         address: nextProps.fixture.address,
         universe: nextProps.fixture.universe,
@@ -210,7 +211,67 @@ export class Sidebar extends Component {
         );
       case "fixture":
         return (
-          <div>This is a fixture</div>
+          <Form>
+            <Row form>
+              <Col xs="12">
+                <Row>
+                  <Col xs="4">
+                    <img src={ "/api/fixture/GetImage/" + this.state.fixture.id } style={{maxWidth: "100%"}} alt={this.state.fixture.name}/>
+                  </Col>
+                  <Col xs="8" className="pl-0">
+                    <ListGroup>
+                      <ListGroupItem className="pt-1 pb-1 font-weight-bold">{this.state.fixture.manufacturer} {this.state.fixture.name}</ListGroupItem>
+                      <ListGroupItem className="pt-1 pb-1 small">{this.state.fixture.power}W</ListGroupItem>
+                      <ListGroupItem className="pt-1 pb-1 small">{this.state.fixture.weight}kg</ListGroupItem>
+                    </ListGroup>
+                  </Col>
+                </Row>
+              </Col>
+              <Col xs="12">
+                <Label for="name" className="mb-0">Name</Label>
+                <Input type="text" value={this.state.name} name="name" id="name" bsSize="sm" onChange={this.handlePropertyChange}/>
+              </Col>
+
+              <Col xs="12" xl="8">
+                <Label for="mode" className="mb-0 mt-2">Mode</Label>
+                <CustomInput type="select" value={this.state.mode} name="mode" id="mode" bsSize="sm" onChange={this.handlePropertyChange}>
+                  {this.state.fixture.modes.map(mode => {
+                    return (
+                      <option key={mode.id} value={mode.id}>{mode.name} ({mode.channels.length} channel)</option>
+                    )
+                  })}
+                </CustomInput>
+              </Col>
+              <Col xs="12" xl="4">
+                <Label for="angle" className="mb-0 mt-2">Angle</Label>
+                <InputGroup size="sm">
+                  <Input type="number" value={this.state.angle} name="angle" id="angle" step="1" min="0" max="360" onChange={this.handlePropertyChange}/>
+                  <InputGroupAddon addonType="append">
+                    <InputGroupText>&deg;</InputGroupText>
+                  </InputGroupAddon>
+                </InputGroup>
+              </Col>
+
+              <Col xs="6">
+                  <Label for="universe" className="mb-0 mt-2">Universe</Label>
+                  <Input type="number" value={this.state.universe} name="universe" id="universe" step="1" min="1" onChange={this.handlePropertyChange}/>
+              </Col>
+              <Col xs="6">
+                  <Label for="universe" className="mb-0 mt-2">Address</Label>
+                  <Input type="number" value={this.state.address} name="address" id="address" step="1" min="1" onChange={this.handlePropertyChange}/>
+              </Col>
+
+              <Col xs="12">
+                  <Label for="colour" className="mb-0 mt-2">Colour</Label>
+                  <Input type="text" value={this.state.colour} name="colour" id="colour" onChange={this.handlePropertyChange}/>
+              </Col>
+
+              <Col xs="12">
+                <Label for="notes" className="mb-0 mt-2">Notes</Label>
+                <Input type="textarea" value={this.state.notes} name="notes" id="notes" rows="4" onChange={this.handlePropertyChange}/>
+              </Col>
+            </Row>
+          </Form>
         );
       case "none":
       default:
@@ -226,23 +287,49 @@ export class Sidebar extends Component {
       [event.target.name]: event.target.value
     });
 
-    let data = {
-      id: this.props.structure.id,
-      [event.target.name]: event.target.value
-    };
+    this.sendChangesDebounce(event.target.name, event.target.value);
+  }
 
-    if (event.target.name === "type") {
-      data = {
+  sendChanges = (field, value) => {
+    let structureData, fixtureData = null;
+
+    if (this.props.selectedObjectType === "structure") {
+      structureData = {
         id: this.props.structure.id,
-        [event.target.name]: {id: event.target.value}
+        [field]: value
       };
+
+      if (field === "type") {
+        structureData = {
+          id: this.props.structure.id,
+          [field]: {id: value}
+        };
+      }
+
+    } else if (this.props.selectedObjectType === "fixture") {
+      fixtureData = {
+        id: this.props.fixture.id,
+        [field]: value
+      }
+
+      if (field === "mode") {
+        fixtureData = {
+          id: this.props.fixture.id,
+          [field]: {id: value}
+        }
+      }
     }
 
     this.props.hub.invoke(
-      "UpdateStructureProperty",
-      data
+      "UpdateObjectProperty",
+      this.props.selectedObjectType,
+      field,
+      structureData,
+      fixtureData
     ).catch(err => console.error(err));
   }
+
+  sendChangesDebounce = AwesomeDebouncePromise(this.sendChanges, 250);
 
   fetchTypes = async () => {
     const response = await fetch("api/structure/GetStructureTypes", {

@@ -143,11 +143,5 @@ namespace openld.Controllers {
 
             return new JsonResponse<List<Drawing>> { success = true, data = drawings };
         }
-
-        [HttpPost]
-        [Authorize]
-        public async Task<ActionResult<Structure>> UpdateStructureProp(Structure structure) {
-            return await _structureService.UpdateStructurePropsAsync(structure);
-        }
     }
 }

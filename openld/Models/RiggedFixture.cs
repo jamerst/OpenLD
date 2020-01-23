@@ -9,7 +9,7 @@ namespace openld.Models {
         public Structure Structure { get; set; }
         [Column(TypeName = "jsonb")]
         public Point Position { get; set; }
-        public int Angle { get; set; } = 0;
+        public int Angle { get; set; }
         public short Address { get; set; }
         public short Universe { get; set; }
         public FixtureMode Mode { get; set; }

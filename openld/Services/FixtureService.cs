@@ -96,11 +96,24 @@ namespace openld.Services {
                 throw new ArgumentException("Image not valid");
             }
         }
+
+        public async Task<FixtureMode> GetFixtureModeAsync(string id) {
+            FixtureMode mode;
+            try {
+                mode = await _context.FixtureModes.FirstAsync(m => m.Id == id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("FixtureMode ID not found");
+            }
+
+            return mode;
+        }
+
     }
 
     public interface IFixtureService {
         Task<List<Fixture>> SearchAllFixturesAsync(SearchParams search);
         Task CreateFixtureAsync(Fixture fixture);
         Task<string> UploadFixtureImageAsync(IFormFile file);
+        Task<FixtureMode> GetFixtureModeAsync(string id);
     }
 }

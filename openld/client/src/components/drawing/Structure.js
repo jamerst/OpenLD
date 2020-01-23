@@ -1,61 +1,8 @@
 import React, { Component } from "react";
-import { Group, Layer, Line, Rect, Label, Tag, Text as KonvaText, Circle, Image } from "react-konva";
-import { DrawingUtils } from "./DrawingUtils";
+import { Circle, Line, Group } from "react-konva";
 import { Text } from "./KonvaNodes";
-
-export class View extends Component {
-  render = () => {
-    if (typeof(this.props.data) === "undefined" || !this.props.data.structures) {
-      return null;
-    }
-
-    return (<Layer>
-      {this.props.data.structures.map(structure => {
-        return (
-          <Structure
-            key={"s-" + structure.id}
-            id={structure.id}
-            points={structure.geometry.points}
-            fixtures={structure.fixtures}
-            name={structure.name}
-            snapGridSize = {this.props.snapGridSize}
-            setTooltip = {this.props.setTooltip}
-            setHintText = {this.props.setHintText}
-            updatePoints = {this.props.updatePoints}
-            onDragStart = {this.props.onDragStart}
-            onDragMove = {this.props.onDragMove}
-            onDragEnd = {this.props.onDragEnd}
-            setCursor = {this.props.setCursor}
-            scale = {this.props.scale}
-            onSelectObject = {this.props.onSelectObject}
-            onStructureDelete = {this.props.onStructureDelete}
-            deselectObject = {this.props.deselectObject}
-            selected = {this.props.selectedObjectId === structure.id && this.props.selectedObjectType === "structure"}
-            selectedObjectType = {this.props.selectedObjectType}
-            selectedObjectId = {this.props.selectedObjectId}
-            setStructureColour = {this.setStructureColour}
-            setFixtureColour = {this.setFixtureColour}
-            selectedFixtureStructure = {this.props.selectedFixtureStructure}
-            setSelectedFixtureStructure = {this.props.setSelectedFixtureStructure}
-            colour = {structure.colour}
-            hubConnected = {this.props.hubConnected}
-            selectedTool = {this.props.selectedTool}
-            setTool = {this.props.setTool}
-            onFixturePlace = {this.props.onFixturePlace}
-          />
-        )
-      })}
-    </Layer>);
-  }
-
-  setStructureColour = (id, colour) => {
-    this.props.setStructureColour(this.props.data.id, id, colour);
-  }
-
-  setFixtureColour = (structureId, fixtureId, colour) => {
-    this.props.setFixtureColour(this.props.data.id, structureId, fixtureId, colour);
-  }
-}
+import { RiggedFixture } from "./RiggedFixture";
+import { DrawingUtils } from "./DrawingUtils";
 
 export class Structure extends Component {
   constructor(props) {
@@ -134,9 +81,7 @@ export class Structure extends Component {
           return (
             <RiggedFixture
               key = {"rf-" + fixture.id}
-              id = {fixture.id}
-              position = {fixture.position}
-              angle = {fixture.angle}
+              data = {fixture}
               structureId = {this.props.id}
               fixtureId = {fixture.fixture.id}
               selected = {this.props.selectedObjectId === fixture.id && this.props.selectedObjectType === "fixture"}
@@ -145,7 +90,6 @@ export class Structure extends Component {
               hubConnected = {this.props.hubConnected}
               setFixtureColour = {this.setFixtureColour}
               selectedTool = {this.props.selectedTool}
-              colour = {fixture.colour}
               setSelectedFixtureStructure = {this.props.setSelectedFixtureStructure}
               selectedFixtureStructure = {this.props.selectedFixtureStructure}
               setCursor = {this.props.setCursor}
@@ -282,190 +226,5 @@ export class Structure extends Component {
 
   setFixtureColour = (id, colour) => {
     this.props.setFixtureColour(this.props.id, id, colour);
-  }
-}
-
-export class RiggedFixture extends Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      symbol: null,
-      symbolWidth: 0,
-      symbolHeight: 0
-    }
-  }
-
-  componentDidMount() {
-    const image = new window.Image();
-    image.src = "/api/fixture/GetSymbol/" + this.props.fixtureId;
-    image.onload = () => {
-      let width, height;
-      if (image.width >= image.height) {
-        width = 1.25;
-        height = image.height * width / image.width
-      } else {
-        height = 1.25;
-        width = image.width * height / image.height
-      }
-
-      this.setState({
-        symbol: image,
-        symbolWidth: width,
-        symbolHeight: height
-      });
-    }
-  }
-
-  render = () => {
-    const colour = typeof this.props.colour === "undefined" ? "#000" : this.props.colour;
-
-    let highlight;
-    if (colour !== "#000") {
-      highlight = (
-        <Circle
-          x = {this.props.position.x}
-          y = {this.props.position.y}
-          width = {1.75}
-          height = {1.75}
-          fill = {colour}
-          opacity = {.5}
-        />
-      );
-    }
-
-    return (
-      <Group>
-        {highlight}
-        <Image
-          x = {this.props.position.x}
-          y = {this.props.position.y}
-          offset = {{x: this.state.symbolWidth/2, y: this.state.symbolHeight/2}}
-          scaleY = {-1}
-          width = {this.state.symbolWidth}
-          height = {this.state.symbolHeight}
-          image = {this.state.symbol}
-          onMouseEnter = {this.handleMouseEnter}
-          onMouseLeave = {this.handleMouseLeave}
-          onClick = {this.handleClick}
-          rotation = {360-this.props.angle}
-        />
-      </Group>
-    );
-  }
-
-  handleMouseEnter = (event) => {
-    event.target.scale({x: 1.1, y: -1.1});
-    event.target.getLayer().draw();
-
-    if (this.props.selectedTool === "none" && !this.props.selected) {
-      this.props.setCursor("pointer");
-      this.props.setHintText("Click to select fixture");
-    }
-  }
-
-  handleMouseLeave = (event) => {
-    event.target.scale({x: 1, y: -1});
-    event.target.getLayer().draw();
-
-    if (this.props.selectedTool === "none") {
-      this.props.setCursor("grab");
-
-      if (!this.props.selected) {
-        this.props.setHintText("");
-      }
-    }
-  }
-
-  handleClick = (event) => {
-    if (this.props.hubConnected) {
-      event.cancelBubble = true;
-      this.props.deselectObject(this.props.selectedFixtureStructure);
-      this.props.setSelectedFixtureStructure(this.props.structureId);
-      this.props.onSelectObject("fixture", this.props.structureId, this.props.id);
-
-      if (this.props.selectedTool === "none") {
-        this.props.setFixtureColour(this.props.id, "#007bff");
-        this.props.setHintText("Modify fixture properties above.\nPress delete to remove fixture.")
-      }
-    }
-  }
-}
-
-export class Grid extends Component {
-  render = () => {
-    if (!this.props.enabled) {
-      return (
-        <Layer>
-          <Rect
-            x = {0}
-            y = {0}
-            width = {this.props.xLim}
-            height = {this.props.yLim}
-            fill = "#fff"
-          />
-        </Layer>
-      )
-    }
-
-    let grid = [];
-    for (let x = 0; x < this.props.xLim; x+=this.props.gridSize) {
-      grid.push([x, 0, x, this.props.yLim]);
-    }
-
-    for (let y = 0; y < this.props.yLim; y+=this.props.gridSize) {
-      grid.push([0, y, this.props.xLim, y]);
-    }
-
-    return (
-      <Layer>
-        <Rect
-          x = {0}
-          y = {0}
-          width = {this.props.xLim}
-          height = {this.props.yLim}
-          fill = "#fff"
-        />
-        {grid.map((line, index) => {
-          const text = line[0] === 0 ? line[1] : line[0];
-          return (
-            <Group key = {"grid-" + index}>
-              <Line
-                points = {line}
-                stroke = "#ddd"
-                strokeWidth = {this.props.lineWidth}
-              />
-              <Text
-                x = {line[0] + 0.05}
-                y = {line[1] + 0.25}
-                text = {text + "m"}
-                textScale = {0.025}
-                fill = "#999"
-              />
-            </Group>
-          );
-        })}
-      </Layer>
-    );
-  }
-}
-
-export class Tooltip extends Component {
-  render = () => {
-    return (
-      <Label
-        position = {this.props.position}
-        scale = {{x: this.props.scale, y: -this.props.scale}}
-        visible = {this.props.visible}
-      >
-        <Tag fill="#ddd"/>
-        <KonvaText
-          key = "tooltip"
-          text = {this.props.text}
-          fill = "#000"
-          padding = {2}
-        />
-      </Label>
-    )
   }
 }

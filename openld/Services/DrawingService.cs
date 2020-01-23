@@ -42,18 +42,19 @@ namespace openld.Services {
 
             try {
                 drawing = await _context.Drawings
-                .Include(d => d.Views)
-                    .ThenInclude(v => v.Structures)
-                        .ThenInclude(s => s.Fixtures)
-                            .ThenInclude(f => f.Fixture)
-                .Include(d => d.Views)
-                    .ThenInclude(v => v.Structures)
-                        .ThenInclude(s => s.Fixtures)
-                            .ThenInclude(f => f.Mode)
-                .Include(d => d.Views)
-                    .ThenInclude(v => v.Structures)
-                        .ThenInclude(s => s.Type)
-                .FirstAsync(d => d.Id == id);
+                    .Include(d => d.Views)
+                        .ThenInclude(v => v.Structures)
+                            .ThenInclude(s => s.Fixtures)
+                                .ThenInclude(rf => rf.Fixture)
+                                    .ThenInclude(f => f.Modes)
+                    .Include(d => d.Views)
+                        .ThenInclude(v => v.Structures)
+                            .ThenInclude(s => s.Fixtures)
+                                .ThenInclude(f => f.Mode)
+                    .Include(d => d.Views)
+                        .ThenInclude(v => v.Structures)
+                            .ThenInclude(s => s.Type)
+                    .FirstAsync(d => d.Id == id);
             } catch (InvalidOperationException) {
                 throw new KeyNotFoundException("Drawing ID not found");
             }

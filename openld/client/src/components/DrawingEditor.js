@@ -285,13 +285,13 @@ export class DrawingEditor extends Component {
     this.state.hub.on("AddStructureSuccess", structure => this.setState({newLinePoints: []}));
     this.state.hub.on("AddStructureFailure", () => this.setAlertError("Failed to insert new structure"));
 
-    this.state.hub.on("UpdateStructureGeometry", structure => this.updateStructurePos(structure.view.id, structure.id, structure.geometry.points));
+    this.state.hub.on("UpdateStructureGeometry", (structure, fixtures) => this.updateStructurePos(structure.view.id, structure.id, structure.geometry.points, fixtures));
     this.state.hub.on("UpdateStructureGeometryFailure", () => this.setAlertError("Failed to move structure"));
-    this.state.hub.on("UpdateStructureProperty", (viewId, structure) => this.setStructure(viewId, structure));
-    this.state.hub.on("UpdateStructurePropertySuccess", () => this.setModifiedCurrent(false));
-    this.state.hub.on("DeleteStructure", (viewId, structureId) => this.onStructureRemoved(viewId, structureId));
-    this.state.hub.on("DeleteStructureSuccess", (viewId, structureId) => this.removeStructure(viewId, structureId));
-    this.state.hub.on("DeleteStructureFailure", () => this.setAlertError("Failed to delete structure"));
+    this.state.hub.on("UpdateObjectProperty", (type, field, viewId, structure, fixture) => this.onObjectUpdate(type, field, viewId, structure, fixture));
+    this.state.hub.on("UpdateObjectPropertySuccess", () => this.setModifiedCurrent(false));
+    this.state.hub.on("DeleteObject", (type, viewId, structureId, fixtureId) => this.onObjectRemoved(type, viewId, structureId, fixtureId));
+    this.state.hub.on("DeleteObjectSuccess", (type, viewId, structureId, fixtureId) => this.removeObject(type, viewId, structureId, fixtureId));
+    this.state.hub.on("DeleteObjectFailure", (type) => this.setAlertError(`Failed to delete ${type}`));
 
     this.state.hub.on("AddFixture", (viewId, fixture) => this.insertNewFixture(viewId, fixture));
   }
@@ -376,10 +376,10 @@ export class DrawingEditor extends Component {
         {points: points},
         fixtures
     ).catch(err => console.error(err))
-    .then(() => this.updateStructurePos(viewId, id, points));
+    .then(() => this.updateStructurePos(viewId, id, points, fixtures));
   }
 
-  updateStructurePos = (viewId, id, points) => {
+  updateStructurePos = (viewId, id, points, fixtures) => {
     if (viewId === null) {
       viewId = this.state.currentView;
     }
@@ -394,7 +394,8 @@ export class DrawingEditor extends Component {
 
       const newStructure = {
         ...modifiedStructure,
-        geometry: {points: points}
+        geometry: {points: points},
+        fixtures: fixtures
       };
 
       modifiedView.structures[structureIndex] = newStructure;
@@ -431,12 +432,26 @@ export class DrawingEditor extends Component {
     }
   }
 
-  onStructureRemoved = (viewId, structureId) => {
-    if (this.state.selectedObjectType === "structure" && this.state.selectedObjectId === structureId) {
-      this.setAlertIcon("warning", "The structure you were working on was deleted.", "exclamation");
+  onObjectRemoved = (type, viewId, structureId, fixtureId) => {
+    if (type === "structure") {
+      if (this.state.selectedObjectType === type && this.state.selectedObjectId === structureId) {
+        this.setAlertIcon("warning", "The structure you were working on was deleted.", "exclamation");
+      }
+      this.removeStructure(viewId, structureId);
+    } else if (type === "fixture") {
+      if (this.state.selectedObjectType === type && this.state.selectedObjectId === fixtureId) {
+        this.setAlertIcon("warning", "The fixture you were working on was deleted.", "exclamation");
+      }
+      this.removeFixture(viewId, structureId, fixtureId);
     }
+  }
 
-    this.removeStructure(viewId, structureId);
+  removeObject = (type, viewId, structureId, fixtureId) => {
+    if (type === "structure") {
+      this.removeStructure(viewId, structureId);
+    } else if (type === "fixture") {
+      this.removeFixture(viewId, structureId, fixtureId);
+    }
   }
 
   removeStructure = (viewId, structureId) => {
@@ -469,6 +484,46 @@ export class DrawingEditor extends Component {
         views: views
       };
     })
+  }
+
+  removeFixture = (viewId, structureId, fixtureId) => {
+    if (this.state.selectedObjectType === "fixture" && this.state.selectedObjectId === fixtureId) {
+      this.setState({selectedObjectType: "none", selectedObjectId: ""});
+      this.setHintText("");
+    }
+
+    this.setState(prevState => {
+      let views = [...prevState.views];
+      const viewIndex = views.findIndex(v => v.id === viewId);
+      if (viewIndex < 0) {
+        return;
+      }
+      let view = views[viewIndex];
+
+      let structures = [...view.structures];
+      const structureIndex = structures.findIndex(s => s.id === structureId);
+      if (structureIndex < 0) {
+        return;
+      }
+      let structure = structures[structureIndex];
+
+      let fixtures = [...structure.fixtures];
+      const fixtureIndex = fixtures.findIndex(f => f.id === fixtureId);
+      if (fixtureIndex < 0) {
+        return;
+      }
+
+      fixtures.splice(fixtureIndex, 1);
+
+      structure.fixtures = fixtures;
+      structures[structureIndex] = structure;
+      view.structures = structures;
+      views[viewIndex] = view;
+
+      return {
+        views: views
+      };
+    });
   }
 
   selectObject = (type, structureId, fixtureId) => {
@@ -509,6 +564,14 @@ export class DrawingEditor extends Component {
       selectedObjectType: "none",
       modifiedCurrent: false
     })
+  }
+
+  onObjectUpdate = (type, field, viewId, structure, fixture) => {
+    if (type === "structure") {
+      this.setStructureField(viewId, field, structure);
+    } else if (type === "fixture") {
+      this.setFixtureField(viewId, structure.id, field, fixture);
+    }
   }
 
   insertNewView = (view) => {
@@ -732,12 +795,12 @@ export class DrawingEditor extends Component {
     })
   }
 
-  setStructure = (viewId, structure) => {
+  setStructureField = (viewId, field, structure) => {
     this.setState(prevState => {
       let views = [...prevState.views];
       const viewIndex = views.findIndex(v => v.id === viewId);
       if (viewIndex < 0) {
-        console.error(`setStructure error: view ID "${viewId}" not found`);
+        console.error(`setStructureField error: view ID "${viewId}" not found`);
         return;
       }
       let view = views[viewIndex];
@@ -745,13 +808,11 @@ export class DrawingEditor extends Component {
       let structures = [...view.structures];
       const structureIndex = structures.findIndex(s => s.id === structure.id);
       if (structureIndex < 0) {
-        console.error(`setStructure error: structure ID "${structure.id}" not found`);
+        console.error(`setStructureField error: structure ID "${structure.id}" not found`);
         return;
       }
-      const colour = structures[structureIndex].colour;
-      structure.colour = colour;
 
-      structures[structureIndex] = structure;
+      structures[structureIndex][field] = structure[field];
       view.structures = structures;
       views[viewIndex] = view;
 
@@ -762,6 +823,49 @@ export class DrawingEditor extends Component {
       if (this.state.selectedObjectType === "structure" && this.state.selectedObjectId === structure.id) {
         this.setState({
           selectedStructure: this.getStructure(viewId, structure.id)
+        });
+      }
+    });
+  }
+
+  setFixtureField = (viewId, structureId, field, fixture) => {
+    this.setState(prevState => {
+      let views = [...prevState.views];
+      const viewIndex = views.findIndex(v => v.id === viewId);
+      if (viewIndex < 0) {
+        console.error(`setFixtureField error: view ID "${viewId}" not found`);
+        return;
+      }
+      let view = views[viewIndex];
+
+      let structures = [...view.structures];
+      const structureIndex = structures.findIndex(s => s.id === structureId);
+      if (structureIndex < 0) {
+        console.error(`setFixtureField error: structure ID "${structureId}" not found`);
+        return;
+      }
+      let structure = structures[structureIndex];
+
+      let fixtures = [...structure.fixtures];
+      const fixtureIndex = fixtures.findIndex(f => f.id === fixture.id);
+      if (fixtureIndex < 0) {
+        console.error(`setFixtureField error: fixture ID "${fixture.id}" not found`);
+        return;
+      }
+
+      fixtures[fixtureIndex][field] = fixture[field];
+
+      structures[structureIndex].fixtures = fixtures;
+      view.structures = structures;
+      views[viewIndex] = view;
+
+      return {
+        views: views,
+      };
+    }, () => {
+      if (this.state.selectedObjectType === "fixture" && this.state.selectedObjectId === fixture.id) {
+        this.setState({
+          selectedFixture: this.getFixture(viewId, structureId, fixture.id)
         });
       }
     });
@@ -791,7 +895,7 @@ export class DrawingEditor extends Component {
         console.error(`setFixtureColour error: fixture ID "${fixtureId}" not found`);
         return;
       }
-      fixtures[fixtureIndex].colour = colour;
+      fixtures[fixtureIndex].highlightColour = colour;
 
       structure.fixtures = fixtures;
       structures[structureIndex] = structure;
@@ -875,7 +979,6 @@ export class DrawingEditor extends Component {
 
   getFixture = (viewId, structureId, fixtureId) => {
     const structure = this.getStructure(viewId, structureId);
-    console.log(structure);
 
     return structure.fixtures.find(f => f.id === fixtureId);
   }
