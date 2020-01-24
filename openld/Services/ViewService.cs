@@ -11,10 +11,8 @@ using openld.Data;
 namespace openld.Services {
     public class ViewService : IViewService {
         private readonly OpenLDContext _context;
-        private readonly IDrawingService _drawingService;
-        public ViewService(OpenLDContext context, IDrawingService drawingService) {
+        public ViewService(OpenLDContext context) {
             _context = context;
-            _drawingService = drawingService;
         }
 
         public async Task<Drawing> GetDrawingAsync(View view) {
@@ -63,13 +61,14 @@ namespace openld.Services {
                 throw new KeyNotFoundException("View ID not found");
             }
 
+            await UpdateLastModifiedAsync(view);
+
             if (_context.Views.AsNoTracking().Where(v => v.Drawing.Id == view.Drawing.Id).Count() == 1) {
                 throw new InvalidOperationException("Cannot delete last view in drawing");
             }
 
             _context.Views.Remove(view);
             await _context.SaveChangesAsync();
-            await _drawingService.UpdateLastModifiedAsync(view.Drawing);
         }
 
         public async Task UpdateLastModifiedAsync(View view) {
@@ -83,6 +82,27 @@ namespace openld.Services {
             await _context.SaveChangesAsync();
         }
 
+        public async Task<List<UsedFixtureResult>> GetUsedFixturesAsync(string id) {
+            View view;
+            try {
+                view = await _context.Views.Include(v => v.Drawing).FirstAsync(v => v.Id == id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("View ID not found");
+            }
+
+            List<Structure> structures = await _context.Structures.Where(s => s.View.Id == id).ToListAsync();
+
+            List<RiggedFixture> riggedFixtures = await _context.RiggedFixtures
+                .Include(f => f.Fixture)
+                .Where(rf => structures.Contains(rf.Structure))
+                .ToListAsync();
+
+            return riggedFixtures
+                .GroupBy(rf => rf.Fixture)
+                .Select(g => new UsedFixtureResult {Fixture = g.Key, Count = g.Count()})
+                .ToList();
+        }
+
     }
 
     public interface IViewService {
@@ -90,5 +110,6 @@ namespace openld.Services {
         Task<View> CreateViewAsync(View view);
         Task DeleteViewAsync(string viewId);
         Task UpdateLastModifiedAsync(View view);
+        Task<List<UsedFixtureResult>> GetUsedFixturesAsync(string id);
     }
 }

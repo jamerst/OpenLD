@@ -31,6 +31,7 @@ export class RiggedFixture extends Component {
         symbolWidth: width,
         symbolHeight: height
       });
+      this.props.onLoad(this.props.data.id);
     }
   }
 

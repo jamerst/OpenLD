@@ -4,6 +4,7 @@ import { Switch } from 'react-router-dom';
 import { PageLayout, DrawingLayout } from './components/Layout';
 import { Home } from './components/Home';
 import { DrawingEditor } from './components/DrawingEditor';
+import { PrintDrawingViewer } from "./components/PrintDrawingViewer";
 import { FixtureLibrary } from './components/FixtureLibrary';
 import { Token } from './components/Token';
 import ApiAuthorizationRoutes from './components/api-authorization/ApiAuthorizationRoutes';
@@ -32,6 +33,7 @@ export default class App extends Component {
           <RouteLayout path='/token' component={Token} layout={PageLayout} />
           <RouteLayout path={ApplicationPaths.ApiAuthorizationPrefix} component={ApiAuthorizationRoutes} layout={PageLayout} />
           <RouteLayout path='/drawing/:id' component={DrawingEditor} layout={DrawingLayout} />
+          <RouteLayout path="/print/:id" component={PrintDrawingViewer} layout={DrawingLayout}/>
       </Switch>
     );
   }

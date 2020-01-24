@@ -14,6 +14,8 @@ export class Structure extends Component {
       newFixturePos: {x: 0, y: 0},
       newFixtureVisible: false
     }
+
+    this.loadingImages = {};
   }
 
   render = () => {
@@ -60,6 +62,10 @@ export class Structure extends Component {
       );
     }
 
+    if (this.props.fixtures.length === 0) {
+      this.props.onLoad(this.props.id);
+    }
+
     return (
       <Group
         draggable = {this.props.hubConnected}
@@ -78,6 +84,8 @@ export class Structure extends Component {
           onClick = {this.onClick}
         />
         {this.props.fixtures.map(fixture => {
+          this.loadingImages[fixture.id] = false;
+
           return (
             <RiggedFixture
               key = {"rf-" + fixture.id}
@@ -94,6 +102,7 @@ export class Structure extends Component {
               selectedFixtureStructure = {this.props.selectedFixtureStructure}
               setCursor = {this.props.setCursor}
               setHintText = {this.props.setHintText}
+              onLoad = {this.onLoad}
             />
           )
         })}
@@ -226,5 +235,20 @@ export class Structure extends Component {
 
   setFixtureColour = (id, colour) => {
     this.props.setFixtureColour(this.props.id, id, colour);
+  }
+
+  onLoad = (id) => {
+    this.loadingImages[id] = true;
+
+    let finished = true;
+    Object.keys(this.loadingImages).forEach(key => {
+      if (this.loadingImages[key] === false) {
+        finished = false;
+      }
+    });
+
+    if (finished === true) {
+      this.props.onLoad(this.props.id);
+    }
   }
 }

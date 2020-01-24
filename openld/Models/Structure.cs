@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
-using AutoMapper;
+using Newtonsoft.Json;
 
 namespace openld.Models {
     public class Structure {

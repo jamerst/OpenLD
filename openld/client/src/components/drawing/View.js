@@ -3,13 +3,24 @@ import { Layer } from "react-konva";
 import { Structure } from "./Structure";
 
 export class View extends Component {
+  constructor(props) {
+    super(props);
+    this.loadingImages = {};
+  }
+
   render = () => {
     if (typeof(this.props.data) === "undefined" || !this.props.data.structures) {
       return null;
     }
 
+    if (this.props.data.structures.length === 0) {
+      this.props.onLoad(this.props.data.id);
+    }
+
     return (<Layer>
       {this.props.data.structures.map(structure => {
+        this.loadingImages[structure.id] = false;
+
         return (
           <Structure
             key={"s-" + structure.id}
@@ -41,6 +52,7 @@ export class View extends Component {
             selectedTool = {this.props.selectedTool}
             setTool = {this.props.setTool}
             onFixturePlace = {this.props.onFixturePlace}
+            onLoad = {this.onLoad}
           />
         )
       })}
@@ -53,5 +65,20 @@ export class View extends Component {
 
   setFixtureColour = (structureId, fixtureId, colour) => {
     this.props.setFixtureColour(this.props.data.id, structureId, fixtureId, colour);
+  }
+
+  onLoad = (id) => {
+    this.loadingImages[id] = true;
+
+    let finished = true;
+    Object.keys(this.loadingImages).forEach(key => {
+      if (this.loadingImages[key] === false) {
+        finished = false;
+      }
+    });
+
+    if (finished === true) {
+      this.props.onLoad(this.props.data.id);
+    }
   }
 }

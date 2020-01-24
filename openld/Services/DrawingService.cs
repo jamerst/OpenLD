@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 
 using openld.Data;
@@ -11,8 +12,12 @@ using openld.Models;
 namespace openld.Services {
     public class DrawingService : IDrawingService {
         private readonly OpenLDContext _context;
-        public DrawingService(OpenLDContext context) {
+        private readonly IViewService _viewService;
+        private readonly IMapper _mapper;
+        public DrawingService(OpenLDContext context, IViewService viewService, IMapper mapper) {
             _context = context;
+            _viewService = viewService;
+            _mapper = mapper;
         }
         public async Task<string> CreateDrawingAsync(string userId, Drawing drawing) {
             try {
@@ -41,7 +46,7 @@ namespace openld.Services {
             Drawing drawing;
 
             try {
-                drawing = await _context.Drawings
+                drawing = await _context.Drawings.AsNoTracking()
                     .Include(d => d.Views)
                         .ThenInclude(v => v.Structures)
                             .ThenInclude(s => s.Fixtures)
@@ -60,6 +65,46 @@ namespace openld.Services {
             }
 
             return drawing;
+        }
+
+        public async Task<PrintDrawing> GetPrintDrawingAsync(string id) {
+            Drawing drawing;
+
+            try {
+                drawing = await _context.Drawings.AsNoTracking()
+                    .Include(d => d.Views)
+                        .ThenInclude(v => v.Structures)
+                            .ThenInclude(s => s.Fixtures)
+                                .ThenInclude(rf => rf.Fixture)
+                    .Include(d => d.Views)
+                        .ThenInclude(v => v.Structures)
+                            .ThenInclude(s => s.Fixtures)
+                                .ThenInclude(f => f.Mode)
+                    .FirstAsync(d => d.Id == id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("Drawing ID not found");
+            }
+
+            PrintDrawing result = new PrintDrawing();
+            result.Id = drawing.Id;
+            result.Title = drawing.Title;
+            result.Owner = drawing.Owner;
+            result.LastModified = drawing.LastModified;
+            result.PrintViews = new List<PrintView>();
+
+            foreach(View view in drawing.Views) {
+                result.PrintViews.Add(new PrintView {
+                    Id = view.Id,
+                    Name = view.Name,
+                    Structures = view.Structures,
+                    Width = view.Width,
+                    Height = view.Height,
+                    Type = view.Type,
+                    UsedFixtures = await _viewService.GetUsedFixturesAsync(view.Id)
+                });
+            }
+
+            return result;
         }
 
         public async Task<bool> DrawingExistsAsync(string id) {
@@ -195,6 +240,7 @@ namespace openld.Services {
     public interface IDrawingService {
         Task<string> CreateDrawingAsync(string userId, Drawing drawing);
         Task<Drawing> GetDrawingAsync(string id);
+        Task<PrintDrawing> GetPrintDrawingAsync(string id);
         Task<bool> DrawingExistsAsync(string id);
         Task<List<UserDrawing>> GetSharedUsersAsync(string drawingId);
         Task<UserDrawing> ShareWithUserAsync(string email, string drawingId);

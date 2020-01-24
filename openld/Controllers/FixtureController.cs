@@ -17,7 +17,7 @@ namespace openld.Controllers {
             _context = context;
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id}.{ext?}")]
         public async Task<IActionResult> GetImage(string id) {
             Fixture fixture;
             try {
@@ -30,7 +30,7 @@ namespace openld.Controllers {
             return File(image, "image/jpeg");
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id}.{ext?}")]
         public async Task<IActionResult> GetSymbol(string id) {
             Fixture fixture;
             try {

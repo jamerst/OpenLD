@@ -68,6 +68,29 @@ namespace openld.Controllers {
 
         [HttpGet("{drawingId}")]
         [Authorize]
+        public async Task<ActionResult<JsonResponse<PrintDrawing>>> GetPrintDrawing(string drawingId) {
+            if (! await _drawingService.DrawingExistsAsync(drawingId)) {
+                return NotFound();
+            }
+
+            if (! await _authUtils.hasAccess(drawingId, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                return Unauthorized();
+            }
+
+            PrintDrawing drawing;
+            try {
+                drawing = await _drawingService.GetPrintDrawingAsync(drawingId);
+            } catch (KeyNotFoundException) {
+                return new JsonResponse<PrintDrawing> { success = false, msg = "Drawing ID not found" };
+            } catch (Exception) {
+                return new JsonResponse<PrintDrawing> { success = false, msg = "Unknown error loading drawing" };
+            }
+
+            return new JsonResponse<PrintDrawing> { success = true, data = drawing };
+        }
+
+        [HttpGet("{drawingId}")]
+        [Authorize]
         public async Task<ActionResult<JsonResponse<List<UserDrawing>>>> GetSharedUsers(string drawingId) {
             if (! await _authUtils.hasAccess(drawingId, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 return Unauthorized();
