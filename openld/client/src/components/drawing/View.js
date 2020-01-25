@@ -5,7 +5,14 @@ import { Structure } from "./Structure";
 export class View extends Component {
   constructor(props) {
     super(props);
-    this.loadingImages = {};
+    this.symbolsLoaded = {};
+  }
+
+  componentDidMount = () => {
+    // trigger onSymbolLoad once rendered if no structures actually rendered
+    if (this.props.data.structures.length === 0) {
+      this.props.onSymbolLoad(this.props.data.id);
+    }
   }
 
   render = () => {
@@ -13,13 +20,9 @@ export class View extends Component {
       return null;
     }
 
-    if (this.props.data.structures.length === 0) {
-      this.props.onLoad(this.props.data.id);
-    }
-
     return (<Layer>
       {this.props.data.structures.map(structure => {
-        this.loadingImages[structure.id] = false;
+        this.symbolsLoaded[structure.id] = false;
 
         return (
           <Structure
@@ -52,7 +55,7 @@ export class View extends Component {
             selectedTool = {this.props.selectedTool}
             setTool = {this.props.setTool}
             onFixturePlace = {this.props.onFixturePlace}
-            onLoad = {this.onLoad}
+            onSymbolLoad = {this.onSymbolLoad}
           />
         )
       })}
@@ -67,18 +70,18 @@ export class View extends Component {
     this.props.setFixtureColour(this.props.data.id, structureId, fixtureId, colour);
   }
 
-  onLoad = (id) => {
-    this.loadingImages[id] = true;
+  onSymbolLoad = (id) => {
+    this.symbolsLoaded[id] = true;
 
     let finished = true;
-    Object.keys(this.loadingImages).forEach(key => {
-      if (this.loadingImages[key] === false) {
+    Object.keys(this.symbolsLoaded).forEach(key => {
+      if (this.symbolsLoaded[key] === false) {
         finished = false;
       }
     });
 
     if (finished === true) {
-      this.props.onLoad(this.props.data.id);
+      this.props.onSymbolLoad(this.props.data.id);
     }
   }
 }

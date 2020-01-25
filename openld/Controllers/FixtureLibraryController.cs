@@ -58,6 +58,22 @@ namespace openld.Controllers {
         }
 
         [HttpPost]
+        [Authorize]
+        public async Task<ActionResult<JsonResponse<string>>> UploadFixtureSymbol([FromForm] IFormFile file) {
+            string id = "";
+
+            try {
+                id = await _fixtureService.UploadFixtureSymbolAsync(file);
+            } catch (ArgumentException e) {
+                return new JsonResponse<string> { success = false, msg = e.Message };
+            } catch (Exception) {
+                return new JsonResponse<string> { success = false, msg = "Unknown error uploading symbol" };
+            }
+
+            return new JsonResponse<string> { success = true, data = id };
+        }
+
+        [HttpPost]
         public async Task<ActionResult<JsonResponse<List<FixtureType>>>> GetFixtureTypes() {
             return new JsonResponse<List<FixtureType>> { success = true, data  = await _fixtureTypeService.GetAllTypesAsync() };
         }

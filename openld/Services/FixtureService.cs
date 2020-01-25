@@ -36,18 +36,22 @@ namespace openld.Services {
         }
 
         public async Task CreateFixtureAsync(Fixture fixture) {
-            fixture.Type = await _context.FixtureTypes.FirstOrDefaultAsync(t => t.Id == fixture.Type.Id);
-            fixture.Image = await _context.StoredImages.FirstOrDefaultAsync(i => i.Id == fixture.Image.Id);
-
-            if (fixture.Type == default(FixtureType)) {
-                throw new KeyNotFoundException("Type not found");
-            } else if (fixture.Image == default(StoredImage)) {
-                throw new KeyNotFoundException("Image not found");
+            try {
+                fixture.Type = await _context.FixtureTypes.FirstAsync(t => t.Id == fixture.Type.Id);
+                fixture.Image = await _context.StoredImages.FirstAsync(i => i.Id == fixture.Image.Id);
+                fixture.Symbol = await _context.Symbols.Include(s => s.Bitmap).FirstAsync(i => i.Id == fixture.Symbol.Id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("Related record not found");
             }
 
             if (fixture.Modes == null || fixture.Modes.Count == 0) {
                 fixture.Modes = new List<FixtureMode>();
                 fixture.Modes.Add(new FixtureMode { Name = "Default", Channels = new[] {"1"} });
+            }
+
+            // if symbol bitmap not already created
+            if (fixture.Symbol.Bitmap == null) {
+                fixture.Symbol.Bitmap = await CreateSymbolBitmapAsync(fixture.Symbol.Path);
             }
 
             await _context.Fixtures.AddAsync(fixture);
@@ -65,18 +69,13 @@ namespace openld.Services {
             if (isImage) {
                 string hash = "";
                 using (var fileStream = file.OpenReadStream()) {
-                    // check file not already uploaded
-                    using (MemoryStream mst = new MemoryStream())
-                    using (var sha = SHA256.Create()) {
-                        fileStream.CopyTo(mst);
-                        hash = Convert.ToBase64String(sha.ComputeHash(mst.ToArray()));
+                    hash = ImageUtils.FileHash(fileStream);
+                }
 
-                        StoredImage existing = await _context.StoredImages.AsNoTracking().SingleOrDefaultAsync(i => i.Hash == hash);
-                        if (existing != default(StoredImage)) {
-                            return existing.Id;
-                        }
-                    }
-                    fileStream.Position = 0;
+                // check if already exists
+                StoredImage existing = await _context.StoredImages.AsNoTracking().SingleOrDefaultAsync(i => i.Hash == hash);
+                if (existing != default(StoredImage)) {
+                    return existing.Id;
                 }
 
                 string filePath = Path.Combine("/openld-data/fixture-images", Path.GetRandomFileName());
@@ -90,11 +89,59 @@ namespace openld.Services {
                 await _context.SaveChangesAsync();
 
                 return image.Id;
-
-
             } else {
                 throw new ArgumentException("Image not valid");
             }
+        }
+
+        public async Task<string> UploadFixtureSymbolAsync(IFormFile file) {
+            bool isSvg = false;
+            try {
+                isSvg = ImageUtils.isSvg(file);
+            } catch (ArgumentException) {
+                throw new ArgumentException("Symbol not valid");
+            }
+
+            if (isSvg) {
+                string hash = "";
+                using (var fileStream = file.OpenReadStream()) {
+                    hash = ImageUtils.FileHash(fileStream);
+                }
+
+                Symbol existing = await _context.Symbols.AsNoTracking().SingleOrDefaultAsync(i => i.Hash == hash);
+                if (existing != default(Symbol)) {
+                    return existing.Id;
+                }
+
+                string filePath = Path.Combine("/openld-data/fixture-symbols", Path.GetRandomFileName());
+
+                await ImageUtils.SaveAsOptimisedSvg(file, filePath);
+                Symbol symbol = new Symbol { Path = filePath, Hash = hash };
+
+                await _context.Symbols.AddAsync(symbol);
+                await _context.SaveChangesAsync();
+
+                return symbol.Id;
+            } else {
+                throw new ArgumentException("Symbol not valid");
+            }
+        }
+
+        public async Task<StoredImage> CreateSymbolBitmapAsync(string svgPath) {
+            string bitmapPath = Path.Combine("/openld-data/fixture-symbol-bitmaps", Path.GetRandomFileName());
+            ImageUtils.SaveSvgAsPng(svgPath, bitmapPath, 500);
+
+            string hash = "";
+            using (var fileStream = new FileStream(bitmapPath, FileMode.Open, FileAccess.Read)) {
+                hash = ImageUtils.FileHash(fileStream);
+            }
+
+            StoredImage bitmap = new StoredImage { Path = bitmapPath, Hash = hash};
+
+            _context.StoredImages.Add(bitmap);
+            await _context.SaveChangesAsync();
+
+            return bitmap;
         }
 
         public async Task<FixtureMode> GetFixtureModeAsync(string id) {
@@ -114,6 +161,8 @@ namespace openld.Services {
         Task<List<Fixture>> SearchAllFixturesAsync(SearchParams search);
         Task CreateFixtureAsync(Fixture fixture);
         Task<string> UploadFixtureImageAsync(IFormFile file);
+        Task<string> UploadFixtureSymbolAsync(IFormFile file);
+        Task<StoredImage> CreateSymbolBitmapAsync(string svgPath);
         Task<FixtureMode> GetFixtureModeAsync(string id);
     }
 }

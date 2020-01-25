@@ -29,12 +29,10 @@ export class PrintDrawing extends Component {
               <View style={{width: "20%"}}>
                 <Text>{view.name}</Text>
                 {view.usedFixtures.map(used => {
-                  const image = new window.Image();
-                  image.src = "/api/fixture/GetSymbol/" + used.fixture.id;
                   return (
                     <Fragment>
                       <Image
-                        src={image}
+                        src={`/api/fixture/GetSymbolBitmap/${used.fixture.id}`}
                         style={{width: "1cm", height: "1cm"}}
                       />
                       <Text>{used.fixture.manufacturer} {used.fixture.name} {used.count}</Text>

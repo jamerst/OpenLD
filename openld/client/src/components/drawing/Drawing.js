@@ -102,7 +102,7 @@ export class Drawing extends Component {
               selectedTool = {this.props.selectedTool}
               setTool = {this.props.setTool}
               onFixturePlace = {this.onFixturePlace}
-              onLoad = {() => void(0)}
+              onSymbolLoad = {() => void(0)}
           />
           <Layer>
             <Tooltip

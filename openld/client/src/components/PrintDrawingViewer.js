@@ -17,10 +17,10 @@ export class PrintDrawingViewer extends Component {
       stageX: 0,
       stageY: 0,
       stagePosition: {x: 0, y: 0},
-      loading: true,
-      imagesLoading: true
+      dataLoaded: false,
+      symbolsLoaded: false
     }
-    this.loadingImages = {};
+    this.loadedSymbols = {};
     this.images = {};
     this.views = [];
   }
@@ -30,12 +30,12 @@ export class PrintDrawingViewer extends Component {
   }
 
   render = () => {
-    if (this.state.loading) {
+    if (this.state.dataLoaded === false) {
       return null;
     }
 
     let viewer;
-    if (this.state.loading === false && this.state.loadingImages === false) {
+    if (this.state.dataLoaded === true && this.state.symbolsLoaded === true) {
       viewer = (
         <PDFViewer style={{width: "100%", height: "100%"}}>
           <PrintDrawing views={this.views}/>
@@ -47,7 +47,7 @@ export class PrintDrawingViewer extends Component {
       <Fragment>
         {this.state.drawingData.printViews.map(view => {
           this.stageRefs[view.id] = React.createRef();
-          this.loadingImages[view.id] = false;
+          this.loadedSymbols[view.id] = false;
 
           let size = this.sizeStage(view);
           let scale = this.scaleStage(view, size.width, size.height, size.y);
@@ -65,7 +65,7 @@ export class PrintDrawingViewer extends Component {
             >
               <View
                 data = {view}
-                onLoad = {this.onImageLoad}
+                onSymbolLoad = {this.onSymbolLoad}
               />
             </Stage>
           )
@@ -89,25 +89,25 @@ export class PrintDrawingViewer extends Component {
 
       this.setState({
         drawingData: data.data,
-        loading: false
+        dataLoaded: true
       }, () => {
         this.sizeStage(this.scaleStage);
       });
     }
   }
 
-  onImageLoad = (id) => {
-    this.loadingImages[id] = true;
+  onSymbolLoad = (id) => {
+    this.loadedSymbols[id] = true;
     this.setViewImage(id, this.stageRefs[id].current.toDataURL({pixelRatio: 2}), () => {
       let finished = true;
-      Object.keys(this.loadingImages).forEach(key => {
-        if (this.loadingImages[key] === false) {
+      Object.keys(this.loadedSymbols).forEach(key => {
+        if (this.loadedSymbols[key] === false) {
           finished = false;
         }
       });
 
       if (finished === true) {
-        this.setState({loadingImages: false});
+        this.setState({symbolsLoaded: true});
       }
     })
   }

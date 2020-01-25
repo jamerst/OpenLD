@@ -11,5 +11,22 @@ namespace openld.Models {
         public DateTime LastModified { get; set; }
         public List<View> Views { get; set; }
         public List<UserDrawing> UserDrawings { get; set; }
+
+        public Drawing Clone() {
+            Drawing drawing = new Drawing {
+                Id = null,
+                Title = this.Title,
+                Owner = null,
+                LastModified = this.LastModified,
+                Views = new List<View>(),
+                UserDrawings = null
+            };
+
+            foreach (View v in this.Views) {
+                drawing.Views.Add(v.Clone());
+            }
+
+            return drawing;
+        }
     }
 }

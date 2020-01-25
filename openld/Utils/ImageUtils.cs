@@ -2,9 +2,13 @@ using System;
 using System.IO;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using System.Security.Cryptography;
+using Svg;
+
 
 namespace openld.Utils {
     public static class ImageUtils {
@@ -75,6 +79,17 @@ namespace openld.Utils {
             return true;
         }
 
+        public static bool isSvg(IFormFile file) {
+            try {
+                using (Stream stream = file.OpenReadStream()) {
+                    SvgDocument doc = SvgDocument.Open<SvgDocument>(stream);
+                }
+                return true;
+            } catch {
+                throw new ArgumentException("Failed to verify SVG");
+            }
+        }
+
         public static async Task SaveAsJpeg(IFormFile file, string filePath) {
             using (var fileStream = file.OpenReadStream()) {
                 if (file.ContentType.ToLower() != "image/jpg" && file.ContentType.ToLower() != "image/jpeg") {
@@ -98,6 +113,62 @@ namespace openld.Utils {
                     }
                 }
             }
+        }
+
+        public static async Task SaveAsOptimisedSvg(IFormFile file, string filePath) {
+            string tempPath = Path.GetTempFileName();
+            using (var stream = File.Create(tempPath)) {
+                await file.CopyToAsync(stream);
+            }
+
+            bool success = true;
+            using (Process svgo = new Process()) {
+                svgo.StartInfo = new ProcessStartInfo(
+                    "svgo",
+                    $"-i {tempPath} -o {filePath}"
+                );
+                svgo.Start();
+                success = svgo.WaitForExit(10000);
+                if (svgo.ExitCode != 0) {
+                    throw new InvalidOperationException("svgo execution failed");
+                }
+            }
+
+            if (!success) {
+                throw new TimeoutException("svgo took longer than 10s");
+            }
+        }
+
+        public static void SaveSvgAsPng(string fileIn, string fileOut, int res) {
+            bool success = true;
+            using (Process svgExport = new Process()) {
+                svgExport.StartInfo = new ProcessStartInfo(
+                    "rsvg-convert",
+                    $"-h {res} {fileIn} -o {fileOut}"
+                );
+                svgExport.Start();
+                success = svgExport.WaitForExit(10000);
+
+                if (svgExport.ExitCode != 0) {
+                    throw new InvalidOperationException("rsvg-convert execution failed");
+                }
+            }
+
+            if (!success) {
+                throw new TimeoutException("rsvg-convert took longer than 10s");
+            }
+        }
+
+        public static string FileHash(Stream fileStream) {
+            string hash = "";
+            using (MemoryStream mst = new MemoryStream())
+            using (var sha = SHA256.Create()) {
+                fileStream.CopyTo(mst);
+                hash = Convert.ToBase64String(sha.ComputeHash(mst.ToArray()));
+            }
+            fileStream.Position = 0;
+
+            return hash;
         }
     }
 }

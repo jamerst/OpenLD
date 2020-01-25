@@ -15,5 +15,20 @@ namespace openld.Models {
         public FixtureMode Mode { get; set; }
         public string Notes { get; set; }
         public string Colour { get; set; }
+        public RiggedFixture Clone() {
+            return new RiggedFixture {
+                Id = null,
+                Name = this.Name,
+                Fixture = this.Fixture,
+                Structure = null,
+                Position = this.Position,
+                Angle = this.Angle,
+                Address = this.Address,
+                Universe = this.Universe,
+                Mode = this.Mode,
+                Notes = this.Notes,
+                Colour = this.Colour
+            };
+        }
     }
 }

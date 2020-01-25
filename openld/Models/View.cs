@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -11,5 +12,22 @@ namespace openld.Models {
         public float Width { get; set; }
         public float Height { get; set; }
         public int Type { get; set; }
+        public View Clone() {
+            View view = new View {
+                Id = null,
+                Drawing = null,
+                Name = this.Name,
+                Structures = new List<Structure>(),
+                Width = this.Width,
+                Height = this.Height,
+                Type = this.Type
+            };
+
+            foreach(Structure s in this.Structures) {
+                view.Structures.Add(s.Clone());
+            }
+
+            return view;
+        }
     }
 }

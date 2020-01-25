@@ -15,7 +15,14 @@ export class Structure extends Component {
       newFixtureVisible: false
     }
 
-    this.loadingImages = {};
+    this.symbolsLoaded = {};
+  }
+
+  componentDidMount = () => {
+    // trigger onSymbolLoad once rendered if no fixtures actually rendered
+    if (this.props.fixtures.length === 0) {
+      this.props.onSymbolLoad(this.props.id);
+    }
   }
 
   render = () => {
@@ -62,10 +69,6 @@ export class Structure extends Component {
       );
     }
 
-    if (this.props.fixtures.length === 0) {
-      this.props.onLoad(this.props.id);
-    }
-
     return (
       <Group
         draggable = {this.props.hubConnected}
@@ -84,7 +87,7 @@ export class Structure extends Component {
           onClick = {this.onClick}
         />
         {this.props.fixtures.map(fixture => {
-          this.loadingImages[fixture.id] = false;
+          this.symbolsLoaded[fixture.id] = false;
 
           return (
             <RiggedFixture
@@ -102,7 +105,7 @@ export class Structure extends Component {
               selectedFixtureStructure = {this.props.selectedFixtureStructure}
               setCursor = {this.props.setCursor}
               setHintText = {this.props.setHintText}
-              onLoad = {this.onLoad}
+              onSymbolLoad = {this.onSymbolLoad}
             />
           )
         })}
@@ -237,18 +240,18 @@ export class Structure extends Component {
     this.props.setFixtureColour(this.props.id, id, colour);
   }
 
-  onLoad = (id) => {
-    this.loadingImages[id] = true;
+  onSymbolLoad = (id) => {
+    this.symbolsLoaded[id] = true;
 
     let finished = true;
-    Object.keys(this.loadingImages).forEach(key => {
-      if (this.loadingImages[key] === false) {
+    Object.keys(this.symbolsLoaded).forEach(key => {
+      if (this.symbolsLoaded[key] === false) {
         finished = false;
       }
     });
 
     if (finished === true) {
-      this.props.onLoad(this.props.id);
+      this.props.onSymbolLoad(this.props.id);
     }
   }
 }

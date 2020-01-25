@@ -103,7 +103,7 @@ export class AddFixtureForm extends Component {
             </Collapse>
 
             <FormGroup>
-              <Label for="addImage">Fixture Image</Label>
+              <Label for="addImage" className="mb-0 mt-2">Fixture Image</Label>
               <Alert isOpen={this.state.uploading} color={this.state.uploadAlertColour} style={{ fontSize: "11pt", padding: ".25rem 1rem" }}>
                 <Container>
                   <Row className="align-items-center">
@@ -118,6 +118,9 @@ export class AddFixtureForm extends Component {
                 </Container>
               </Alert>
               <Input type="file" id="addImage" name="image" onChange={this.handleImageChange} required/>
+
+              <Label for="addSymbol" className="mb-0 mt-2">Fixture Symbol</Label>
+              <Input type="file" id="addSymbol" name="symbol" onChange={this.handleSymbolChange} required/>
             </FormGroup>
           </ModalBody>
           <ModalFooter>
@@ -130,7 +133,7 @@ export class AddFixtureForm extends Component {
   }
 
   handleAddChange = (event) => {
-    if (event.target.name !== "image") {
+    if (event.target.name !== "image" && event.target.name !== "symbol") {
       let values = this.state.newFixture;
 
       if (event.target.name === "type") {
@@ -159,23 +162,79 @@ export class AddFixtureForm extends Component {
       body: formData
     });
 
-    const data = await response.json();
-    if (data.success) {
-      let fixtureData = this.state.newFixture;
-      fixtureData.image.id = data.data;
-      this.setState({
-        newFixture: fixtureData,
-        uploadAlertColour: "success",
-        uploadAlertIcon: <FontAwesomeIcon icon="check" />,
-        uploadAlertTitle: "File uploaded successfully",
-        uploadAlertText: ""
-      });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success) {
+        let fixtureData = this.state.newFixture;
+        fixtureData.image.id = data.data;
+        this.setState({
+          newFixture: fixtureData,
+          uploadAlertColour: "success",
+          uploadAlertIcon: <FontAwesomeIcon icon="check" />,
+          uploadAlertTitle: "File uploaded successfully",
+          uploadAlertText: ""
+        });
+      } else {
+        this.setState({
+          uploadAlertColour: "danger",
+          uploadAlertIcon: <FontAwesomeIcon icon="exclamation" />,
+          uploadAlertTitle: "Error",
+          uploadAlertText: data.msg
+        });
+      }
     } else {
       this.setState({
         uploadAlertColour: "danger",
         uploadAlertIcon: <FontAwesomeIcon icon="exclamation" />,
         uploadAlertTitle: "Error",
-        uploadAlertText: data.msg
+        uploadAlertText: "Unknown error uploading file"
+      });
+    }
+  }
+
+  handleSymbolChange = async (event) => {
+    this.setState({
+      uploading: true,
+      uploadAlertColor: "secondary",
+      uploadAlertIcon: <Spinner size="sm"/>,
+      uploadAlertTitle: "Uploading file.."
+    });
+
+    let formData = new FormData();
+    formData.append("file", event.target.files[0]);
+
+    const response = await fetch('api/library/UploadFixtureSymbol', {
+      method: "POST",
+      headers: await authService.generateHeader(),
+      body: formData
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success) {
+        let fixtureData = this.state.newFixture;
+        fixtureData.symbol.id = data.data;
+        this.setState({
+          newFixture: fixtureData,
+          uploadAlertColour: "success",
+          uploadAlertIcon: <FontAwesomeIcon icon="check" />,
+          uploadAlertTitle: "File uploaded successfully",
+          uploadAlertText: ""
+        });
+      } else {
+        this.setState({
+          uploadAlertColour: "danger",
+          uploadAlertIcon: <FontAwesomeIcon icon="exclamation" />,
+          uploadAlertTitle: "Error",
+          uploadAlertText: data.msg
+        });
+      }
+    } else {
+      this.setState({
+        uploadAlertColour: "danger",
+        uploadAlertIcon: <FontAwesomeIcon icon="exclamation" />,
+        uploadAlertTitle: "Error",
+        uploadAlertText: "Unknown error uploading file"
       });
     }
   }
@@ -301,5 +360,8 @@ export class NewFixture {
   weight = 0;
   image = {
       id: ""
+  };
+  symbol = {
+    id: ""
   }
 }

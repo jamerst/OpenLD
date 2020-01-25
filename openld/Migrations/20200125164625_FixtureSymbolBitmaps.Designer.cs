@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using openld.Data;
@@ -10,9 +11,10 @@ using openld.Models;
 namespace openld.Migrations
 {
     [DbContext(typeof(OpenLDContext))]
-    partial class OpenLDContextModelSnapshot : ModelSnapshot
+    [Migration("20200125164625_FixtureSymbolBitmaps")]
+    partial class FixtureSymbolBitmaps
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -471,22 +473,6 @@ namespace openld.Migrations
                     b.ToTable("Symbols");
                 });
 
-            modelBuilder.Entity("openld.Models.Template", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text");
-
-                    b.Property<string>("DrawingId")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DrawingId");
-
-                    b.ToTable("Templates");
-                });
-
             modelBuilder.Entity("openld.Models.User", b =>
                 {
                     b.Property<string>("Id")
@@ -719,13 +705,6 @@ namespace openld.Migrations
                     b.HasOne("openld.Models.StoredImage", "Bitmap")
                         .WithMany()
                         .HasForeignKey("BitmapId");
-                });
-
-            modelBuilder.Entity("openld.Models.Template", b =>
-                {
-                    b.HasOne("openld.Models.Drawing", "Drawing")
-                        .WithMany()
-                        .HasForeignKey("DrawingId");
                 });
 
             modelBuilder.Entity("openld.Models.UserDrawing", b =>

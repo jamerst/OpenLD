@@ -61,5 +61,7 @@ namespace openld.Data {
         public DbSet<FixtureMode> FixtureModes { get; set; }
         public DbSet<FixtureType> FixtureTypes { get; set; }
         public DbSet<StoredImage> StoredImages { get; set; }
+        public DbSet<Symbol> Symbols { get; set; }
+        public DbSet<Template> Templates { get; set; }
     }
 }
