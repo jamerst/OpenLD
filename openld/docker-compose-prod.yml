@@ -1,17 +1,23 @@
 version: "3.3"
 
 services:
-  web:
+  web-prod:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     ports:
-      - "5000:5000"
+      - "80:80"
+      - "443:443"
     depends_on:
       - db
     volumes:
-      - ./:/app
       - openld-data:/openld-data
+      - ${HOME}/.aspnet/certs:/certs/
+    environment:
+        ASPNETCORE_URLS: https://+;http://+
+        ASPNETCORE_HTTPS_PORT: 443
+        ASPNETCORE_Kestrel__Certificates__Default__Password: H@ye?fuGg:)OyHxSLmS?eMKtBI%U:;v]oe]udeC#_wT|*W7+
+        ASPNETCORE_Kestrel__Certificates__Default__Path: /certs/openld-https.pfx
   db:
     image: "postgres:12.1"
     environment:

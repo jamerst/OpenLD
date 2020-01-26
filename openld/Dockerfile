@@ -14,12 +14,4 @@ RUN mkdir -p /openld-data/fixture-images /openld-data/fixture-symbols /openld-da
 COPY *.csproj ./
 RUN dotnet restore
 
-# Copy everything else and build
-# ADD . ./
 ENTRYPOINT dotnet watch run --urls "https://0.0.0.0:5000"
-
-# Build runtime image
-# FROM mcr.microsoft.com/dotnet/core/aspnet:3.0
-# WORKDIR /app
-# COPY --from=build-env /app/out .
-# ENTRYPOINT ["dotnet", "openld.dll"]
