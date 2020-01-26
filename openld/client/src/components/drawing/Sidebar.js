@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { Link } from 'react-router-dom';
 import { Col, Row,
   Button, CustomInput, Form, Input, InputGroup, InputGroupAddon, InputGroupText,
   Card, CardHeader, CardBody,
@@ -152,7 +153,11 @@ export class Sidebar extends Component {
                 <Col xs="2" className="p-0">
                   {this.props.gridSize}m
                 </Col>
-
+              </Row>
+              <Row className="mt-3">
+                <Col>
+                  <Link to={`/print/${this.props.drawingId}`}>Export to PDF</Link>
+                </Col>
               </Row>
             </CardBody>
           </Card>

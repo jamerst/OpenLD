@@ -21,16 +21,5 @@ namespace openld.Controllers {
             _viewService = viewService;
             _authUtils = new AuthUtils(drawingService, rFixtureService, structureService, viewService);
         }
-
-        [HttpGet("{id}")]
-        [Authorize]
-        public async Task<ActionResult<List<UsedFixtureResult>>> GetUsedFixtures(string id) {
-            if (!await _authUtils.hasAccess(new View {Id = id}, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
-                return Unauthorized();
-            }
-
-            return await _viewService.GetUsedFixturesAsync(id);
-        }
     }
-
 }

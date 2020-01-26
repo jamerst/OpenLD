@@ -82,7 +82,7 @@ namespace openld.Services {
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<UsedFixtureResult>> GetUsedFixturesAsync(string id) {
+        public async Task<Tuple<List<UsedFixtureResult>, List<RiggedFixture>>> GetUsedFixturesAsync(string id) {
             View view;
             try {
                 view = await _context.Views.Include(v => v.Drawing).FirstAsync(v => v.Id == id);
@@ -94,13 +94,18 @@ namespace openld.Services {
 
             List<RiggedFixture> riggedFixtures = await _context.RiggedFixtures
                 .Include(f => f.Fixture)
+                .Include(f => f.Mode)
                 .Where(rf => structures.Contains(rf.Structure))
+                .OrderBy(rf => rf.Universe)
+                .ThenBy(rf => rf.Address)
                 .ToListAsync();
 
-            return riggedFixtures
+            List<UsedFixtureResult> used = riggedFixtures
                 .GroupBy(rf => rf.Fixture)
                 .Select(g => new UsedFixtureResult {Fixture = g.Key, Count = g.Count()})
                 .ToList();
+
+            return new Tuple<List<UsedFixtureResult>, List<RiggedFixture>>(used, riggedFixtures);
         }
 
     }
@@ -110,6 +115,6 @@ namespace openld.Services {
         Task<View> CreateViewAsync(View view);
         Task DeleteViewAsync(string viewId);
         Task UpdateLastModifiedAsync(View view);
-        Task<List<UsedFixtureResult>> GetUsedFixturesAsync(string id);
+        Task<Tuple<List<UsedFixtureResult>, List<RiggedFixture>>> GetUsedFixturesAsync(string id);
     }
 }

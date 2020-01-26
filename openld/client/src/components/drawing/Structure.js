@@ -86,6 +86,16 @@ export class Structure extends Component {
           visible = {this.state.newFixtureVisible && this.props.selectedTool === "add-fixture"}
           onClick = {this.onClick}
         />
+        <Text
+          key={"sl-" + this.props.id}
+          x = {points[0]}
+          y = {points[1] - 0.1}
+          rotation = {angle}
+          padding = {2}
+          text = {this.props.name}
+          textScale = {0.025}
+          fill = "#000"
+        />
         {this.props.fixtures.map(fixture => {
           this.symbolsLoaded[fixture.id] = false;
 
@@ -109,16 +119,6 @@ export class Structure extends Component {
             />
           )
         })}
-        <Text
-          key={"sl-" + this.props.id}
-          x = {points[0]}
-          y = {points[1] - 0.1}
-          rotation = {angle}
-          padding = {2}
-          text = {this.props.name}
-          textScale = {0.05}
-          fill = "#000"
-        />
       </Group>
     );
   }

@@ -54,9 +54,9 @@ export class RiggedFixture extends Component {
     if (this.props.data.colour) {
       frontLabel = (
         <Label
-          scale = {{x: 0.04, y: -0.04}}
-          x={-1}
-          y={this.state.symbolHeight + 0.25}
+          scale = {{x: 0.025, y: -0.025}}
+          x={-.6}
+          y={this.state.symbolHeight - 0.15}
 
         >
           <Tag fill="#fff"/>
@@ -84,9 +84,9 @@ export class RiggedFixture extends Component {
 
       backLabel = (
         <Label
-          scale = {{x: 0.04, y: -0.04}}
-          x={-1}
-          y={-(this.state.symbolHeight/2 + 0.25)}
+          scale = {{x: 0.025, y: -0.025}}
+          x={-.6}
+          y={-(this.state.symbolHeight/2 + 0.1)}
 
         >
           <Tag fill="#fff"/>
@@ -118,7 +118,7 @@ export class RiggedFixture extends Component {
           onMouseEnter = {this.handleMouseEnter}
           onMouseLeave = {this.handleMouseLeave}
           onClick = {this.handleClick}
-
+          hitStrokeWidth = {0}
         />
         {frontLabel}
         {backLabel}

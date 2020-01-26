@@ -80,28 +80,24 @@ namespace openld.Services {
                         .ThenInclude(v => v.Structures)
                             .ThenInclude(s => s.Fixtures)
                                 .ThenInclude(f => f.Mode)
+                    .Include(d => d.Owner)
                     .FirstAsync(d => d.Id == id);
             } catch (InvalidOperationException) {
                 throw new KeyNotFoundException("Drawing ID not found");
             }
 
+            // only return the username, not the password hash lol
+            drawing.Owner = new User { UserName = drawing.Owner.UserName };
+
             PrintDrawing result = new PrintDrawing();
-            result.Id = drawing.Id;
-            result.Title = drawing.Title;
-            result.Owner = drawing.Owner;
-            result.LastModified = drawing.LastModified;
-            result.PrintViews = new List<PrintView>();
+            result.Drawing = drawing;
+            result.UsedFixtures = new List<List<UsedFixtureResult>>();
+            result.RiggedFixtures = new List<RiggedFixture>();
 
             foreach(View view in drawing.Views) {
-                result.PrintViews.Add(new PrintView {
-                    Id = view.Id,
-                    Name = view.Name,
-                    Structures = view.Structures,
-                    Width = view.Width,
-                    Height = view.Height,
-                    Type = view.Type,
-                    UsedFixtures = await _viewService.GetUsedFixturesAsync(view.Id)
-                });
+                var fixtures = await _viewService.GetUsedFixturesAsync(view.Id);
+                result.UsedFixtures.Add(fixtures.Item1);
+                result.RiggedFixtures.AddRange(fixtures.Item2);
             }
 
             return result;

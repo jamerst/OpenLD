@@ -1,9 +1,14 @@
 import React, { Component, Fragment } from "react";
+import { Link } from 'react-router-dom';
 import { PDFViewer } from "@react-pdf/renderer";
 import { PrintDrawing } from "./PrintDrawing";
-import { Stage } from "react-konva";
+import { Stage, Layer } from "react-konva";
+import { Container, Col, Row, Spinner } from "reactstrap";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+
 import authService from "./api-authorization/AuthorizeService";
 import { View } from "./drawing/View";
+import { Scale } from "./drawing/Scale";
 
 export class PrintDrawingViewer extends Component {
   constructor(props) {
@@ -18,7 +23,10 @@ export class PrintDrawingViewer extends Component {
       stageY: 0,
       stagePosition: {x: 0, y: 0},
       dataLoaded: false,
-      symbolsLoaded: false
+      symbolsLoaded: false,
+      rendered: false,
+      viewer: null,
+      loadingStatus: "Fetching Data"
     }
     this.loadedSymbols = {};
     this.images = {};
@@ -30,22 +38,51 @@ export class PrintDrawingViewer extends Component {
   }
 
   render = () => {
-    if (this.state.dataLoaded === false) {
-      return null;
+    let loadingContent = null;
+    const spinner = (
+      <Container className="h-100">
+        <Col className="h-100">
+          <Row className="align-items-center justify-content-center h-100 flex-column">
+            <Spinner style={{width: "10rem", height: "10rem"}}/>
+            <h3 className="mt-3">{this.state.loadingStatus}</h3>
+          </Row>
+        </Col>
+      </Container>
+    );
+
+    if (this.state.error === true) {
+      return (
+        <Container className="h-100">
+          <Col className="h-100">
+            <Row className="align-items-center justify-content-center flex-column h-100">
+              {this.state.errorIcon}
+              <h1 className="mt-3">{this.state.errorTitle}</h1>
+              <h3>{this.state.errorMsg}</h3>
+              <Link to="/">Return Home</Link>
+            </Row>
+          </Col>
+        </Container>
+        );
+    } else if (this.state.dataLoaded === false) {
+      return spinner;
+    } else if (this.state.symbolsLoaded === false || this.state.rendered === false) {
+      loadingContent = spinner;
     }
 
-    let viewer;
-    if (this.state.dataLoaded === true && this.state.symbolsLoaded === true) {
-      viewer = (
+    if (this.state.dataLoaded === true && this.state.symbolsLoaded === true && this.state.rendered === false) {
+      this.state.viewer = (
         <PDFViewer style={{width: "100%", height: "100%"}}>
-          <PrintDrawing views={this.views}/>
+          <PrintDrawing views={this.views} drawing={this.state.drawingData} onRender={() => {
+            this.setState({rendered: true});
+          }}/>
         </PDFViewer>
       );
     }
 
     return (
       <Fragment>
-        {this.state.drawingData.printViews.map(view => {
+        {loadingContent}
+        {this.state.drawingData.drawing.views.map(view => {
           this.stageRefs[view.id] = React.createRef();
           this.loadedSymbols[view.id] = false;
 
@@ -63,6 +100,14 @@ export class PrintDrawingViewer extends Component {
               position = {scale.position}
               draggable
             >
+            <Layer>
+
+              <Scale
+                x = {1}
+                y = {1}
+                scale = {scale.scale}
+              />
+            </Layer>
               <View
                 data = {view}
                 onSymbolLoad = {this.onSymbolLoad}
@@ -70,7 +115,7 @@ export class PrintDrawingViewer extends Component {
             </Stage>
           )
         })}
-        {viewer}
+        {this.state.viewer}
       </Fragment>
     )
   }
@@ -83,22 +128,37 @@ export class PrintDrawingViewer extends Component {
     if (response.ok) {
       const data = await response.json();
 
-      data.data.printViews.forEach(view => {
+      data.data.drawing.views.forEach(view => {
         this.views.push(view);
       });
 
       this.setState({
         drawingData: data.data,
-        dataLoaded: true
+        dataLoaded: true,
+        loadingStatus: "Loading Fixture Symbols"
       }, () => {
         this.sizeStage(this.scaleStage);
+      });
+    } else if (response.status === 401) {
+      this.setState({
+        error: true,
+        errorTitle: "Access Denied",
+        errorMsg: "Sorry, you don't have permission to view this drawing.",
+        errorIcon: <FontAwesomeIcon icon="ban" style={{width: "15rem", height: "15rem", color: "#B71C1C"}}/>
+      });
+    } else if (response.status === 404) {
+      this.setState({
+        error: true,
+        errorTitle: "Not Found",
+        errorMsg: "The drawing you requested couldn't be found.",
+        errorIcon: <FontAwesomeIcon icon={["far", "question-circle"]} style={{width: "15rem", height: "15rem", color: "#1565C0"}}/>
       });
     }
   }
 
   onSymbolLoad = (id) => {
     this.loadedSymbols[id] = true;
-    this.setViewImage(id, this.stageRefs[id].current.toDataURL({pixelRatio: 2}), () => {
+    this.setViewImage(id, this.stageRefs[id].current.toDataURL({pixelRatio: 5}), () => {
       let finished = true;
       Object.keys(this.loadedSymbols).forEach(key => {
         if (this.loadedSymbols[key] === false) {
@@ -107,7 +167,10 @@ export class PrintDrawingViewer extends Component {
       });
 
       if (finished === true) {
-        this.setState({symbolsLoaded: true});
+        this.setState({
+          symbolsLoaded: true,
+          loadingStatus: "Rendering Document"
+        });
       }
     })
   }
