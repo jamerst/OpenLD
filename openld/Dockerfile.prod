@@ -19,6 +19,6 @@ RUN apt-get update
 RUN curl -sL https://deb.nodesource.com/setup_13.x |  bash -
 RUN apt-get install -y nodejs unzip libc6-dev libgdiplus librsvg2-bin
 RUN npm i -g svgo --unsafe-perm=true --allow-root
-RUN mkdir -p /openld-data/fixture-images /openld-data/fixture-symbols /openld-data/fixture-symbol-bitmaps
+COPY init-data/openld-data /openld-data
 COPY --from=build-env /app/out .
 ENTRYPOINT ["dotnet", "openld.dll"]
