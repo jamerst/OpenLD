@@ -162,6 +162,17 @@ namespace openld.Services {
 
             return type;
         }
+
+        public async Task UpdateLastModifiedAsync(Structure structure) {
+            try {
+                structure = await _context.Structures.Include(s => s.View).ThenInclude(v => v.Drawing).FirstAsync(s => s.Id == structure.Id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("Structure ID not found");
+            }
+
+            structure.View.Drawing.LastModified = DateTime.Now;
+            await _context.SaveChangesAsync();
+        }
     }
 
     public interface IStructureService {
@@ -176,5 +187,6 @@ namespace openld.Services {
         Task<List<StructureType>> GetAllTypesAsync();
         Task<StructureType> GetStructureTypeAsync(string structureTypeId);
         Task<StructureType> GetStructureTypeByNameAsync(string name);
+        Task UpdateLastModifiedAsync(Structure structure);
     }
 }

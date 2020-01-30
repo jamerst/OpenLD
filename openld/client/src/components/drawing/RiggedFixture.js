@@ -72,14 +72,14 @@ export class RiggedFixture extends Component {
       )
     }
 
-    if (this.props.data.name || this.props.data.universe || this.props.data.address) {
+    if (this.props.data.name || this.props.data.channel) {
       let text = "";
-      if (this.props.data.name && (this.props.data.universe || this.props.data.address)) {
-        text = `${this.props.data.name}\n${this.props.data.universe}-${this.props.data.address}`
+      if (this.props.data.name && this.props.data.channel) {
+        text = `${this.props.data.name}\n${this.props.data.channel}`
       } else if (this.props.data.name) {
         text = `${this.props.data.name}`;
       } else {
-        text = `${this.props.data.universe}-${this.props.data.address}`;
+        text = `${this.props.data.channel}`;
       }
 
       backLabel = (

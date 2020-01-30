@@ -2,7 +2,6 @@ import React, { Component } from "react";
 import { Col, Row,
   Card,
   Button, Input, Label,
-  InputGroup, InputGroupAddon, InputGroupText,
   Nav, NavItem, NavLink,
   TabContent, TabPane } from 'reactstrap';
 
@@ -43,7 +42,7 @@ export class FixtureModesForm extends Component {
         <TabContent activeTab={this.state.activeMode}>
           {this.props.modes.map((mode, mIndex) => {
             return (
-              <TabPane tabId={mIndex}>
+              <TabPane tabId={mIndex} key={mIndex}>
                 <Label for="modeName" className="mt-3">Mode Name</Label>
                 <Input
                   id = "modeName"
@@ -52,39 +51,19 @@ export class FixtureModesForm extends Component {
                   onChange = {this.handleNameChange}
                 />
 
-                <Label className="mt-3">Channels</Label>
-                <div className="vertical-input-group overflow-auto" style={{maxHeight: "15em"}}>
-                  {mode.channels.map((channel, cIndex) => {
-                    return (
-                      <InputGroup>
-                        <InputGroupAddon addonType="prepend">
-                          <InputGroupText style={{width: "3.5em"}}>
-                            <div className="text-right w-100">
-                              {cIndex + 1}
-                            </div>
-                          </InputGroupText>
-                        </InputGroupAddon>
-                        <Input
-                          required = {this.props.enabled}
-                          value = {this.props.modes[mIndex].channels[cIndex]}
-                          placeholder = "Name"
-                          channel = {cIndex}
-                          onChange = {this.handleChannelChange}
-                        />
-                      </InputGroup>
-                    );
-                  })}
-                </div>
+                <Label className="mt-3" for="channels">Channels</Label>
+                <Input
+                  id = "channels"
+                  type="number"
+                  min = "0"
+                  required = {this.props.enabled}
+                  value = {this.props.modes[mIndex].channels}
+                  onChange = {this.handleChannelChange}
+                />
               </TabPane>
             );
           })}
         </TabContent>
-
-        <Row>
-          <Col>
-            <Button color="secondary" className="mt-1" size="sm" onClick={() => this.props.addChannel(this.state.activeMode)}>Add Channel</Button>
-          </Col>
-        </Row>
       </Card>
     );
   }
@@ -94,7 +73,7 @@ export class FixtureModesForm extends Component {
   }
 
   handleChannelChange = (event) => {
-    this.props.setChannelName(this.state.activeMode, event.target.getAttribute("channel"), event.target.value);
+    this.props.setModeChannels(this.state.activeMode, event.target.value);
   }
 
   setActiveMode = (mode) => {

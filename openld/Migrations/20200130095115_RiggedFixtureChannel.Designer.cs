@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using openld.Data;
@@ -10,9 +11,10 @@ using openld.Models;
 namespace openld.Migrations
 {
     [DbContext(typeof(OpenLDContext))]
-    partial class OpenLDContextModelSnapshot : ModelSnapshot
+    [Migration("20200130095115_RiggedFixtureChannel")]
+    partial class RiggedFixtureChannel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -305,8 +307,8 @@ namespace openld.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("text");
 
-                    b.Property<int>("Channels")
-                        .HasColumnType("integer");
+                    b.Property<string[]>("Channels")
+                        .HasColumnType("text[]");
 
                     b.Property<string>("FixtureId")
                         .IsRequired()

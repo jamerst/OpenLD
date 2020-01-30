@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -65,26 +66,5 @@ namespace openld.Controllers {
             var image = System.IO.File.OpenRead(fixture.Symbol.Bitmap.Path);
             return File(image, "image/png");
         }
-
-        [HttpPost("{id}")]
-        [Authorize]
-        public async Task<ActionResult<Fixture>> AddFixtureSymbol(string id, [FromForm] IFormFile file) {
-            string symbolId = await _fixtureService.UploadFixtureSymbolAsync(file);
-
-            Symbol symbol = await _context.Symbols.FirstAsync(s => s.Id == symbolId);
-
-            StoredImage bitmap = await _fixtureService.CreateSymbolBitmapAsync(symbol.Path);
-
-            symbol.Bitmap = bitmap;
-
-            Fixture fixture = await _context.Fixtures.Include(f => f.Symbol).FirstAsync(f => f.Id == id);
-
-            fixture.Symbol = symbol;
-
-            await _context.SaveChangesAsync();
-
-            return fixture;
-        }
     }
-
 }

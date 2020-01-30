@@ -96,8 +96,7 @@ namespace openld.Services {
                 .Include(f => f.Fixture)
                 .Include(f => f.Mode)
                 .Where(rf => structures.Contains(rf.Structure))
-                .OrderBy(rf => rf.Universe)
-                .ThenBy(rf => rf.Address)
+                .OrderBy(rf => rf.Channel)
                 .ToListAsync();
 
             List<UsedFixtureResult> used = riggedFixtures

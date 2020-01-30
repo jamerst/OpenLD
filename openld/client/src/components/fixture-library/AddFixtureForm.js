@@ -23,7 +23,7 @@ export class AddFixtureForm extends Component {
       addFormError: false,
       addFormErrorMessage: "",
       dmx: false,
-      modes: [{name: "Mode 1", channels: [""]}]
+      modes: [{name: "Mode 1", channels: 1}]
     }
   }
 
@@ -95,7 +95,7 @@ export class AddFixtureForm extends Component {
                 modes = {this.state.modes}
 
                 setModeName = {this.setModeName}
-                setChannelName = {this.setChannelName}
+                setModeChannels = {this.setModeChannels}
 
                 addMode = {this.addMode}
                 addChannel = {this.addChannel}
@@ -304,17 +304,13 @@ export class AddFixtureForm extends Component {
     })
   }
 
-  setChannelName = (mIndex, cIndex, name) => {
+  setModeChannels = (index, channels) => {
     this.setState(() => {
       let modes = [...this.state.modes];
-      let mode = modes[mIndex];
-
-      let channels = [...mode.channels];
-      channels[cIndex] = name;
+      let mode = modes[index];
 
       mode.channels = channels;
-
-      modes[mIndex] = mode;
+      modes[index] = mode;
 
       return {
         modes: modes
@@ -326,21 +322,7 @@ export class AddFixtureForm extends Component {
     this.setState(prevState => {
       let modes = [...prevState.modes];
 
-      modes.push({name: "Mode", channels: [""]});
-
-      return {
-        modes: modes
-      };
-    });
-  }
-
-  addChannel = (modeIndex) => {
-    this.setState(prevState => {
-      let modes = [...prevState.modes];
-      let mode = modes[modeIndex];
-
-      mode.channels.push("");
-      modes[modeIndex] = mode;
+      modes.push({name: "Mode", channels: 1});
 
       return {
         modes: modes

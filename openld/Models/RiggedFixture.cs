@@ -9,7 +9,8 @@ namespace openld.Models {
         public Structure Structure { get; set; }
         [Column(TypeName = "jsonb")]
         public Point Position { get; set; }
-        public int Angle { get; set; }
+        public short Angle { get; set; }
+        public short Channel { get; set; }
         public short Address { get; set; }
         public short Universe { get; set; }
         public FixtureMode Mode { get; set; }
@@ -23,6 +24,7 @@ namespace openld.Models {
                 Structure = null,
                 Position = this.Position,
                 Angle = this.Angle,
+                Channel = this.Channel,
                 Address = this.Address,
                 Universe = this.Universe,
                 Mode = this.Mode,

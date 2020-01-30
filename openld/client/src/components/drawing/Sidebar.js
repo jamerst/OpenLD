@@ -31,6 +31,7 @@ export class Sidebar extends Component {
       notes: "",
       fixture: "",
       angle: "",
+      channel: "",
       address: "",
       universe: "",
       mode: "",
@@ -57,6 +58,7 @@ export class Sidebar extends Component {
         name: nextProps.fixture.name,
         fixture: nextProps.fixture.fixture,
         angle: nextProps.fixture.angle,
+        channel: nextProps.fixture.channel,
         address: nextProps.fixture.address,
         universe: nextProps.fixture.universe,
         mode: nextProps.fixture.mode.id,
@@ -242,7 +244,7 @@ export class Sidebar extends Component {
                 <CustomInput type="select" value={this.state.mode} name="mode" id="mode" bsSize="sm" onChange={this.handlePropertyChange}>
                   {this.state.fixture.modes.map(mode => {
                     return (
-                      <option key={mode.id} value={mode.id}>{mode.name} ({mode.channels.length} channel)</option>
+                      <option key={mode.id} value={mode.id}>{mode.name} ({mode.channels} channel)</option>
                     )
                   })}
                 </CustomInput>
@@ -257,13 +259,18 @@ export class Sidebar extends Component {
                 </InputGroup>
               </Col>
 
+              <Col xs="12">
+                  <Label for="channel" className="mb-0 mt-2">Channel</Label>
+                  <Input type="number" value={this.state.channel} name="channel" id="channel" step="1" min="1" max="512" onChange={this.handlePropertyChange}/>
+              </Col>
+
               <Col xs="6">
                   <Label for="universe" className="mb-0 mt-2">Universe</Label>
                   <Input type="number" value={this.state.universe} name="universe" id="universe" step="1" min="1" onChange={this.handlePropertyChange}/>
               </Col>
               <Col xs="6">
-                  <Label for="universe" className="mb-0 mt-2">Address</Label>
-                  <Input type="number" value={this.state.address} name="address" id="address" step="1" min="1" onChange={this.handlePropertyChange}/>
+                  <Label for="address" className="mb-0 mt-2">Address</Label>
+                  <Input type="number" value={this.state.address} name="address" id="address" step="1" min="1" max="512" onChange={this.handlePropertyChange}/>
               </Col>
 
               <Col xs="12">

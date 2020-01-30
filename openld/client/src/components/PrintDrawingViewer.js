@@ -25,12 +25,12 @@ export class PrintDrawingViewer extends Component {
       dataLoaded: false,
       symbolsLoaded: false,
       rendered: false,
-      viewer: null,
       loadingStatus: "Fetching Data"
     }
     this.loadedSymbols = {};
     this.images = {};
     this.views = [];
+    this.viewer = null;
   }
 
   componentDidMount = () => {
@@ -70,7 +70,7 @@ export class PrintDrawingViewer extends Component {
     }
 
     if (this.state.dataLoaded === true && this.state.symbolsLoaded === true && this.state.rendered === false) {
-      this.state.viewer = (
+      this.viewer = (
         <PDFViewer style={{width: "100%", height: "100%"}}>
           <PrintDrawing views={this.views} drawing={this.state.drawingData} onRender={() => {
             this.setState({rendered: true});
@@ -115,7 +115,7 @@ export class PrintDrawingViewer extends Component {
             </Stage>
           )
         })}
-        {this.state.viewer}
+        {this.viewer}
       </Fragment>
     )
   }

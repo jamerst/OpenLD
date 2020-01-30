@@ -46,7 +46,7 @@ namespace openld.Services {
 
             if (fixture.Modes == null || fixture.Modes.Count == 0) {
                 fixture.Modes = new List<FixtureMode>();
-                fixture.Modes.Add(new FixtureMode { Name = "Default", Channels = new[] {"1"} });
+                fixture.Modes.Add(new FixtureMode { Name = "Default", Channels = 1});
             }
 
             // if symbol bitmap not already created
@@ -154,7 +154,6 @@ namespace openld.Services {
 
             return mode;
         }
-
     }
 
     public interface IFixtureService {
