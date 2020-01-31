@@ -23,7 +23,6 @@ export class Sidebar extends Component {
       deleteViewOpen: false,
       deletedViewId: "",
       deletedViewName: "",
-      gridTooltipOpen: false,
       types: [],
       name: "",
       type: "",
@@ -35,13 +34,14 @@ export class Sidebar extends Component {
       address: "",
       universe: "",
       mode: "",
-      colour: ""
+      colour: "",
+      canTemplate: false
     };
   }
 
   componentDidMount() {
     this.fetchTypes();
-    this.setState({gridTooltipOpen: true});
+    this.fetchCanTemplate();
   }
 
   static getDerivedStateFromProps = (nextProps) => {
@@ -139,8 +139,6 @@ export class Sidebar extends Component {
           <Card className="rounded-0" style={{minHeight: "12em"}}>
             <CardHeader className="pl-3 pr-3"><h5 className="mb-0">Drawing Properties</h5></CardHeader>
             <CardBody>
-              <Button color="primary" size="sm" onClick={this.toggleShareModal} className="mb-3">Sharing Settings</Button>
-
               <CustomInput type="switch" onChange={this.props.toggleGrid} checked={this.props.gridEnabled} id="grid-toggle" label="Show Grid"/>
 
               <Label for="grid-size" className="mb-0">Grid Size</Label>
@@ -156,10 +154,14 @@ export class Sidebar extends Component {
                   {this.props.gridSize}m
                 </Col>
               </Row>
-              <Row className="mt-3">
-                <Col>
-                  <Link to={`/print/${this.props.drawingId}`}>Export to PDF</Link>
-                </Col>
+
+              <Row className="mt-3 justify-content-center">
+                <Button color="primary" tag={Link} to={`/print/${this.props.drawingId}`}>Export PDF</Button>
+              </Row>
+
+              <Row className="mt-3 justify-content-center">
+                <Button color="secondary" size="sm" onClick={this.toggleShareModal} className="mr-2">Sharing Settings</Button>
+                <Button color="secondary" size="sm" className="mr-2" onClick={this.handleCreateTemplate} disabled={!this.state.canTemplate}>Create Template</Button>
               </Row>
             </CardBody>
           </Card>
@@ -377,7 +379,29 @@ export class Sidebar extends Component {
     })
   }
 
-  toggleGridTooltip = () => {
-    this.setState({gridTooltipOpen: !this.state.gridTooltipOpen});
+  handleCreateTemplate = async () => {
+    const response = await fetch(`/api/drawing/CreateTemplate/${this.props.drawingId}`, {
+      method: "POST",
+      headers: await authService.generateHeader()
+    });
+
+    if (response.ok) {
+      this.props.setAlertIcon("success", "Successfully added template for drawing", "check");
+    } else {
+      this.props.setAlertIcon("danger", "Failed to create template for drawing", "exclamation");
+    }
+  }
+
+  fetchCanTemplate = async () => {
+    const response = await fetch(`/api/drawing/CanTemplate/${this.props.drawingId}`, {
+      method: "POST",
+      headers: await authService.generateHeader()
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+
+      this.setState({canTemplate: data});
+    }
   }
 }

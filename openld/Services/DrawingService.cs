@@ -35,12 +35,58 @@ namespace openld.Services {
             view.Height = drawing.Views[0].Height;
             drawing.Views = null;
 
-            await _context.Drawings.AddAsync(drawing);
-            await _context.Views.AddAsync(view);
+            _context.Drawings.Add(drawing);
+            _context.Views.Add(view);
             await _context.SaveChangesAsync();
 
             return drawing.Id;
         }
+
+        public async Task<string> CreateDrawingFromTemplateAsync(string userId, Drawing drawing, Template template) {
+            try {
+                drawing.Owner = await _context.Users.FirstAsync(u => u.Id == userId);
+            } catch (InvalidOperationException) {
+                throw new UnauthorizedAccessException("Invalid user ID");
+            }
+
+            try {
+                template = await _context.Templates.Include(t => t.Drawing).FirstAsync(t => t.Id == template.Id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("Template ID not found");
+            }
+
+            Drawing templateDrawing;
+            try {
+                templateDrawing = await _context.Drawings
+                    .Include(d => d.Views)
+                        .ThenInclude(v => v.Structures)
+                            .ThenInclude(s => s.Fixtures)
+                                .ThenInclude(rf => rf.Fixture)
+                                    .ThenInclude(f => f.Modes)
+                    .Include(d => d.Views)
+                        .ThenInclude(v => v.Structures)
+                            .ThenInclude(s => s.Fixtures)
+                                .ThenInclude(f => f.Mode)
+                    .Include(d => d.Views)
+                        .ThenInclude(v => v.Structures)
+                            .ThenInclude(s => s.Type)
+                    .FirstAsync(d => d.Id == template.Drawing.Id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("Drawing ID not found");
+            }
+
+            Drawing newDrawing = templateDrawing.Clone();
+            newDrawing.Owner = drawing.Owner;
+            newDrawing.Title = drawing.Title;
+
+            newDrawing.LastModified = DateTime.Now;
+
+            _context.Drawings.Add(newDrawing);
+            await _context.SaveChangesAsync();
+
+            return newDrawing.Id;
+        }
+
 
         public async Task<Drawing> GetDrawingAsync(string id) {
             Drawing drawing;
@@ -229,12 +275,11 @@ namespace openld.Services {
             drawing.LastModified = DateTime.Now;
             await _context.SaveChangesAsync();
         }
-
-
     }
 
     public interface IDrawingService {
         Task<string> CreateDrawingAsync(string userId, Drawing drawing);
+        Task<string> CreateDrawingFromTemplateAsync(string userId, Drawing drawing, Template template);
         Task<Drawing> GetDrawingAsync(string id);
         Task<PrintDrawing> GetPrintDrawingAsync(string id);
         Task<bool> DrawingExistsAsync(string id);

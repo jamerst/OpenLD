@@ -228,12 +228,14 @@ export class DrawingEditor extends Component {
               selectedObjectType = {this.state.selectedObjectType}
               modifiedCurrent = {this.state.modifiedCurrent}
               hintText = {this.state.hintText}
+              owner = {this.state.drawingData.owner}
 
               onClickView = {this.switchView}
               toggleGrid = {this.toggleGrid}
               setGridSize = {this.setGridSize}
               getStructure = {this.getStructure}
               setModifiedCurrent = {this.setModifiedCurrent}
+              setAlertIcon = {this.setAlertIcon}
             />
           </Row>
         </Container>

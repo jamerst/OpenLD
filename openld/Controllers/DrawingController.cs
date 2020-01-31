@@ -17,17 +17,24 @@ namespace openld.Controllers {
     public class DrawingController : ControllerBase {
         private readonly IDrawingService _drawingService;
         private readonly IStructureService _structureService;
+        private readonly ITemplateService _templateService;
         private readonly AuthUtils _authUtils;
-        public DrawingController(IDrawingService drawingService, IRiggedFixtureService rFixtureService, IStructureService structureService, IViewService viewService) {
+        public DrawingController(IDrawingService drawingService, IRiggedFixtureService rFixtureService, IStructureService structureService, ITemplateService templateService, IViewService viewService) {
             _drawingService = drawingService;
             _structureService = structureService;
+            _templateService = templateService;
             _authUtils = new AuthUtils(drawingService, rFixtureService, structureService, viewService);
+        }
+
+        public class CreateRequest {
+            public Drawing drawing;
+            public Template template;
         }
 
         [HttpPost]
         [Authorize]
-        public async Task<ActionResult<JsonResponse<string>>> CreateDrawing(Drawing drawing) {
-            if (drawing.Views[0].Width < 1 || drawing.Views[0].Height < 1) {
+        public async Task<ActionResult<JsonResponse<string>>> CreateDrawing(CreateRequest request) {
+            if (request.drawing.Views[0].Width < 1 || request.drawing.Views[0].Height < 1) {
                 return new JsonResponse<string> { success = false, msg = "Invalid drawing size" };
             }
 
@@ -35,7 +42,11 @@ namespace openld.Controllers {
 
             string newDrawingId = "";
             try {
-                newDrawingId = await _drawingService.CreateDrawingAsync(user, drawing);
+                if (request.template.Id != null) {
+                    newDrawingId = await _drawingService.CreateDrawingFromTemplateAsync(user, request.drawing, request.template);
+                } else {
+                    newDrawingId = await _drawingService.CreateDrawingAsync(user, request.drawing);
+                }
             } catch (Exception) {
                 return new JsonResponse<string> { success = false, msg = "Unknown error creating new drawing" };
             }
@@ -165,6 +176,35 @@ namespace openld.Controllers {
             }
 
             return new JsonResponse<List<Drawing>> { success = true, data = drawings };
+        }
+
+        [HttpPost("{drawingId}")]
+        [Authorize]
+        public async Task<ActionResult> CreateTemplate(string drawingId) {
+            if (!await _drawingService.IsOwnerAsync(drawingId, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                return Unauthorized();
+            }
+
+            try {
+                await _templateService.CreateTemplateAsync(drawingId);
+            } catch (Exception) {
+                return StatusCode(500);
+            }
+
+            return Ok();
+        }
+
+        [HttpPost("{drawingId}")]
+        [Authorize]
+        public async Task<ActionResult<bool>> CanTemplate(string drawingId) {
+            return await _drawingService.IsOwnerAsync(drawingId, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)
+                && !await _templateService.IsTemplateAsync(drawingId);
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<ActionResult<List<Template>>> GetTemplates() {
+            return await _templateService.GetTemplatesAsync();
         }
     }
 }

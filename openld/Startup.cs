@@ -73,6 +73,7 @@ namespace openld {
             services.AddTransient<IFixtureTypeService, FixtureTypeService>();
             services.AddTransient<IRiggedFixtureService, RiggedFixtureService>();
             services.AddTransient<IStructureService, StructureService>();
+            services.AddTransient<ITemplateService, TemplateService>();
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<IViewService, ViewService>();
 

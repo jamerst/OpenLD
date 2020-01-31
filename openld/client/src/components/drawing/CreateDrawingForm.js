@@ -3,7 +3,7 @@ import {
   Alert,
   Container, Col, Row,
   Button, Form, FormGroup, Input, Label,
-  Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
+  Modal, ModalHeader, ModalBody, ModalFooter, CustomInput } from 'reactstrap';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import authService from '../api-authorization/AuthorizeService';
@@ -18,8 +18,15 @@ export class CreateDrawingForm extends Component {
       width: 50,
       height: 50,
       error: false,
-      errorMsg: ""
+      errorMsg: "",
+      useTemplate: false,
+      template: "",
+      templates: []
     }
+  }
+
+  componentDidMount = () => {
+    this.fetchTemplates();
   }
 
   render = () => {
@@ -50,18 +57,44 @@ export class CreateDrawingForm extends Component {
                 </Col>
               </Row>
 
-              <Label>Default View Size</Label>
+              <Row form>
+                <Col xs="12">
+                  <FormGroup check>
+                    <Label check>
+                      <Input type="checkbox" value={this.state.useTemplate} onChange={this.handleUseTemplateChange}/>
+                      Use a template
+                    </Label>
+                  </FormGroup>
+                </Col>
+              </Row>
+
+              <Row form>
+                <Col xs="12">
+                  <FormGroup>
+                    <Label for="template">Template</Label>
+                    <CustomInput type="select" name="template" id="template" value={this.state.template} disabled={!this.state.useTemplate} onChange={this.handleTemplateChange}>
+                      {
+                        this.state.templates.map(template => {
+                          return(<option key={template.id} value={template.id}>{template.drawing.title}</option>);
+                        })
+                      }
+                    </CustomInput>
+                  </FormGroup>
+                </Col>
+              </Row>
+
+              <Label className="mb-0">Default View Size</Label>
               <Row form>
                 <Col xs="12" md="6">
                   <FormGroup>
                     <Label for="width">Width (m)</Label>
-                    <Input type="number" value={this.state.width} onChange={this.handleWidthChange} name="width" placeholder="Width (m)" step="0.1" min="0"/>
+                    <Input type="number" value={this.state.width} onChange={this.handleWidthChange} name="width" placeholder="Width (m)" step="0.1" min="0" disabled={this.state.useTemplate}/>
                   </FormGroup>
                 </Col>
                 <Col xs="12" md="6">
                   <FormGroup>
                     <Label for="height">Height (m)</Label>
-                    <Input type="number" value={this.state.height} onChange={this.handleHeightChange} name="height" placeholder="Height (m)" step="0.1" min="0"/>
+                    <Input type="number" value={this.state.height} onChange={this.handleHeightChange} name="height" placeholder="Height (m)" step="0.1" min="0" disabled={this.state.useTemplate}/>
                   </FormGroup>
                 </Col>
               </Row>
@@ -81,11 +114,16 @@ export class CreateDrawingForm extends Component {
       method: "POST",
       headers: await authService.generateHeader({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
-        title: this.state.title,
-        views: [{
-          width: this.state.width,
-          height: this.state.height
-        }]
+        template: {
+          id: this.state.useTemplate ? this.state.template : null
+        },
+        drawing: {
+          title: this.state.title,
+          views: [{
+            width: this.state.width,
+            height: this.state.height
+          }]
+        }
       })
     });
 
@@ -112,5 +150,28 @@ export class CreateDrawingForm extends Component {
 
   handleHeightChange = (event) => {
     this.setState({height: event.target.value});
+  }
+
+  handleUseTemplateChange = (event) => {
+    this.setState({useTemplate: !this.state.useTemplate});
+  }
+
+  handleTemplateChange = (event) => {
+    this.setState({template: event.target.value});
+  }
+
+  fetchTemplates = async () => {
+    const response = await fetch("/api/drawing/GetTemplates", {
+      method: "GET",
+      headers: await authService.generateHeader()
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      this.setState({
+        templates: data,
+        template: data[0].id
+      });
+    }
   }
 }
