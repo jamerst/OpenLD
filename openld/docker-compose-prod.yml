@@ -16,7 +16,7 @@ services:
     environment:
         ASPNETCORE_URLS: https://+;http://+
         ASPNETCORE_HTTPS_PORT: 443
-        ASPNETCORE_Kestrel__Certificates__Default__Password: H@ye?fuGg:)OyHxSLmS?eMKtBI%U:;v]oe]udeC#_wT|*W7+
+        ASPNETCORE_Kestrel__Certificates__Default__Password: PASSWORD_HERE
         ASPNETCORE_Kestrel__Certificates__Default__Path: /certs/openld-https.pfx
     restart: always
   db:
