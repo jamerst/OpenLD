@@ -56,6 +56,7 @@ export class View extends Component {
             setTool = {this.props.setTool}
             onFixturePlace = {this.props.onFixturePlace}
             onSymbolLoad = {this.onSymbolLoad}
+            viewDimension = {this.props.data.width >= this.props.data.height ? this.props.data.width : this.props.data.height}
           />
         )
       })}

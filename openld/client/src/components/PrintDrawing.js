@@ -78,6 +78,10 @@ export class PrintDrawing extends Component {
                       {view.type === 0 ? "Top-down" : "Front-on"}
                     </Text>
                     <Text>
+                      <Text style={styles.bold}>Dimensions: </Text>
+                      {view.width}m&times;{view.height}m
+                    </Text>
+                    <Text>
                       <Text style={styles.bold}>Drawing Title: </Text>
                       {this.props.drawing.drawing.title}
                     </Text>

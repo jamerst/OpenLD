@@ -101,11 +101,11 @@ export class PrintDrawingViewer extends Component {
               draggable
             >
             <Layer>
-
               <Scale
-                x = {1}
-                y = {1}
+                x = {0.1}
+                y = {0.1}
                 scale = {scale.scale}
+                viewDimension = {view.width >= view.height ? view.width : view.height}
               />
             </Layer>
               <View

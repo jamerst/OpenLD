@@ -10,6 +10,9 @@ export class Scale extends Component {
   }
 
   render = () => {
+    const majorHeight = Math.log10(this.props.viewDimension) / 3
+    const minorHeight = majorHeight / 1.5;
+    const subMinorHeight = majorHeight / 3
     return (
       <Group>
         <Line
@@ -21,14 +24,14 @@ export class Scale extends Component {
           return (
             <Group key={`Mm-${mark}`}>
               <Line
-                points = {[this.props.x+mark, this.props.y, this.props.x+mark, this.props.y+.75]}
+                points = {[this.props.x+mark, this.props.y, this.props.x+mark, this.props.y+majorHeight]}
                 stroke = "#f00"
                 strokeWidth = {0.025}
               />
               <Text
-                x = {this.props.x+mark}
-                y = {this.props.y+1}
-                textScale = {0.025}
+                x = {this.props.x+mark+0.05}
+                y = {this.props.y+majorHeight}
+                textScale = {Math.log10(this.props.viewDimension)/85}
                 fill = "#f00"
                 text = {`${mark}m`}
               />
@@ -39,14 +42,14 @@ export class Scale extends Component {
           return (
             <Group key={`mm-${mark}`}>
               <Line
-                points = {[this.props.x+mark, this.props.y, this.props.x+mark, this.props.y+.5]}
+                points = {[this.props.x+mark, this.props.y, this.props.x+mark, this.props.y+minorHeight]}
                 stroke = "#f00"
                 strokeWidth = {0.025}
               />
               <Text
-                x = {this.props.x+mark}
-                y = {this.props.y+0.75}
-                textScale = {0.025}
+                x = {this.props.x+mark+0.05}
+                y = {this.props.y+minorHeight}
+                textScale = {Math.log10(this.props.viewDimension)/100}
                 fill = "#f00"
                 text = {`${mark}m`}
               />
@@ -57,7 +60,7 @@ export class Scale extends Component {
           return (
             <Line
               key={`smm-${mark}`}
-              points = {[this.props.x+mark, this.props.y, this.props.x+mark, this.props.y+.25]}
+              points = {[this.props.x+mark, this.props.y, this.props.x+mark, this.props.y+subMinorHeight]}
               stroke = "#f00"
               strokeWidth = {0.025}
             />

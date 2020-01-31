@@ -1,6 +1,5 @@
 import React, { Component } from "react";
-import { Layer, Line, Group, Rect } from "react-konva"
-import { Text } from "./KonvaNodes";
+import { Layer, Line, Rect } from "react-konva"
 
 export class Grid extends Component {
   render = () => {
@@ -37,22 +36,13 @@ export class Grid extends Component {
           fill = "#fff"
         />
         {grid.map((line, index) => {
-          const text = line[0] === 0 ? line[1] : line[0];
           return (
-            <Group key = {"grid-" + index}>
-              <Line
-                points = {line}
-                stroke = "#ddd"
-                strokeWidth = {this.props.lineWidth}
-              />
-              <Text
-                x = {line[0] + 0.05}
-                y = {line[1] + 0.25}
-                text = {text + "m"}
-                textScale = {0.025}
-                fill = "#999"
-              />
-            </Group>
+            <Line
+              key = {"grid-" + index}
+              points = {line}
+              stroke = "#ddd"
+              strokeWidth = {this.props.lineWidth}
+            />
           );
         })}
       </Layer>

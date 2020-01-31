@@ -1,6 +1,5 @@
 import React, { Component } from "react";
 import { Circle, Group, Image, Label, Tag, Text } from "react-konva";
-// import { Text } from "./KonvaNodes";
 
 export class RiggedFixture extends Component {
   constructor(props) {
@@ -19,10 +18,10 @@ export class RiggedFixture extends Component {
     image.onload = () => {
       let width, height;
       if (image.width >= image.height) {
-        width = 1.25;
+        width = Math.log10(this.props.viewDimension / 5);
         height = image.height * width / image.width
       } else {
-        height = 1.25;
+        height = Math.log10(this.props.viewDimension / 5);
         width = image.width * height / image.height
       }
 
@@ -40,10 +39,11 @@ export class RiggedFixture extends Component {
 
     let highlight;
     if (colour !== "#000") {
+      const maxDim = this.state.symbolWidth >= this.state.symbolHeight ? this.state.symbolWidth : this.state.symbolHeight;
       highlight = (
         <Circle
-          width = {1.75}
-          height = {1.75}
+          width = {maxDim + 0.25}
+          height = {maxDim + 0.25}
           fill = {colour}
           opacity = {.5}
         />
@@ -54,9 +54,9 @@ export class RiggedFixture extends Component {
     if (this.props.data.colour) {
       frontLabel = (
         <Label
-          scale = {{x: 0.025, y: -0.025}}
-          x={-.6}
-          y={this.state.symbolHeight - 0.15}
+          scale = {{x: Math.log10(this.props.viewDimension)/75, y: -Math.log10(this.props.viewDimension)/75}}
+          x={-(this.state.symbolWidth/2 + 0.15)}
+          y={this.state.symbolHeight}
 
         >
           <Tag fill="#fff"/>
@@ -84,8 +84,8 @@ export class RiggedFixture extends Component {
 
       backLabel = (
         <Label
-          scale = {{x: 0.025, y: -0.025}}
-          x={-.6}
+          scale = {{x: Math.log10(this.props.viewDimension)/75, y: -Math.log10(this.props.viewDimension)/75}}
+          x={-(this.state.symbolWidth/2 + 0.15)}
           y={-(this.state.symbolHeight/2 + 0.1)}
 
         >

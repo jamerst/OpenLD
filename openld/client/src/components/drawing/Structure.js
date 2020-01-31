@@ -36,6 +36,7 @@ export class Structure extends Component {
 
     let structure;
     const colour = typeof this.props.colour === "undefined" ? "#000" : this.props.colour;
+    let labelOffset = {x: 0, y: 0};
 
     if (this.state.singlePoint) {
       structure = (
@@ -44,23 +45,25 @@ export class Structure extends Component {
           x = {points[0]}
           y = {points[1]}
           fill = {colour}
-          radius = {this.props.selected ? 0.3 : 0.2}
+          radius = {this.props.selected ? Math.log10(this.props.viewDimension) / 7.5 : Math.log10(this.props.viewDimension) / 10}
           strokeWidth = {0}
-          hitStrokeWidth = {1}
+          hitStrokeWidth = {10 / this.props.scale}
           onMouseOver = {this.onMouseOver}
           onMouseOut = {this.onMouseOut}
           onMouseMove = {this.onMouseMove}
           onClick = {this.onClick}
         />
       )
+      labelOffset.x = Math.log10(this.props.viewDimension) / 7.5;
+      labelOffset.y = Math.log10(this.props.viewDimension) / 7.5;
     } else {
       structure = (
         <Line
           key = {"l-" + this.props.id}
           points = {points}
           stroke = {colour}
-          strokeWidth = {this.props.selected ? 0.1 : 0.06}
-          hitStrokeWidth = {1}
+          strokeWidth = {this.props.selected ? Math.log10(this.props.viewDimension)/30 : Math.log10(this.props.viewDimension)/40}
+          hitStrokeWidth = {10 / this.props.scale}
           onMouseOver = {this.onMouseOver}
           onMouseOut = {this.onMouseOut}
           onMouseMove = {this.onMouseMove}
@@ -82,18 +85,18 @@ export class Structure extends Component {
           x = {this.state.newFixturePos.x}
           y = {this.state.newFixturePos.y}
           fill = {"#007bff"}
-          radius = {0.2}
+          radius = {this.props.viewDimension / 100}
           visible = {this.state.newFixtureVisible && this.props.selectedTool === "add-fixture"}
           onClick = {this.onClick}
         />
         <Text
           key={"sl-" + this.props.id}
-          x = {points[0]}
-          y = {points[1] - 0.1}
+          x = {points[0] + labelOffset.x}
+          y = {points[1] + labelOffset.y}
           rotation = {angle}
           padding = {2}
           text = {this.props.name}
-          textScale = {0.025}
+          textScale = {Math.log10(this.props.viewDimension) / 75}
           fill = "#000"
         />
         {this.props.fixtures.map(fixture => {
@@ -116,6 +119,7 @@ export class Structure extends Component {
               setCursor = {this.props.setCursor}
               setHintText = {this.props.setHintText}
               onSymbolLoad = {this.onSymbolLoad}
+              viewDimension = {this.props.viewDimension}
             />
           )
         })}
@@ -155,9 +159,9 @@ export class Structure extends Component {
 
   onMouseOver = (event) => {
     if (this.state.singlePoint) {
-      event.target.radius(0.3);
+      event.target.radius(Math.log10(this.props.viewDimension) / 7.5);
     } else {
-      event.target.strokeWidth(0.1);
+      event.target.strokeWidth(Math.log10(this.props.viewDimension) / 30);
     }
 
     event.target.draw();
@@ -181,9 +185,9 @@ export class Structure extends Component {
   onMouseOut = (event) => {
     if (!this.props.selected) {
       if (this.state.singlePoint) {
-        event.target.radius(0.2);
+        event.target.radius(Math.log10(this.props.viewDimension) / 10);
       } else {
-        event.target.strokeWidth(0.06);
+        event.target.strokeWidth(Math.log10(this.props.viewDimension) / 40);
       }
 
       // prevent exception when object deleted whilst hovering on

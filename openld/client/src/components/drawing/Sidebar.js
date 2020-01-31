@@ -316,6 +316,7 @@ export class Sidebar extends Component {
       if (field === "type") {
         structureData = {
           id: this.props.structure.id,
+          rating: -1,
           [field]: {id: value}
         };
       }
@@ -323,6 +324,10 @@ export class Sidebar extends Component {
     } else if (this.props.selectedObjectType === "fixture") {
       fixtureData = {
         id: this.props.fixture.id,
+        angle: -1,
+        channel: -1,
+        universe: -1,
+        address: -1,
         [field]: value
       }
 

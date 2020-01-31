@@ -57,10 +57,10 @@ export class DrawingEditor extends Component {
       alertColour: "info",
       alertOpen: false,
 
-      hintText: "Use the buttons on the left to select a tool",
-
-      randomMc: require("random-material-color")
+      hintText: "Use the buttons on the left to select a tool"
     }
+
+    this.randomMc = require("random-material-color");
   }
 
   componentDidMount = () => {
@@ -69,7 +69,9 @@ export class DrawingEditor extends Component {
 
   componentWillUnmount = () => {
     window.removeEventListener("resize", this.sizeStage);
-    this.state.hub.stop();
+    if (this.state.hubConnected) {
+      this.state.hub.stop();
+    }
   }
 
   render = () => {
@@ -681,7 +683,7 @@ export class DrawingEditor extends Component {
     this.setState(prevState => {
       let users = [...prevState.connectedUsers];
 
-      const colour = this.state.randomMc.getColor({text: user.id});
+      const colour = this.randomMc.getColor({text: user.id});
       const rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(colour);
 
       user.colour = colour;
