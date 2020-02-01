@@ -392,6 +392,7 @@ export class Sidebar extends Component {
 
     if (response.ok) {
       this.props.setAlertIcon("success", "Successfully added template for drawing", "check");
+      this.setState({canTemplate: false});
     } else {
       this.props.setAlertIcon("danger", "Failed to create template for drawing", "exclamation");
     }

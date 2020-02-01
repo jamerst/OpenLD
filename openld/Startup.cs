@@ -62,7 +62,6 @@ namespace openld {
                             context.Token = token;
                         }
                     };
-
                 }
             );
 
