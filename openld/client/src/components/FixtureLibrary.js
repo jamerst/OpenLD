@@ -143,7 +143,7 @@ export class FixtureLibrary extends Component {
     event.preventDefault();
     this.fetchFixtures(this.state.searchTerm);
     if (!this.props.embedded) {
-      this.props.history.push("/library" + this.state.searchParams.getQueryString());
+      this.props.history.push(`/library/${this.state.searchParams.getQueryString()}`);
     }
   }
 

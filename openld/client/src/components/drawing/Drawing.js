@@ -211,7 +211,7 @@ export class Drawing extends Component {
         }
         this.setState({
           tooltipPos: {x: snapPos.x - 0.5, y: snapPos.y - 0.5},
-          tooltipText: "(" + snapPos.x.toFixed(1) + "," + snapPos.y.toFixed(1) + ")",
+          tooltipText: `(${snapPos.x.toFixed(1)},${snapPos.y.toFixed(1)})`,
           nextLinePoint: [snapPos.x, snapPos.y]
         });
         this.props.setTooltipVisible(true);

@@ -26,7 +26,7 @@ export class View extends Component {
 
         return (
           <Structure
-            key={"s-" + structure.id}
+            key={`s-${structure.id}`}
             id={structure.id}
             points={structure.geometry.points}
             fixtures={structure.fixtures}

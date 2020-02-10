@@ -90,7 +90,7 @@ export class PrintDrawingViewer extends Component {
           let scale = this.scaleStage(view, size.width, size.height, size.y);
           return (
             <Stage
-              key = {"stage-" + view.id}
+              key = {`stage-${view.id}`}
               style={{display: "none"}}
               ref = {this.stageRefs[view.id]}
               width = {size.width}
@@ -121,7 +121,7 @@ export class PrintDrawingViewer extends Component {
   }
 
   fetchDrawing = async () => {
-    const response = await fetch("api/drawing/GetPrintDrawing/" + this.props.match.params.id, {
+    const response = await fetch(`api/drawing/GetPrintDrawing/${this.props.match.params.id}`, {
       headers: await authService.generateHeader()
     });
 

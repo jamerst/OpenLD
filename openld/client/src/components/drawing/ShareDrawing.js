@@ -33,7 +33,7 @@ export class ShareDrawing extends Component {
     if (this.state.userDrawings.length > 0) {
       users = this.state.userDrawings.map(ud => {
         return (
-          <ListGroupItem key={"ud-" + ud.user.id}>
+          <ListGroupItem key={`ud-${ud.user.id}`}>
             <div className="d-flex justify-content-between">
               <div>
                 {ud.user.email}
@@ -147,7 +147,7 @@ export class ShareDrawing extends Component {
   }
 
   fetchSharedUsers = async () => {
-    const response = await fetch("api/drawing/GetSharedUsers/" + this.props.drawingId, {
+    const response = await fetch(`api/drawing/GetSharedUsers/${this.props.drawingId}`, {
       headers: await authService.generateHeader()
     });
 

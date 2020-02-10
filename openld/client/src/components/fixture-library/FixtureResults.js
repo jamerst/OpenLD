@@ -12,7 +12,7 @@ export class FixtureResults extends Component {
               <Col xs={this.props.xs} md={this.props.md} key={result.id}>
                 <Card color="light" onClick={() => this.props.onCardClick(result.id)} className="mb-3" style={{cursor: "pointer"}}>
                   <div className="p-3" style={{ width: "100%", textAlign: "center", backgroundColor: "white" }}>
-                    <CardImg src={ "/api/fixture/GetImage/" + result.id } style={{ maxHeight: this.props.cardImgSize, width: "auto", maxWidth: "100%" }}></CardImg>
+                    <CardImg src={`/api/fixture/GetImage/${result.id}`} style={{ maxHeight: this.props.cardImgSize, width: "auto", maxWidth: "100%" }}></CardImg>
                   </div>
                   <CardBody>
                     <CardTitle className="h4">{result.name}</CardTitle>

@@ -15,7 +15,7 @@ using openld.Utils;
 namespace openld.Hubs {
 
     [Authorize]
-    public class DrawingHub : Hub {
+    public class DrawingHub : Hub<IDrawingClient> {
         private readonly IDrawingService _drawingService;
         private readonly IFixtureService _fixtureService;
         private readonly IViewService _viewService;
@@ -46,9 +46,7 @@ namespace openld.Hubs {
             if (connectionDrawing.ContainsKey(Context.ConnectionId)) {
                 // alert other users in group to disconnecting
                 await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId])
-                    .SendAsync("UserLeft",
-                        Context.User.FindFirst(ClaimTypes.NameIdentifier).Value
-                    );
+                    .UserLeft(Context.User.FindFirst(ClaimTypes.NameIdentifier).Value);
 
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, connectionDrawing[Context.ConnectionId]);
 
@@ -83,7 +81,7 @@ namespace openld.Hubs {
             } else if (drawingUsers[id].Any(u => u.Id == Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 drawingUsers[id].RemoveWhere(u => u.Id == Context.User.FindFirst(ClaimTypes.NameIdentifier).Value);
             }
-            await Clients.Caller.SendAsync("ConnectedUsers", drawingUsers[id]);
+            await Clients.Caller.ConnectedUsers(drawingUsers[id]);
 
             // get user details for joining user from DB
             User newUser = await _userService.GetUserDetailsAsync(Context.User.FindFirst(ClaimTypes.NameIdentifier).Value);
@@ -92,7 +90,7 @@ namespace openld.Hubs {
 
             // send joining user details to rest of group
             await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId])
-                .SendAsync("UserJoined", newUser);
+                .UserJoined(newUser);
 
         }
 
@@ -105,12 +103,12 @@ namespace openld.Hubs {
             try {
                 newStructure = await _structureService.AddStructureAsync(structure);
             } catch (Exception) {
-                await Clients.Caller.SendAsync("AddStructureFailure");
+                await Clients.Caller.AddStructureFailure();
                 return;
             }
 
-            await Clients.Group(connectionDrawing[Context.ConnectionId]).SendAsync("NewStructure", newStructure);
-            await Clients.Caller.SendAsync("AddStructureSuccess", newStructure);
+            await Clients.Group(connectionDrawing[Context.ConnectionId]).NewStructure(newStructure);
+            await Clients.Caller.AddStructureSuccess(newStructure.Id);
         }
 
         public async Task UpdateStructureGeometry(string structureId, Geometry geometry, List<RiggedFixture> fixtures) {
@@ -122,18 +120,18 @@ namespace openld.Hubs {
             try {
                 updated = await _structureService.SetStructureGeometryAsync(structureId, geometry);
             } catch (Exception) {
-                await Clients.Caller.SendAsync("UpdateStructureGeometryFailure");
+                await Clients.Caller.UpdateStructureGeometryFailure();
                 return;
             }
 
             try {
                 await _structureService.SetRiggedFixturePositionsAsync(structureId, fixtures.Select(f => f.Position).ToList());
             } catch (Exception) {
-                await Clients.Caller.SendAsync("UpdateStructureGeometryFailure");
+                await Clients.Caller.UpdateStructureGeometryFailure();
                 return;
             }
 
-            await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SendAsync("UpdateStructureGeometry", updated, fixtures);
+            await Clients.Group(connectionDrawing[Context.ConnectionId]).UpdateStructureGeometry(updated, fixtures);
         }
 
         public async Task CreateView(View view) {
@@ -142,7 +140,7 @@ namespace openld.Hubs {
             }
 
             if (view.Width < 1 || view.Height < 1) {
-                await Clients.Caller.SendAsync("CreateViewFailure", "Invalid view size");
+                await Clients.Caller.CreateViewFailure("Invalid view size");
                 return;
             }
 
@@ -150,12 +148,11 @@ namespace openld.Hubs {
             try {
                 newView = await _viewService.CreateViewAsync(view);
             } catch (Exception) {
-                await Clients.Caller.SendAsync("CreateViewFailure");
+                await Clients.Caller.CreateViewFailure();
                 return;
             }
 
-            await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SendAsync("NewView", newView);
-            await Clients.Caller.SendAsync("CreateViewSuccess", newView);
+            await Clients.Group(connectionDrawing[Context.ConnectionId]).NewView(newView);
         }
 
         public async Task DeleteView(string viewId) {
@@ -166,12 +163,12 @@ namespace openld.Hubs {
             try {
                 await _viewService.DeleteViewAsync(viewId);
             } catch (Exception) {
-                await Clients.Caller.SendAsync("DeleteViewFailure");
+                await Clients.Caller.DeleteViewFailure();
                 return;
             }
 
-            await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SendAsync("DeleteView", viewId);
-            await Clients.Caller.SendAsync("DeleteViewSuccess", viewId);
+            await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).DeleteView(viewId);
+            await Clients.Caller.DeleteViewSuccess(viewId);
         }
 
         public async Task SelectObject(string type, string id) {
@@ -180,8 +177,7 @@ namespace openld.Hubs {
                     throw new HubException("401: Unauthorised");
                 }
 
-                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SendAsync(
-                    "SelectObject",
+                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SelectObject(
                     type,
                     (await _structureService.GetViewAsync(new Structure {Id = id})).Id,
                     id,
@@ -193,8 +189,7 @@ namespace openld.Hubs {
                     throw new HubException("401: Unauthorised");
                 }
 
-                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SendAsync(
-                    "SelectObject",
+                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SelectObject(
                     type,
                     (await _rFixtureService.GetViewAsync(new RiggedFixture {Id = id})).Id,
                     (await _rFixtureService.GetStructureAsync(new RiggedFixture {Id = id})).Id,
@@ -210,8 +205,7 @@ namespace openld.Hubs {
                     throw new HubException("401: Unauthorised");
                 }
 
-                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SendAsync(
-                    "DeselectObject",
+                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).DeselectObject(
                     type,
                     (await _structureService.GetViewAsync(new Structure {Id = id})).Id,
                     id,
@@ -223,8 +217,7 @@ namespace openld.Hubs {
                     throw new HubException("401: Unauthorised");
                 }
 
-                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SendAsync(
-                    "DeselectObject",
+                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).DeselectObject(
                     type,
                     (await _rFixtureService.GetViewAsync(new RiggedFixture {Id = id})).Id,
                     (await _rFixtureService.GetStructureAsync(new RiggedFixture {Id = id})).Id,
@@ -233,11 +226,14 @@ namespace openld.Hubs {
             }
         }
 
-        public async Task UpdateObjectProperty(string type, string modifiedField, Structure structure, RiggedFixture fixture) {
+        public async Task UpdateObjectProperty(string type, string modifiedField, Structure structure, RiggedFixture fixture, bool successCallback) {
             if (type == "structure") {
                 if (! await _authUtils.hasAccess(structure, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                     throw new HubException("401: Unauthorised");
                 }
+
+                Structure current = await _structureService.GetStructureAsync(structure.Id);
+                var prevValue = current[modifiedField];
 
                 if (structure.Type != null && structure.Type.Id != "") {
                     structure.Type = await _structureService.GetStructureTypeAsync(structure.Type.Id);
@@ -247,23 +243,34 @@ namespace openld.Hubs {
                 try {
                     updated = await _structureService.UpdatePropsAsync(structure);
                 } catch (Exception) {
-                    await Clients.Caller.SendAsync("UpdatePropertyFailure");
+                    await Clients.Caller.UpdateObjectPropertyFailure();
                     return;
                 }
 
-                await Clients.Group(connectionDrawing[Context.ConnectionId]).SendAsync(
-                    "UpdateObjectProperty",
+                await Clients.Group(connectionDrawing[Context.ConnectionId]).UpdateObjectProperty(
                     type,
                     modifiedField,
                     (await _structureService.GetViewAsync(updated)).Id,
                     updated,
                     null
                 );
-                await Clients.Caller.SendAsync("UpdateObjectPropertySuccess");
+
+                if (successCallback) {
+                    await Clients.Caller.UpdateObjectPropertySuccess(
+                        type,
+                        structure.Id,
+                        modifiedField,
+                        prevValue,
+                        updated[modifiedField]
+                    );
+                }
             } else if (type == "fixture") {
                 if (! await _authUtils.hasAccess(fixture, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                     throw new HubException("401: Unauthorised");
                 }
+
+                RiggedFixture current = await _rFixtureService.GetRiggedFixtureAsync(fixture.Id);
+                var prevValue = current[modifiedField];
 
                 if (fixture.Mode != null && fixture.Mode.Id != "") {
                     fixture.Mode = await _fixtureService.GetFixtureModeAsync(fixture.Mode.Id);
@@ -273,19 +280,27 @@ namespace openld.Hubs {
                 try {
                     updated = await _rFixtureService.UpdatePropsAsync(fixture);
                 } catch (Exception) {
-                    await Clients.Caller.SendAsync("UpdatePropertyFailure");
+                    await Clients.Caller.UpdateObjectPropertyFailure();
                     return;
                 }
 
-                await Clients.Group(connectionDrawing[Context.ConnectionId]).SendAsync(
-                    "UpdateObjectProperty",
+                await Clients.Group(connectionDrawing[Context.ConnectionId]).UpdateObjectProperty(
                     type,
                     modifiedField,
                     (await _rFixtureService.GetViewAsync(updated)).Id,
                     await _rFixtureService.GetStructureAsync(updated),
                     updated
                 );
-                await Clients.Caller.SendAsync("UpdateObjectPropertySuccess");
+
+                if (successCallback) {
+                    await Clients.Caller.UpdateObjectPropertySuccess(
+                        type,
+                        fixture.Id,
+                        modifiedField,
+                        prevValue,
+                        updated[modifiedField]
+                    );
+                }
             }
         }
 
@@ -300,20 +315,18 @@ namespace openld.Hubs {
                 try {
                     await _structureService.DeleteAsync(id);
                 } catch (Exception) {
-                    await Clients.Caller.SendAsync("DeleteObjectFailure", type);
+                    await Clients.Caller.DeleteObjectFailure(type);
                     return;
                 }
 
-                await Clients.Caller.SendAsync(
-                    "DeleteObjectSuccess",
+                await Clients.Caller.DeleteObjectSuccess(
                     type,
                     view.Id,
                     id,
                     null
                 );
 
-                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SendAsync(
-                    "DeleteObject",
+                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).DeleteObject(
                     type,
                     view.Id,
                     id,
@@ -330,20 +343,18 @@ namespace openld.Hubs {
                 try {
                     await _rFixtureService.DeleteAsync(id);
                 } catch (Exception) {
-                    await Clients.Caller.SendAsync("DeleteObjectFailure", type);
+                    await Clients.Caller.DeleteObjectFailure(type);
                     return;
                 }
 
-                await Clients.Caller.SendAsync(
-                    "DeleteObjectSuccess",
+                await Clients.Caller.DeleteObjectSuccess(
                     type,
                     view.Id,
                     structure.Id,
                     id
                 );
 
-                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).SendAsync(
-                    "DeleteObject",
+                await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).DeleteObject(
                     type,
                     view.Id,
                     structure.Id,
@@ -360,15 +371,16 @@ namespace openld.Hubs {
             try {
                 fixture = await _rFixtureService.AddRiggedFixtureAsync(fixture);
             } catch (Exception) {
-                await Clients.Caller.SendAsync("AddFixtureFailure");
+                await Clients.Caller.AddFixtureFailure();
                 return;
             }
 
-            await Clients.Group(connectionDrawing[Context.ConnectionId]).SendAsync(
-                "AddFixture",
+            await Clients.Group(connectionDrawing[Context.ConnectionId]).AddFixture(
                 (await _structureService.GetViewAsync(fixture.Structure)).Id,
                 fixture
             );
+
+            await Clients.Caller.AddFixtureSuccess(fixture.Id);
         }
     }
 }

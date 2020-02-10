@@ -46,6 +46,19 @@ namespace openld.Services {
             return structure.View;
         }
 
+        public async Task<Structure> GetStructureAsync(string structureId) {
+            Structure structure;
+            try {
+                structure = await _context.Structures.AsNoTracking()
+                    .Include(s => s.Type)
+                    .FirstAsync(s => s.Id == structureId);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("Structure ID not found");
+            }
+
+            return structure;
+        }
+
         public async Task<Structure> AddStructureAsync(Structure structure) {
             try {
                 structure.View = await _context.Views.FirstAsync(v => v.Id == structure.View.Id);
@@ -53,7 +66,18 @@ namespace openld.Services {
                 throw new KeyNotFoundException("View ID not found");
             }
 
-            structure.Type = await GetStructureTypeByNameAsync("Bar");
+            if (structure.Type != null) {
+                structure.Type = await _context.StructureTypes.FirstAsync(st => st.Id == structure.Type.Id);
+            } else {
+                structure.Type = await GetStructureTypeByNameAsync("Bar");
+            }
+
+            if (structure.Fixtures != null) {
+                foreach(RiggedFixture fixture in structure.Fixtures) {
+                    fixture.Fixture = await _context.Fixtures.FirstAsync(f => f.Id == fixture.Fixture.Id);
+                    fixture.Mode = await _context.FixtureModes.FirstAsync(fm => fm.Id == fixture.Mode.Id);
+                }
+            }
 
             await _context.Structures.AddAsync(structure);
             await _context.SaveChangesAsync();
@@ -178,6 +202,7 @@ namespace openld.Services {
     public interface IStructureService {
         Task<Drawing> GetDrawingAsync(Structure structure);
         Task<View> GetViewAsync(Structure structure);
+        Task<Structure> GetStructureAsync(string structureId);
         Task<Structure> AddStructureAsync(Structure structure);
         Task<Structure> SetStructureGeometryAsync(string structureId, Geometry geometry);
         Task<List<RiggedFixture>> SetRiggedFixturePositionsAsync(string structureId, List<Point> points);

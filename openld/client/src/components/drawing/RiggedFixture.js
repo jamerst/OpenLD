@@ -14,7 +14,7 @@ export class RiggedFixture extends Component {
 
   componentDidMount() {
     const image = new window.Image();
-    image.src = "/api/fixture/GetSymbol/" + this.props.fixtureId;
+    image.src = `/api/fixture/GetSymbol/${this.props.fixtureId}`;
     image.onload = () => {
       let width, height;
       if (image.width >= image.height) {
@@ -61,7 +61,7 @@ export class RiggedFixture extends Component {
         >
           <Tag fill="#fff"/>
           <Text
-            key={"flc-" + this.props.data.id}
+            key={`flc-${this.props.data.id}`}
             width = {50}
             align = "center"
             padding = {1}
@@ -91,7 +91,7 @@ export class RiggedFixture extends Component {
         >
           <Tag fill="#fff"/>
           <Text
-            key={"fl-" + this.props.data.id}
+            key={`fl-${this.props.data.id}`}
             width = {50}
             align = "center"
             padding = {1}

@@ -32,11 +32,11 @@ namespace openld.Services {
                 throw new KeyNotFoundException("Fixture ID not found");
             }
 
-            if (fixture.Fixture.Modes.Count > 0) {
+            if (fixture.Mode != null) {
+                fixture.Mode = await _context.FixtureModes.FirstAsync(fm => fm.Id == fixture.Mode.Id);
+            } else if (fixture.Fixture.Modes.Count > 0) {
                 fixture.Mode = fixture.Fixture.Modes[0];
             }
-
-            fixture.Angle = 0;
 
             await _context.RiggedFixtures.AddAsync(fixture);
             await _context.SaveChangesAsync();
@@ -75,7 +75,7 @@ namespace openld.Services {
 
         public async Task<Structure> GetStructureAsync(RiggedFixture fixture) {
             try {
-                fixture = await _context.RiggedFixtures
+                fixture = await _context.RiggedFixtures.AsNoTracking()
                     .Include(rf => rf.Structure)
                     .FirstAsync(rf => rf.Id == fixture.Id);
             } catch (InvalidOperationException) {
@@ -83,6 +83,19 @@ namespace openld.Services {
             }
 
             return fixture.Structure;
+        }
+
+        public async Task<RiggedFixture> GetRiggedFixtureAsync(string id) {
+            RiggedFixture fixture;
+            try {
+                fixture = await _context.RiggedFixtures
+                    .Include(rf => rf.Mode)
+                    .FirstAsync(f => f.Id == id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("Structure ID not found");
+            }
+
+            return fixture;
         }
 
         public async Task<RiggedFixture> UpdatePropsAsync(RiggedFixture fixture) {
@@ -120,6 +133,7 @@ namespace openld.Services {
         Task<Drawing> GetDrawingAsync(RiggedFixture fixture);
         Task<View> GetViewAsync(RiggedFixture fixture);
         Task<Structure> GetStructureAsync(RiggedFixture fixture);
+        Task<RiggedFixture> GetRiggedFixtureAsync(string id);
         Task<RiggedFixture> UpdatePropsAsync(RiggedFixture fixture);
         Task DeleteAsync(string id);
     }

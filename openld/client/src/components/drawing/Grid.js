@@ -38,7 +38,7 @@ export class Grid extends Component {
         {grid.map((line, index) => {
           return (
             <Line
-              key = {"grid-" + index}
+              key = {`grid-${index}`}
               points = {line}
               stroke = "#ddd"
               strokeWidth = {this.props.lineWidth}

@@ -15,6 +15,9 @@ export class Structure extends Component {
       newFixtureVisible: false
     }
 
+    this.startPoints = [];
+    this.startFixtures = [];
+
     this.symbolsLoaded = {};
   }
 
@@ -41,7 +44,7 @@ export class Structure extends Component {
     if (this.state.singlePoint) {
       structure = (
         <Circle
-          key = {"c-" + this.props.id}
+          key = {`c-${this.props.id}`}
           x = {points[0]}
           y = {points[1]}
           fill = {colour}
@@ -59,7 +62,7 @@ export class Structure extends Component {
     } else {
       structure = (
         <Line
-          key = {"l-" + this.props.id}
+          key = {`l-${this.props.id}`}
           points = {points}
           stroke = {colour}
           strokeWidth = {this.props.selected ? Math.log10(this.props.viewDimension)/30 : Math.log10(this.props.viewDimension)/40}
@@ -90,7 +93,7 @@ export class Structure extends Component {
           onClick = {this.onClick}
         />
         <Text
-          key={"sl-" + this.props.id}
+          key = {`sl-${this.props.id}`}
           x = {points[0] + labelOffset.x}
           y = {points[1] + labelOffset.y}
           rotation = {angle}
@@ -104,7 +107,7 @@ export class Structure extends Component {
 
           return (
             <RiggedFixture
-              key = {"rf-" + fixture.id}
+              key = {`rf-${fixture.id}`}
               data = {fixture}
               structureId = {this.props.id}
               fixtureId = {fixture.fixture.id}
@@ -130,6 +133,8 @@ export class Structure extends Component {
   handleDragStart = (event) => {
     this.setState({startPos: event.target.position()});
     this.props.setHintText("Release to confirm position");
+    this.startPoints = DrawingUtils.clone(this.props.points);
+    this.startFixtures = DrawingUtils.clone(this.props.fixtures);
   }
 
   handleDrag = (event) => {
@@ -139,7 +144,7 @@ export class Structure extends Component {
 
     const snapPos = DrawingUtils.getNearestSnapPos(newPoint, this.props.snapGridSize);
 
-    this.props.setTooltip({x: newPoint.x, y: newPoint.y + 25 / this.props.scale}, true, "(" + snapPos.x.toFixed(1) + "," + snapPos.y.toFixed(1) + ")");
+    this.props.setTooltip({x: newPoint.x, y: newPoint.y + 25 / this.props.scale}, true, `(${snapPos.x.toFixed(1)},${snapPos.y.toFixed(1)})`);
   }
 
   handleDragEnd = (event) => {
@@ -147,9 +152,9 @@ export class Structure extends Component {
     const change = DrawingUtils.getDifference(snapPos, this.state.startPos);
 
     const newStructurePoints = DrawingUtils.movePoints(this.props.points, change);
-    const newFixtures = DrawingUtils.moveFixtures(this.props.fixtures, change);
 
-    this.props.updatePoints(null, this.props.id, newStructurePoints, newFixtures);
+    const newFixtures = DrawingUtils.moveFixtures(this.props.fixtures, change);
+    this.props.updatePoints(this.props.id, newStructurePoints, newFixtures, this.startPoints, this.startFixtures);
     event.target.position({x: 0, y: 0});
 
     event.target.getLayer().draw();
@@ -175,7 +180,7 @@ export class Structure extends Component {
         newFixturePos: DrawingUtils.nearestLinePoint(this.props.points, DrawingUtils.getRelativePointerPos(stage))
       }, () => {
         const snapPos = DrawingUtils.getNearestSnapPos(this.state.newFixturePos, this.props.snapGridSize);
-        this.props.setTooltip({x: snapPos.x + 0.5, y: snapPos.y + 0.5}, true, "(" + snapPos.x.toFixed(1) + "," + snapPos.y.toFixed(1) + ")");
+        this.props.setTooltip({x: snapPos.x + 0.5, y: snapPos.y + 0.5}, true, `(${snapPos.x.toFixed(1)},${snapPos.y.toFixed(1)})`);
       });
     } else if (this.props.selectedTool === "eraser") {
       this.props.setHintText("Click to remove structure.")
@@ -213,7 +218,7 @@ export class Structure extends Component {
         newFixturePos: DrawingUtils.nearestLinePoint(this.props.points, DrawingUtils.getRelativePointerPos(stage))
       }, () => {
         const snapPos = DrawingUtils.getNearestSnapPos(this.state.newFixturePos, this.props.snapGridSize);
-        this.props.setTooltip({x: snapPos.x + 0.5, y: snapPos.y + 0.5}, true, "(" + snapPos.x.toFixed(1) + "," + snapPos.y.toFixed(1) + ")");
+        this.props.setTooltip({x: snapPos.x + 0.5, y: snapPos.y + 0.5}, true, `(${snapPos.x.toFixed(1)},${snapPos.y.toFixed(1)})`);
       });
     }
   }
@@ -229,7 +234,16 @@ export class Structure extends Component {
         this.props.setTool("none");
       } else if (this.props.selectedTool === "add-fixture") {
         const stage = event.target.getStage();
-        this.props.onFixturePlace(this.props.id, DrawingUtils.getNearestSnapPos(DrawingUtils.nearestLinePoint(this.props.points, DrawingUtils.getRelativePointerPos(stage)), this.props.snapGridSize));
+        this.props.onFixturePlace(
+          this.props.id,
+          DrawingUtils.getNearestSnapPos(
+            DrawingUtils.nearestLinePoint(
+              this.props.points,
+              DrawingUtils.getRelativePointerPos(stage)
+            ),
+            this.props.snapGridSize
+          )
+        );
         this.props.setTool("none");
         this.props.setTooltip({x: 0, y: 0}, false, "");
         this.setState({newFixtureVisible: false});

@@ -47,7 +47,7 @@ export class Home extends Component {
                 <Row><h2>Your Drawings</h2></Row>
                 {this.state.ownedDrawings.map(drawing => {
                   return (
-                    <Link to={"/drawing/" + drawing.id} className="text-dark" key={drawing.id}>
+                    <Link to={`/drawing/${drawing.id}`} className="text-dark" key={drawing.id}>
                       <Card className="mb-3">
                         <CardHeader><h4 className="mb-0">{drawing.title}</h4></CardHeader>
                         <CardBody>
@@ -65,7 +65,7 @@ export class Home extends Component {
                 <Row><h2>Drawings Shared With You</h2></Row>
                 {this.state.sharedDrawings.map(drawing => {
                   return (
-                    <Link to={"/drawing/" + drawing.id} className="text-dark" key={drawing.id}>
+                    <Link to={`/drawing/${drawing.id}`} className="text-dark" key={drawing.id}>
                       <Card className="mb-3">
                         <CardHeader><h4 className="mb-0">{drawing.title}</h4></CardHeader>
                         <CardBody>
@@ -111,7 +111,7 @@ export class Home extends Component {
   }
 
   redirect = (id) => {
-    this.props.history.push("/drawing/" + id);
+    this.props.history.push(`/drawing/${id}`);
   }
 
   renderActions = async () => {

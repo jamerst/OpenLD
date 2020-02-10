@@ -114,7 +114,7 @@ export class Sidebar extends Component {
 
                   return (
                     <ListGroupItem
-                      key = {"list-" + view.id}
+                      key = {`list-${view.id}`}
                       className="rounded-0 p-1 border-left-0 border-right-0 d-flex justify-content-between text-break"
                       onClick={() => this.props.onClickView(view.id)}
                       active={this.props.currentView === view.id}
@@ -225,7 +225,7 @@ export class Sidebar extends Component {
               <Col xs="12">
                 <Row>
                   <Col xs="4">
-                    <img src={ "/api/fixture/GetImage/" + this.state.fixture.id } style={{maxWidth: "100%"}} alt={this.state.fixture.name}/>
+                    <img src={`/api/fixture/GetImage/${this.state.fixture.id}`} style={{maxWidth: "100%"}} alt={this.state.fixture.name}/>
                   </Col>
                   <Col xs="8" className="pl-0">
                     <ListGroup>
@@ -344,7 +344,8 @@ export class Sidebar extends Component {
       this.props.selectedObjectType,
       field,
       structureData,
-      fixtureData
+      fixtureData,
+      true
     ).catch(err => console.error(err));
   }
 

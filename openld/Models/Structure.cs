@@ -1,6 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
-using Newtonsoft.Json;
+using System.Reflection;
 
 namespace openld.Models {
     public class Structure {
@@ -31,6 +32,17 @@ namespace openld.Models {
             }
 
             return structure;
+        }
+
+        public object this[string propName] {
+            get {
+                Type t = typeof(Structure);
+                PropertyInfo propInfo = t.GetProperty(propName, BindingFlags.IgnoreCase |  BindingFlags.Public | BindingFlags.Instance);
+                if (propInfo == null) {
+                    throw new KeyNotFoundException("Property not found");
+                }
+                return propInfo.GetValue(this, null);
+            }
         }
     }
 }

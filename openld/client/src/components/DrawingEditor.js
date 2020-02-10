@@ -13,6 +13,17 @@ import { Drawing } from "./drawing/Drawing";
 import { Sidebar } from "./drawing/Sidebar";
 import authService from './api-authorization/AuthorizeService';
 
+const Ops = {
+  ADD_FIXTURE: 'addFixture',
+  REMOVE_FIXTURE: 'removeFixture',
+
+  ADD_STRUCTURE: 'addStructure',
+  MOVE_STRUCTURE: 'moveStructure',
+  REMOVE_STRUCTURE: 'removeStructure',
+
+  UPDATE_PROPERTY: 'updateProperty'
+}
+
 export class DrawingEditor extends Component {
   constructor(props) {
     super(props);
@@ -59,6 +70,9 @@ export class DrawingEditor extends Component {
 
       hintText: "Use the buttons on the left to select a tool"
     }
+
+    this.history = [];
+    this.undoHistory = [];
 
     this.randomMc = require("random-material-color");
   }
@@ -108,14 +122,14 @@ export class DrawingEditor extends Component {
             {this.state.connectedUsers.map(u => {
               return (
                 <div
-                  key={"userCircle-" + u.id}
+                  key={`userCircle-${u.id}`}
                   className={"rounded-circle font-weight-bold d-flex align-items-center justify-content-center ml-2 " + (u.lightText ? "text-dark" : "text-light")}
                   style={{width: "2.5em", height: "2.5em", backgroundColor: u.colour}}
                 >
-                  <div id={"userCircle-" + u.id} style={{fontSize: "130%"}}>
+                  <div id={`userCircle-${u.id}`} style={{fontSize: "130%"}}>
                     {u.userName.charAt(0).toUpperCase()}
                   </div>
-                  <UncontrolledTooltip placement="bottom" target={"userCircle-" + u.id} style={{zIndex: 1000}}>{u.userName}</UncontrolledTooltip>
+                  <UncontrolledTooltip placement="bottom" target={`userCircle-${u.id}`} style={{zIndex: 1000}}>{u.userName}</UncontrolledTooltip>
                 </div>
               );
             })}
@@ -262,42 +276,42 @@ export class DrawingEditor extends Component {
           this.state.hub.invoke("OpenDrawing", this.state.drawingData.id)
             .catch(err => console.error(err.toString()));
         })
-        .catch(err => console.error("Hub error: " + err));
+        .catch(err => console.error(`Hub error: ${err}`));
 
       this.state.hub.onreconnecting(this.onHubReconnecting);
       this.state.hub.onreconnected(this.onHubReconnect);
-      this.state.hub.onclose(this.onHubDisconnect)
+      this.state.hub.onclose(this.onHubDisconnect);
     });
   }
 
   addHubHandlers = () => {
-    this.state.hub.on("ConnectedUsers", users => this.setConnectedUsers(users));
-    this.state.hub.on("UserJoined", user => this.userJoin(user));
-    this.state.hub.on("UserLeft", user => this.userLeave(user));
+    this.state.hub.on("ConnectedUsers", this.setConnectedUsers);
+    this.state.hub.on("UserJoined", this.userJoin);
+    this.state.hub.on("UserLeft", this.userLeave);
 
-    this.state.hub.on("NewView", view => this.insertNewView(view));
-    this.state.hub.on("CreateViewSuccess", view => this.insertNewView(view));
+    this.state.hub.on("NewView", this.insertNewView);
     this.state.hub.on("CreateViewFailure", () => this.setAlertError("Failed to create new view"));
-    this.state.hub.on("DeleteView", view => this.onDeleteView(view));
-    this.state.hub.on("DeleteViewSuccess", view => this.deleteView(view));
+    this.state.hub.on("DeleteView", this.onDeleteView);
+    this.state.hub.on("DeleteViewSuccess", this.deleteView);
     this.state.hub.on("DeleteViewFailure", () => this.setAlertError("Failed to delete view"));
 
-    this.state.hub.on("SelectObject", (type, viewId, structureId, fixtureId, userId) => this.userSelectObject(type, viewId, structureId, fixtureId, userId));
-    this.state.hub.on("DeselectObject", (type, viewId, structureId, fixtureId) => this.userDeselectObject(type, viewId, structureId, fixtureId));
+    this.state.hub.on("SelectObject", this.userSelectObject);
+    this.state.hub.on("DeselectObject", this.userDeselectObject);
 
-    this.state.hub.on("NewStructure", structure => this.insertNewStructure(structure));
-    this.state.hub.on("AddStructureSuccess", structure => this.setState({newLinePoints: []}));
+    this.state.hub.on("NewStructure", this.insertNewStructure);
+    this.state.hub.on("AddStructureSuccess", id => {this.setState({newLinePoints: []}); this.history.push({type: Ops.ADD_STRUCTURE, data: id})});
     this.state.hub.on("AddStructureFailure", () => this.setAlertError("Failed to insert new structure"));
 
     this.state.hub.on("UpdateStructureGeometry", (structure, fixtures) => this.updateStructurePos(structure.view.id, structure.id, structure.geometry.points, fixtures));
     this.state.hub.on("UpdateStructureGeometryFailure", () => this.setAlertError("Failed to move structure"));
-    this.state.hub.on("UpdateObjectProperty", (type, field, viewId, structure, fixture) => this.onObjectUpdate(type, field, viewId, structure, fixture));
-    this.state.hub.on("UpdateObjectPropertySuccess", () => this.setModifiedCurrent(false));
-    this.state.hub.on("DeleteObject", (type, viewId, structureId, fixtureId) => this.onObjectRemoved(type, viewId, structureId, fixtureId));
-    this.state.hub.on("DeleteObjectSuccess", (type, viewId, structureId, fixtureId) => this.removeObject(type, viewId, structureId, fixtureId));
+    this.state.hub.on("UpdateObjectProperty", this.onObjectUpdate);
+    this.state.hub.on("UpdateObjectPropertySuccess", this.onObjectUpdateSuccess);
+    this.state.hub.on("DeleteObject", this.onObjectRemoved);
+    this.state.hub.on("DeleteObjectSuccess", this.removeObject);
     this.state.hub.on("DeleteObjectFailure", (type) => this.setAlertError(`Failed to delete ${type}`));
 
-    this.state.hub.on("AddFixture", (viewId, fixture) => this.insertNewFixture(viewId, fixture));
+    this.state.hub.on("AddFixture", this.insertNewFixture);
+    this.state.hub.on("AddFixtureSuccess", (id) => this.history.push({type: Ops.ADD_FIXTURE, data: id}));
   }
 
   onHubDisconnect = () => {
@@ -319,7 +333,7 @@ export class DrawingEditor extends Component {
   }
 
   fetchDrawing = async () => {
-    const response = await fetch("api/drawing/GetDrawing/" + this.props.match.params.id, {
+    const response = await fetch(`api/drawing/GetDrawing/${this.props.match.params.id}`, {
       headers: await authService.generateHeader()
     });
 
@@ -335,6 +349,7 @@ export class DrawingEditor extends Component {
         this.initHubConnection();
         this.sizeStage(this.scaleStage);
         window.addEventListener("resize", this.sizeStage);
+        window.addEventListener("keydown", this.handleKeyDown);
       });
     } else if (response.status === 401) {
       this.setState({
@@ -373,21 +388,25 @@ export class DrawingEditor extends Component {
     });
   }
 
-  moveStructure = async (viewId, id, points, fixtures) => {
+  moveStructure = async (id, points, fixtures, prevPoints, prevFixtures) => {
+    this.history.push({
+      type: Ops.MOVE_STRUCTURE,
+      data: {
+        id: id,
+        prevValue: {points: prevPoints, fixtures: prevFixtures},
+        newValue: {points: points, fixtures: fixtures}
+      }
+    });
+
     this.state.hub.invoke(
       "UpdateStructureGeometry",
         id,
         {points: points},
         fixtures
-    ).catch(err => console.error(err))
-    .then(() => this.updateStructurePos(viewId, id, points, fixtures));
+    ).catch(err => console.error(err));
   }
 
   updateStructurePos = (viewId, id, points, fixtures) => {
-    if (viewId === null) {
-      viewId = this.state.currentView;
-    }
-
     this.setState((prevState) => {
       let views = [...prevState.views];
       const viewIndex = views.findIndex(view => view.id === viewId);
@@ -452,8 +471,10 @@ export class DrawingEditor extends Component {
 
   removeObject = (type, viewId, structureId, fixtureId) => {
     if (type === "structure") {
+      this.history.push({type: Ops.REMOVE_STRUCTURE, data: this.getStructure(viewId, structureId)});
       this.removeStructure(viewId, structureId);
     } else if (type === "fixture") {
+      this.history.push({type: Ops.REMOVE_FIXTURE, data: this.getFixture(viewId, structureId, fixtureId)});
       this.removeFixture(viewId, structureId, fixtureId);
     }
   }
@@ -550,6 +571,7 @@ export class DrawingEditor extends Component {
       selectedObjectType: type,
       modifiedCurrent: false
     });
+
   }
 
   deselectObject = (structureId) => {
@@ -576,6 +598,11 @@ export class DrawingEditor extends Component {
     } else if (type === "fixture") {
       this.setFixtureField(viewId, structure.id, field, fixture);
     }
+  }
+
+  onObjectUpdateSuccess = (type, id, field, prevValue, newValue) => {
+    this.setModifiedCurrent(false)
+    this.history.push({type: Ops.UPDATE_PROPERTY, data: {type: type, id: id, field: field, prevValue: prevValue, newValue: newValue}});
   }
 
   insertNewView = (view) => {
@@ -923,8 +950,8 @@ export class DrawingEditor extends Component {
   setAlertError = (msg) => {
     this.setState({
       alertColour: "danger",
-      alertContent: "Error: " + msg,
-      alertIcon: "exclamation",
+      alertContent: `Error: ${msg}`,
+      alertIcon: <FontAwesomeIcon icon="exclamation" className="h5 m-0"/>,
       alertOpen: "true"
     })
   }
@@ -985,5 +1012,114 @@ export class DrawingEditor extends Component {
     const structure = this.getStructure(viewId, structureId);
 
     return structure.fixtures.find(f => f.id === fixtureId);
+  }
+
+  handleKeyDown = (event) => {
+    if (event.keyCode === 90 && event.ctrlKey) {
+      if (this.history.length === 0) {
+        return;
+      }
+      const op = this.history.pop();
+      this.undoOperation(op);
+    }
+  }
+
+  undoOperation = (op) => {
+    switch (op.type) {
+      case Ops.ADD_FIXTURE:
+        this.state.hub.invoke(
+          "DeleteObject",
+          "fixture",
+          op.data
+        ).catch(err => console.error(err));
+        this.undoHistory.push(op);
+        return;
+      case Ops.REMOVE_FIXTURE:
+        let tempFData = op.data;
+        tempFData.id = null;
+
+        this.state.hub.invoke(
+          "AddFixture",
+          tempFData
+        ).catch(err => console.error(err));
+        this.undoHistory.push(op);
+        return;
+
+      case Ops.ADD_STRUCTURE:
+        this.state.hub.invoke(
+          "DeleteObject",
+          "structure",
+          op.data
+        ).catch(err => console.error(err));
+        this.undoHistory.push(op);
+        return;
+      case Ops.MOVE_STRUCTURE:
+        this.state.hub.invoke(
+          "UpdateStructureGeometry",
+            op.data.id,
+            {points: op.data.prevValue.points},
+            op.data.prevValue.fixtures
+        ).catch(err => console.error(err));
+        this.undoHistory.push(op);
+        return;
+      case Ops.REMOVE_STRUCTURE:
+        let tempSData = op.data;
+        tempSData.id = null;
+        tempSData.fixtures.forEach((f, index) => {
+          tempSData.fixtures[index].id = null;
+        });
+
+        this.state.hub.invoke(
+          "AddStructure",
+          tempSData
+        ).catch(err => console.error(err));
+        this.undoHistory.push(op);
+        return;
+
+      case Ops.UPDATE_PROPERTY:
+        let structureData, fixtureData = null;
+
+        if (op.data.type === "structure") {
+          structureData = {
+            id: op.data.id,
+            [op.data.field]: op.data.prevValue
+          };
+
+          if (op.data.field === "type") {
+            structureData = {
+              id: op.data.id,
+              rating: -1,
+              [op.data.field]: {id: op.data.prevValue}
+            };
+          }
+
+        } else if (op.data.type === "fixture") {
+          fixtureData = {
+            id: op.data.id,
+            angle: -1,
+            channel: -1,
+            universe: -1,
+            address: -1,
+            [op.data.field]: op.data.prevValue
+          }
+
+          if (op.data.field === "mode") {
+            fixtureData = {
+              id: op.data.id,
+              [op.data.field]: {id: op.data.prevValue}
+            }
+          }
+        }
+        this.state.hub.invoke(
+          "UpdateObjectProperty",
+          op.data.type,
+          op.data.field,
+          structureData,
+          fixtureData,
+          false
+        ).catch(err => console.error(err));
+        this.undoHistory.push(op);
+        return;
+    }
   }
 }

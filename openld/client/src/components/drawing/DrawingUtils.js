@@ -30,6 +30,14 @@ export class DrawingUtils {
         return points;
     }
 
+    static moveFixtures(fixtures, change) {
+        fixtures.forEach((f, index, fixtures) => {
+            fixtures[index].position = {x: f.position.x + change.x, y: f.position.y + change.y}
+        });
+
+        return fixtures;
+    }
+
     static arrayPointsToObject(points) {
         let newPoints = [];
 
@@ -100,11 +108,5 @@ export class DrawingUtils {
         return Math.sqrt(Math.pow(A.x - B.x, 2) + Math.pow(A.y - B.y, 2));
     }
 
-    static moveFixtures(fixtures, change) {
-        fixtures.forEach((f, index, fixtures) => {
-            fixtures[index].position = {x: f.position.x + change.x, y: f.position.y + change.y}
-        })
-
-        return fixtures;
-    }
+    static clone = (items) => items.map(item => Array.isArray(item) ? this.clone(item) : {...item});
 }
