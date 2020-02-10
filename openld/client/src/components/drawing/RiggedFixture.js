@@ -138,7 +138,10 @@ export class RiggedFixture extends Component {
 
   handleMouseLeave = (event) => {
     event.target.scale({x: 1, y: -1});
-    event.target.getLayer().draw();
+    // prevent exception when object deleted whilst hovering on
+    try {
+      event.target.getLayer().draw();
+    } catch {}
 
     if (this.props.selectedTool === "none") {
       this.props.setCursor("grab");

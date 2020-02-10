@@ -471,10 +471,10 @@ export class DrawingEditor extends Component {
 
   removeObject = (type, viewId, structureId, fixtureId) => {
     if (type === "structure") {
-      this.history.push({type: Ops.REMOVE_STRUCTURE, data: this.getStructure(viewId, structureId)});
+      this.history.push({type: Ops.REMOVE_STRUCTURE, data: {...this.getStructure(viewId, structureId), ...{view: {id: viewId}}}});
       this.removeStructure(viewId, structureId);
     } else if (type === "fixture") {
-      this.history.push({type: Ops.REMOVE_FIXTURE, data: this.getFixture(viewId, structureId, fixtureId)});
+      this.history.push({type: Ops.REMOVE_FIXTURE, data: {...this.getFixture(viewId, structureId, fixtureId), ...{structure: {id: structureId}}}});
       this.removeFixture(viewId, structureId, fixtureId);
     }
   }
@@ -1119,6 +1119,8 @@ export class DrawingEditor extends Component {
           false
         ).catch(err => console.error(err));
         this.undoHistory.push(op);
+        return;
+      default:
         return;
     }
   }

@@ -5,7 +5,6 @@ import { DrawingUtils } from './DrawingUtils';
 import { View } from "./View";
 import { Grid } from "./Grid";
 import { Tooltip } from "./Tooltip";
-import { DeleteObjectModal } from "./DeleteObjectModal";
 import { AddFixtureModal } from "./AddFixtureModal";
 
 export class Drawing extends Component {
@@ -113,13 +112,6 @@ export class Drawing extends Component {
             />
           </Layer>
         </Stage>
-        <DeleteObjectModal
-          selectedId = {this.props.selectedObjectId}
-          type = {this.props.selectedObjectType}
-          hub = {this.props.hub}
-          isOpen = {this.state.deleteModalOpen}
-          toggle = {this.toggleDeleteModal}
-        />
         <AddFixtureModal
           isOpen = {this.state.addFixtureModalOpen}
           toggle = {this.toggleAddFixtureModal}
@@ -240,8 +232,12 @@ export class Drawing extends Component {
         this.props.setHintText("");
       });
     } else if ((this.props.selectedObjectType === "structure" || this.props.selectedObjectType === "fixture") && event.keyCode === 46) {
-      if (this.props.hubConnected === true && this.state.deleteModalOpen === false) {
-        this.toggleDeleteModal();
+      if (this.props.hubConnected === true) {
+        this.props.hub.invoke(
+          "DeleteObject",
+          this.props.selectedObjectType,
+          this.props.selectedObjectId
+        ).catch(err => console.error(err));
       }
     }
   }
