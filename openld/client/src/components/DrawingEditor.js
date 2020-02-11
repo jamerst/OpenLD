@@ -11,18 +11,8 @@ import { HubConnectionBuilder } from "@microsoft/signalr";
 
 import { Drawing } from "./drawing/Drawing";
 import { Sidebar } from "./drawing/Sidebar";
+import { Ops } from "./drawing/DrawingUtils";
 import authService from './api-authorization/AuthorizeService';
-
-const Ops = {
-  ADD_FIXTURE: 'addFixture',
-  REMOVE_FIXTURE: 'removeFixture',
-
-  ADD_STRUCTURE: 'addStructure',
-  MOVE_STRUCTURE: 'moveStructure',
-  REMOVE_STRUCTURE: 'removeStructure',
-
-  UPDATE_PROPERTY: 'updateProperty'
-}
 
 export class DrawingEditor extends Component {
   constructor(props) {
@@ -211,6 +201,7 @@ export class DrawingEditor extends Component {
                 onMoveStructure = {this.moveStructure}
                 onSelectObject = {this.selectObject}
                 deselectObject = {this.deselectObject}
+                onRemoveObject = {this.onRemoveObject}
 
                 gridEnabled = {this.state.gridEnabled}
                 gridSize = {this.state.gridSize}
@@ -224,6 +215,8 @@ export class DrawingEditor extends Component {
                 setFixtureColour = {this.setFixtureColour}
                 setHintText = {this.setHintText}
                 setTooltipVisible = {this.setTooltipVisible}
+                pushHistoryOp = {this.pushHistoryOp}
+                setAlertError = {this.setAlertError}
               />
             </Col>
             <Sidebar
@@ -252,6 +245,9 @@ export class DrawingEditor extends Component {
               getStructure = {this.getStructure}
               setModifiedCurrent = {this.setModifiedCurrent}
               setAlertIcon = {this.setAlertIcon}
+              pushHistoryOp = {this.pushHistoryOp}
+              setAlertError = {this.setAlertError}
+              deleteView = {this.deleteView}
             />
           </Row>
         </Container>
@@ -290,28 +286,18 @@ export class DrawingEditor extends Component {
     this.state.hub.on("UserLeft", this.userLeave);
 
     this.state.hub.on("NewView", this.insertNewView);
-    this.state.hub.on("CreateViewFailure", () => this.setAlertError("Failed to create new view"));
     this.state.hub.on("DeleteView", this.onDeleteView);
-    this.state.hub.on("DeleteViewSuccess", this.deleteView);
-    this.state.hub.on("DeleteViewFailure", () => this.setAlertError("Failed to delete view"));
 
     this.state.hub.on("SelectObject", this.userSelectObject);
     this.state.hub.on("DeselectObject", this.userDeselectObject);
 
     this.state.hub.on("NewStructure", this.insertNewStructure);
-    this.state.hub.on("AddStructureSuccess", id => {this.setState({newLinePoints: []}); this.history.push({type: Ops.ADD_STRUCTURE, data: id})});
-    this.state.hub.on("AddStructureFailure", () => this.setAlertError("Failed to insert new structure"));
 
     this.state.hub.on("UpdateStructureGeometry", (structure, fixtures) => this.updateStructurePos(structure.view.id, structure.id, structure.geometry.points, fixtures));
-    this.state.hub.on("UpdateStructureGeometryFailure", () => this.setAlertError("Failed to move structure"));
     this.state.hub.on("UpdateObjectProperty", this.onObjectUpdate);
-    this.state.hub.on("UpdateObjectPropertySuccess", this.onObjectUpdateSuccess);
     this.state.hub.on("DeleteObject", this.onObjectRemoved);
-    this.state.hub.on("DeleteObjectSuccess", this.removeObject);
-    this.state.hub.on("DeleteObjectFailure", (type) => this.setAlertError(`Failed to delete ${type}`));
 
     this.state.hub.on("AddFixture", this.insertNewFixture);
-    this.state.hub.on("AddFixtureSuccess", (id) => this.history.push({type: Ops.ADD_FIXTURE, data: id}));
   }
 
   onHubDisconnect = () => {
@@ -389,21 +375,26 @@ export class DrawingEditor extends Component {
   }
 
   moveStructure = async (id, points, fixtures, prevPoints, prevFixtures) => {
-    this.history.push({
-      type: Ops.MOVE_STRUCTURE,
-      data: {
-        id: id,
-        prevValue: {points: prevPoints, fixtures: prevFixtures},
-        newValue: {points: points, fixtures: fixtures}
-      }
-    });
-
-    this.state.hub.invoke(
+    let result;
+    result = await this.state.hub.invoke(
       "UpdateStructureGeometry",
         id,
         {points: points},
         fixtures
-    ).catch(err => console.error(err));
+    ).catch(err => {console.error(err); result = false;});
+
+    if (result) {
+      this.history.push({
+        type: Ops.MOVE_STRUCTURE,
+        data: {
+          id: id,
+          prevValue: {points: prevPoints, fixtures: prevFixtures},
+          newValue: {points: points, fixtures: fixtures}
+        }
+      });
+    } else {
+      this.setAlertError("Failed to move structure")
+    }
   }
 
   updateStructurePos = (viewId, id, points, fixtures) => {
@@ -469,12 +460,16 @@ export class DrawingEditor extends Component {
     }
   }
 
-  removeObject = (type, viewId, structureId, fixtureId) => {
+  onRemoveObject = (type, viewId, structureId, fixtureId, undo) => {
     if (type === "structure") {
-      this.history.push({type: Ops.REMOVE_STRUCTURE, data: {...this.getStructure(viewId, structureId), ...{view: {id: viewId}}}});
+      if (!undo) {
+        this.history.push({type: Ops.REMOVE_STRUCTURE, data: {...this.getStructure(viewId, structureId), ...{view: {id: viewId}}}});
+      }
       this.removeStructure(viewId, structureId);
     } else if (type === "fixture") {
-      this.history.push({type: Ops.REMOVE_FIXTURE, data: {...this.getFixture(viewId, structureId, fixtureId), ...{structure: {id: structureId}}}});
+      if (!undo) {
+        this.history.push({type: Ops.REMOVE_FIXTURE, data: {...this.getFixture(viewId, structureId, fixtureId), ...{structure: {id: structureId}}}});
+      }
       this.removeFixture(viewId, structureId, fixtureId);
     }
   }
@@ -598,11 +593,6 @@ export class DrawingEditor extends Component {
     } else if (type === "fixture") {
       this.setFixtureField(viewId, structure.id, field, fixture);
     }
-  }
-
-  onObjectUpdateSuccess = (type, id, field, prevValue, newValue) => {
-    this.setModifiedCurrent(false)
-    this.history.push({type: Ops.UPDATE_PROPERTY, data: {type: type, id: id, field: field, prevValue: prevValue, newValue: newValue}});
   }
 
   insertNewView = (view) => {
@@ -1024,43 +1014,69 @@ export class DrawingEditor extends Component {
     }
   }
 
-  undoOperation = (op) => {
+  undoOperation = async (op) => {
+    let result;
     switch (op.type) {
       case Ops.ADD_FIXTURE:
-        this.state.hub.invoke(
+        result = {success: false}
+        result = await this.state.hub.invoke(
           "DeleteObject",
           "fixture",
-          op.data
-        ).catch(err => console.error(err));
-        this.undoHistory.push(op);
+          op.data.id
+        ).catch(err => {console.error(err); result.success = false});
+
+        if (result && result.success) {
+          this.onRemoveObject(result.data.type, result.data.viewId, result.data.structureId, result.data.fixtureId, true);
+          this.undoHistory.push(op);
+        } else {
+          this.setAlertError("Failed to undo fixture add");
+        }
         return;
       case Ops.REMOVE_FIXTURE:
         let tempFData = op.data;
         tempFData.id = null;
 
-        this.state.hub.invoke(
+        result = {success: false};
+        result = await this.state.hub.invoke(
           "AddFixture",
           tempFData
-        ).catch(err => console.error(err));
-        this.undoHistory.push(op);
+        ).catch(err => {console.error(err); result.success = false});
+
+        if (result && result.success) {
+          this.undoHistory.push(op);
+        } else {
+          this.setAlertError("Failed to undo fixture delete");
+        }
         return;
 
       case Ops.ADD_STRUCTURE:
-        this.state.hub.invoke(
+        result = {success: false}
+        result = await this.state.hub.invoke(
           "DeleteObject",
           "structure",
-          op.data
-        ).catch(err => console.error(err));
-        this.undoHistory.push(op);
+          op.data.id
+        ).catch(err => {console.error(err); result.success = false});
+
+        if (result && result.success) {
+          this.onRemoveObject(result.data.type, result.data.viewId, result.data.structureId, result.data.fixtureId, true);
+          this.undoHistory.push(op);
+        } else {
+          this.setAlertError("Failed to undo structure add");
+        }
         return;
       case Ops.MOVE_STRUCTURE:
-        this.state.hub.invoke(
+        result = await this.state.hub.invoke(
           "UpdateStructureGeometry",
             op.data.id,
             {points: op.data.prevValue.points},
             op.data.prevValue.fixtures
-        ).catch(err => console.error(err));
-        this.undoHistory.push(op);
+        ).catch(err => {console.error(err); result = false});
+
+        if (result) {
+          this.undoHistory.push(op);
+        } else {
+          this.setAlertError("Failed to undo structure move");
+        }
         return;
       case Ops.REMOVE_STRUCTURE:
         let tempSData = op.data;
@@ -1069,15 +1085,24 @@ export class DrawingEditor extends Component {
           tempSData.fixtures[index].id = null;
         });
 
-        this.state.hub.invoke(
+        result = {success: false}
+        result = await this.state.hub.invoke(
           "AddStructure",
           tempSData
-        ).catch(err => console.error(err));
-        this.undoHistory.push(op);
+        ).catch(err => {console.error(err); result.success = false});
+
+        if (result && result.success) {
+          this.undoHistory.push(op);
+        } else {
+          this.setAlertError("Failed to undo structure remove");
+        }
         return;
 
       case Ops.UPDATE_PROPERTY:
         let structureData, fixtureData = null;
+        if (op.data.prevValue === null) {
+          op.data.prevValue = "";
+        }
 
         if (op.data.type === "structure") {
           structureData = {
@@ -1092,7 +1117,6 @@ export class DrawingEditor extends Component {
               [op.data.field]: {id: op.data.prevValue}
             };
           }
-
         } else if (op.data.type === "fixture") {
           fixtureData = {
             id: op.data.id,
@@ -1110,18 +1134,27 @@ export class DrawingEditor extends Component {
             }
           }
         }
-        this.state.hub.invoke(
+
+        result = await this.state.hub.invoke(
           "UpdateObjectProperty",
           op.data.type,
           op.data.field,
           structureData,
-          fixtureData,
-          false
-        ).catch(err => console.error(err));
-        this.undoHistory.push(op);
+          fixtureData
+        ).catch(err => {console.error(err); result = false});
+
+        if (result) {
+          this.undoHistory.push(op);
+        } else {
+          this.setAlertError("Failed to undo property change");
+        }
         return;
       default:
         return;
     }
+  }
+
+  pushHistoryOp = (op) => {
+    this.history.push(op);
   }
 }

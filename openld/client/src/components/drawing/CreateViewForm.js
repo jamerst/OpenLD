@@ -85,10 +85,10 @@ export class CreateViewForm extends Component {
     )
   }
 
-  handleSubmit = (event) => {
+  handleSubmit = async (event) => {
     event.preventDefault()
-
-    this.props.hub.invoke(
+    let result = "";
+    result = await this.props.hub.invoke(
       "CreateView",
       {
         drawing: { id: this.props.drawingId },
@@ -100,9 +100,14 @@ export class CreateViewForm extends Component {
     ).catch(err => {
       console.error(err);
       this.setState({error: true, errorMsg: err});
-    }).then(() => {
-      this.props.toggle();
+      result = false;
     });
+
+    if (result === "") {
+      this.props.toggle();
+    } else {
+      this.props.setAlertError(`Failed to create new view: ${result}`)
+    }
   }
 
   handleNameChange = (event) => {

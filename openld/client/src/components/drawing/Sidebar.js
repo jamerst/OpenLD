@@ -11,6 +11,7 @@ import AwesomeDebouncePromise from "awesome-debounce-promise";
 import { ShareDrawing } from "./ShareDrawing";
 import { CreateViewForm } from "./CreateViewForm";
 import { DeleteViewModal } from "./DeleteViewModal";
+import { Ops } from "./DrawingUtils";
 import authService from "../api-authorization/AuthorizeService";
 
 export class Sidebar extends Component {
@@ -83,6 +84,7 @@ export class Sidebar extends Component {
                 toggle = {this.toggleCreateView}
                 hub = {this.props.hub}
                 drawingId = {this.props.drawingId}
+                setAlertError = {this.props.setAlertError}
               />
               <DeleteViewModal
                 isOpen = {this.state.deleteViewOpen}
@@ -90,6 +92,8 @@ export class Sidebar extends Component {
                 hub = {this.props.hub}
                 viewId = {this.state.deletedViewId}
                 viewName = {this.state.deletedViewName}
+                setAlertError = {this.props.setAlertError}
+                deleteView = {this.props.deleteView}
               />
             </CardHeader>
 
@@ -304,7 +308,7 @@ export class Sidebar extends Component {
     this.sendChangesDebounce(event.target.name, event.target.value);
   }
 
-  sendChanges = (field, value) => {
+  sendChanges = async (field, value) => {
     let structureData, fixtureData = null;
 
     if (this.props.selectedObjectType === "structure") {
@@ -338,15 +342,22 @@ export class Sidebar extends Component {
         }
       }
     }
-
-    this.props.hub.invoke(
+    let result = {success: false};
+    result = await this.props.hub.invoke(
       "UpdateObjectProperty",
       this.props.selectedObjectType,
       field,
       structureData,
-      fixtureData,
-      true
-    ).catch(err => console.error(err));
+      fixtureData
+    ).catch(err => {console.error(err); result.success = false});
+
+    this.props.setModifiedCurrent(false);
+    if (result && result.success) {
+      let id = this.props.selectedObjectType === "structure" ? this.props.structure.id : this.props.fixture.id;
+      this.props.pushHistoryOp({type: Ops.UPDATE_PROPERTY, data: {type: this.props.selectedObjectType, id: id, field: field, prevValue: result.data, newValue: value}});
+    } else {
+      this.props.setAlertError("Failed to update property value");
+    }
   }
 
   sendChangesDebounce = AwesomeDebouncePromise(this.sendChanges, 250);

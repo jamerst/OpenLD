@@ -1,7 +1,7 @@
 import React, { Component, Fragment } from "react";
 import { Layer, Line, Stage } from 'react-konva';
 
-import { DrawingUtils } from './DrawingUtils';
+import { DrawingUtils, Ops } from './DrawingUtils';
 import { View } from "./View";
 import { Grid } from "./Grid";
 import { Tooltip } from "./Tooltip";
@@ -153,7 +153,7 @@ export class Drawing extends Component {
     }
   }
 
-  handleStageDblClick = (event) => {
+  handleStageDblClick = async (event) => {
     if (this.props.selectedTool === "polygon" && this.props.hubConnected) {
       this.setState({
         lastLinePoint: [],
@@ -174,13 +174,20 @@ export class Drawing extends Component {
         points = [DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.props.snapGridSize)];
       }
 
-      this.props.hub.invoke(
+      let result = {success: false};
+      result = await this.props.hub.invoke(
         "AddStructure",
         {
           view: {id: this.props.viewData.id},
           geometry: {points: points}
         }
-      ).catch(err => console.error(err));
+      ).catch(err => {console.error(err); result.success = false});
+
+      if (result && result.success) {
+        this.props.pushHistoryOp({type: Ops.ADD_STRUCTURE, data: result.data});
+      } else {
+        this.props.setAlertError("Failed to insert new structure")
+      }
 
       this.setState({
         newLinePoints: []
@@ -218,7 +225,7 @@ export class Drawing extends Component {
     this.props.setScale(newScale);
   }
 
-  handleKeyUp = (event) => {
+  handleKeyUp = async (event) => {
     if (this.props.selectedTool !== "none" && event.keyCode === 27) {
       this.setState({
         lastLinePoint: [],
@@ -233,11 +240,18 @@ export class Drawing extends Component {
       });
     } else if ((this.props.selectedObjectType === "structure" || this.props.selectedObjectType === "fixture") && event.keyCode === 46) {
       if (this.props.hubConnected === true) {
-        this.props.hub.invoke(
+        let result = {success: false};
+        result = await this.props.hub.invoke(
           "DeleteObject",
           this.props.selectedObjectType,
           this.props.selectedObjectId
-        ).catch(err => console.error(err));
+        ).catch(err => {console.error(err); result.success = false});
+
+        if (result && result.success) {
+          this.props.onRemoveObject(result.data.type, result.data.viewId, result.data.structureId, result.data.fixtureId, false);
+        } else {
+          this.props.setAlertError(`Failed to delete ${result.data ? result.data : "object"}`)
+        }
       }
     }
   }
@@ -246,16 +260,23 @@ export class Drawing extends Component {
     this.setState({newFixtureStructure: structureId, newFixturePos: position, addFixtureModalOpen: true});
   }
 
-  addFixture = (fixtureId) => {
+  addFixture = async (fixtureId) => {
     if (this.props.hubConnected) {
-      this.props.hub.invoke(
+      let result = {success: false};
+      result = await this.props.hub.invoke(
         "AddFixture",
         {
           fixture: {id: fixtureId},
           structure: {id: this.state.newFixtureStructure},
           position: this.state.newFixturePos
         }
-      ).catch(err => console.error(err));
+      ).catch(err => {console.error(err); result.success = false});
+
+      if (result && result.success) {
+        this.props.pushHistoryOp({type: Ops.ADD_FIXTURE, data: result.data});
+      } else {
+        this.props.setAlertError("Failed to insert new fixture");
+      }
     }
   }
 

@@ -94,7 +94,7 @@ namespace openld.Hubs {
 
         }
 
-        public async Task AddStructure(Structure structure) {
+        public async Task<JsonResponse<Structure>> AddStructure(Structure structure) {
             if (! await _authUtils.hasAccess(structure.View, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 throw new HubException("401: Unauthorised");
             }
@@ -103,15 +103,14 @@ namespace openld.Hubs {
             try {
                 newStructure = await _structureService.AddStructureAsync(structure);
             } catch (Exception) {
-                await Clients.Caller.AddStructureFailure();
-                return;
+                return new JsonResponse<Structure> {success = false};
             }
 
             await Clients.Group(connectionDrawing[Context.ConnectionId]).NewStructure(newStructure);
-            await Clients.Caller.AddStructureSuccess(newStructure.Id);
+            return new JsonResponse<Structure> {success = true, data = newStructure};
         }
 
-        public async Task UpdateStructureGeometry(string structureId, Geometry geometry, List<RiggedFixture> fixtures) {
+        public async Task<bool> UpdateStructureGeometry(string structureId, Geometry geometry, List<RiggedFixture> fixtures) {
             if (! await _authUtils.hasAccess(new Structure {Id = structureId}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 throw new HubException("401: Unauthorised");
             }
@@ -120,42 +119,40 @@ namespace openld.Hubs {
             try {
                 updated = await _structureService.SetStructureGeometryAsync(structureId, geometry);
             } catch (Exception) {
-                await Clients.Caller.UpdateStructureGeometryFailure();
-                return;
+                return false;
             }
 
             try {
                 await _structureService.SetRiggedFixturePositionsAsync(structureId, fixtures.Select(f => f.Position).ToList());
             } catch (Exception) {
-                await Clients.Caller.UpdateStructureGeometryFailure();
-                return;
+                return false;
             }
 
             await Clients.Group(connectionDrawing[Context.ConnectionId]).UpdateStructureGeometry(updated, fixtures);
+            return true;
         }
 
-        public async Task CreateView(View view) {
+        public async Task<string> CreateView(View view) {
             if (! await _authUtils.hasAccess(view.Drawing.Id, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 throw new HubException("401: Unauthorised");
             }
 
             if (view.Width < 1 || view.Height < 1) {
-                await Clients.Caller.CreateViewFailure("Invalid view size");
-                return;
+                return "Invalid view size";
             }
 
             View newView;
             try {
                 newView = await _viewService.CreateViewAsync(view);
             } catch (Exception) {
-                await Clients.Caller.CreateViewFailure();
-                return;
+                return "";
             }
 
             await Clients.Group(connectionDrawing[Context.ConnectionId]).NewView(newView);
+            return "";
         }
 
-        public async Task DeleteView(string viewId) {
+        public async Task<string> DeleteView(string viewId) {
             if (! await _authUtils.hasAccess(new View {Id = viewId}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 throw new HubException("401: Unauthorised");
             }
@@ -163,12 +160,11 @@ namespace openld.Hubs {
             try {
                 await _viewService.DeleteViewAsync(viewId);
             } catch (Exception) {
-                await Clients.Caller.DeleteViewFailure();
-                return;
+                return "";
             }
 
             await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).DeleteView(viewId);
-            await Clients.Caller.DeleteViewSuccess(viewId);
+            return viewId;
         }
 
         public async Task SelectObject(string type, string id) {
@@ -226,7 +222,7 @@ namespace openld.Hubs {
             }
         }
 
-        public async Task UpdateObjectProperty(string type, string modifiedField, Structure structure, RiggedFixture fixture, bool successCallback) {
+        public async Task<JsonResponse<dynamic>> UpdateObjectProperty(string type, string modifiedField, Structure structure, RiggedFixture fixture) {
             if (type == "structure") {
                 if (! await _authUtils.hasAccess(structure, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                     throw new HubException("401: Unauthorised");
@@ -243,8 +239,7 @@ namespace openld.Hubs {
                 try {
                     updated = await _structureService.UpdatePropsAsync(structure);
                 } catch (Exception) {
-                    await Clients.Caller.UpdateObjectPropertyFailure();
-                    return;
+                    return new JsonResponse<dynamic> {success = false};
                 }
 
                 await Clients.Group(connectionDrawing[Context.ConnectionId]).UpdateObjectProperty(
@@ -255,15 +250,8 @@ namespace openld.Hubs {
                     null
                 );
 
-                if (successCallback) {
-                    await Clients.Caller.UpdateObjectPropertySuccess(
-                        type,
-                        structure.Id,
-                        modifiedField,
-                        prevValue,
-                        updated[modifiedField]
-                    );
-                }
+                return new JsonResponse<dynamic> {success = true, data = prevValue};
+
             } else if (type == "fixture") {
                 if (! await _authUtils.hasAccess(fixture, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                     throw new HubException("401: Unauthorised");
@@ -280,8 +268,7 @@ namespace openld.Hubs {
                 try {
                     updated = await _rFixtureService.UpdatePropsAsync(fixture);
                 } catch (Exception) {
-                    await Clients.Caller.UpdateObjectPropertyFailure();
-                    return;
+                    return new JsonResponse<dynamic> {success = false};
                 }
 
                 await Clients.Group(connectionDrawing[Context.ConnectionId]).UpdateObjectProperty(
@@ -292,19 +279,13 @@ namespace openld.Hubs {
                     updated
                 );
 
-                if (successCallback) {
-                    await Clients.Caller.UpdateObjectPropertySuccess(
-                        type,
-                        fixture.Id,
-                        modifiedField,
-                        prevValue,
-                        updated[modifiedField]
-                    );
-                }
+                return new JsonResponse<dynamic> {success = true, data = prevValue};
+            } else {
+                return new JsonResponse<dynamic> {success = false};
             }
         }
 
-        public async Task DeleteObject(string type, string id) {
+        public async Task<JsonResponse<dynamic>> DeleteObject(string type, string id) {
             if (type == "structure") {
                 if (! await _authUtils.hasAccess(new Structure {Id = id}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                     throw new HubException("401: Unauthorised");
@@ -315,16 +296,8 @@ namespace openld.Hubs {
                 try {
                     await _structureService.DeleteAsync(id);
                 } catch (Exception) {
-                    await Clients.Caller.DeleteObjectFailure(type);
-                    return;
+                    return new JsonResponse<dynamic> {success = false, data = type};
                 }
-
-                await Clients.Caller.DeleteObjectSuccess(
-                    type,
-                    view.Id,
-                    id,
-                    null
-                );
 
                 await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).DeleteObject(
                     type,
@@ -332,6 +305,8 @@ namespace openld.Hubs {
                     id,
                     null
                 );
+
+                return new JsonResponse<dynamic> {success = true, data = new {type = type, viewId = view.Id, structureId = id, fixtureId = ""}};
             } else if (type == "fixture") {
                 if (! await _authUtils.hasAccess(new RiggedFixture {Id = id}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                     throw new HubException("401: Unauthorised");
@@ -343,16 +318,8 @@ namespace openld.Hubs {
                 try {
                     await _rFixtureService.DeleteAsync(id);
                 } catch (Exception) {
-                    await Clients.Caller.DeleteObjectFailure(type);
-                    return;
+                    return new JsonResponse<dynamic> {success = false, data = type};
                 }
-
-                await Clients.Caller.DeleteObjectSuccess(
-                    type,
-                    view.Id,
-                    structure.Id,
-                    id
-                );
 
                 await Clients.OthersInGroup(connectionDrawing[Context.ConnectionId]).DeleteObject(
                     type,
@@ -360,10 +327,13 @@ namespace openld.Hubs {
                     structure.Id,
                     id
                 );
+                return new JsonResponse<dynamic> {success = true, data = new {type = type, viewId = view.Id, structureId = structure.Id, fixtureId = id}};
+            } else {
+                return new JsonResponse<dynamic> {success = false};
             }
         }
 
-        public async Task AddFixture(RiggedFixture fixture) {
+        public async Task<JsonResponse<RiggedFixture>> AddFixture(RiggedFixture fixture) {
             if (! await _authUtils.hasAccess(new Structure {Id = fixture.Structure.Id}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 throw new HubException("401: Unauthorised");
             }
@@ -371,8 +341,7 @@ namespace openld.Hubs {
             try {
                 fixture = await _rFixtureService.AddRiggedFixtureAsync(fixture);
             } catch (Exception) {
-                await Clients.Caller.AddFixtureFailure();
-                return;
+                return new JsonResponse<RiggedFixture> {success = false};
             }
 
             await Clients.Group(connectionDrawing[Context.ConnectionId]).AddFixture(
@@ -380,7 +349,7 @@ namespace openld.Hubs {
                 fixture
             );
 
-            await Clients.Caller.AddFixtureSuccess(fixture.Id);
+            return new JsonResponse<RiggedFixture> {success = true, data = fixture};
         }
     }
 }

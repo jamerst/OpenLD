@@ -1,3 +1,14 @@
+export const Ops = {
+    ADD_FIXTURE: 'addFixture',
+    REMOVE_FIXTURE: 'removeFixture',
+
+    ADD_STRUCTURE: 'addStructure',
+    MOVE_STRUCTURE: 'moveStructure',
+    REMOVE_STRUCTURE: 'removeStructure',
+
+    UPDATE_PROPERTY: 'updateProperty'
+}
+
 export class DrawingUtils {
     static getRelativePointerPos(stage) {
         const pointerPosition = stage.getPointerPosition();
@@ -8,10 +19,10 @@ export class DrawingUtils {
     }
 
     static getNearestSnapPos(pos, snapGridSize) {
-       return {
-        x: Math.round(pos.x / snapGridSize) * snapGridSize,
-        y: Math.round(pos.y / snapGridSize) * snapGridSize
-      };
+        return {
+            x: Math.round(pos.x / snapGridSize) * snapGridSize,
+            y: Math.round(pos.y / snapGridSize) * snapGridSize
+        };
     }
 
     static getDifference(pos1, pos2) {
@@ -32,7 +43,7 @@ export class DrawingUtils {
 
     static moveFixtures(fixtures, change) {
         fixtures.forEach((f, index, fixtures) => {
-            fixtures[index].position = {x: f.position.x + change.x, y: f.position.y + change.y}
+            fixtures[index].position = { x: f.position.x + change.x, y: f.position.y + change.y }
         });
 
         return fixtures;
@@ -42,7 +53,7 @@ export class DrawingUtils {
         let newPoints = [];
 
         for (let i = 0; i < points.length; i += 2) {
-            newPoints.push({x: points[i], y: points[i + 1]});
+            newPoints.push({ x: points[i], y: points[i + 1] });
         }
 
         return newPoints;
@@ -64,7 +75,7 @@ export class DrawingUtils {
 
         // find the nearest point by checking each segment individually
         for (let i = 0; i < linePoints.length - 1; i++) {
-            const intersection = this.intersection(linePoints[i], linePoints[i+1], point);
+            const intersection = this.intersection(linePoints[i], linePoints[i + 1], point);
             const distance = this.vectorLen(intersection, point);
 
             if (distance < nearestDistance) {
@@ -101,12 +112,12 @@ export class DrawingUtils {
         return {
             x: A.x + k * AB.x,
             y: A.y + k * AB.y
-          };
+        };
     }
 
     static vectorLen(A, B) {
         return Math.sqrt(Math.pow(A.x - B.x, 2) + Math.pow(A.y - B.y, 2));
     }
 
-    static clone = (items) => items.map(item => Array.isArray(item) ? this.clone(item) : {...item});
+    static clone = (items) => items.map(item => Array.isArray(item) ? this.clone(item) : { ...item });
 }

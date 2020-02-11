@@ -47,14 +47,20 @@ export class DeleteViewModal extends Component {
     )
   }
 
-  handleConfirm = () => {
-    this.props.hub.invoke(
+  handleConfirm = async () => {
+    let result = "";
+    result = await this.props.hub.invoke(
       "DeleteView",
       this.props.viewId
     ).catch(err => {
       this.setState({error: true, errorMsg: err});
-    }).then(() => {
-      this.props.toggle();
     });
+
+    if (result !== "") {
+      this.props.deleteView(result);
+      this.props.toggle();
+    } else {
+      this.props.setAlertError("Failed to delete view")
+    }
   }
 }
