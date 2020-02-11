@@ -10,7 +10,7 @@ export const Ops = {
 }
 
 export class DrawingUtils {
-    static getRelativePointerPos(stage) {
+    static getRelativePointerPos = (stage) => {
         const pointerPosition = stage.getPointerPosition();
         return {
             x: (pointerPosition.x - stage.attrs.x) / stage.attrs.scaleX,
@@ -18,21 +18,21 @@ export class DrawingUtils {
         };
     }
 
-    static getNearestSnapPos(pos, snapGridSize) {
+    static getNearestSnapPos = (pos, snapGridSize) => {
         return {
             x: Math.round(pos.x / snapGridSize) * snapGridSize,
             y: Math.round(pos.y / snapGridSize) * snapGridSize
         };
     }
 
-    static getDifference(pos1, pos2) {
+    static getDifference = (pos1, pos2) => {
         return {
             x: pos1.x - pos2.x,
             y: pos1.y - pos2.y
         }
     }
 
-    static movePoints(points, change) {
+    static movePoints = (points, change) => {
         points.forEach(p => {
             p.x += change.x;
             p.y += change.y
@@ -41,7 +41,7 @@ export class DrawingUtils {
         return points;
     }
 
-    static moveFixtures(fixtures, change) {
+    static moveFixtures = (fixtures, change) => {
         fixtures.forEach((f, index, fixtures) => {
             fixtures[index].position = { x: f.position.x + change.x, y: f.position.y + change.y }
         });
@@ -49,7 +49,7 @@ export class DrawingUtils {
         return fixtures;
     }
 
-    static arrayPointsToObject(points) {
+    static arrayPointsToObject = (points) => {
         let newPoints = [];
 
         for (let i = 0; i < points.length; i += 2) {
@@ -59,7 +59,7 @@ export class DrawingUtils {
         return newPoints;
     }
 
-    static lineAngle(point1, point2) {
+    static lineAngle = (point1, point2) => {
         if (typeof point1 === "undefined" || typeof point2 === "undefined") {
             return 0;
         }
@@ -69,7 +69,7 @@ export class DrawingUtils {
         return Math.atan2(dy, dx) * 180 / Math.PI;
     }
 
-    static nearestLinePoint(linePoints, point) {
+    static nearestLinePoint = (linePoints, point) => {
         let nearestDistance = Infinity
         let nearestPoint = linePoints[0];
 
@@ -87,7 +87,7 @@ export class DrawingUtils {
         return nearestPoint;
     }
 
-    static intersection(A, B, P) {
+    static intersection = (A, B, P) => {
         if (typeof B === "undefined") {
             return A;
         }
@@ -115,7 +115,7 @@ export class DrawingUtils {
         };
     }
 
-    static vectorLen(A, B) {
+    static vectorLen = (A, B) => {
         return Math.sqrt(Math.pow(A.x - B.x, 2) + Math.pow(A.y - B.y, 2));
     }
 

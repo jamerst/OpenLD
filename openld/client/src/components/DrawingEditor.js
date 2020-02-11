@@ -384,7 +384,7 @@ export class DrawingEditor extends Component {
     ).catch(err => {console.error(err); result = false;});
 
     if (result) {
-      this.history.push({
+      this.pushHistoryOp({
         type: Ops.MOVE_STRUCTURE,
         data: {
           id: id,
@@ -463,12 +463,12 @@ export class DrawingEditor extends Component {
   onRemoveObject = (type, viewId, structureId, fixtureId, undo) => {
     if (type === "structure") {
       if (!undo) {
-        this.history.push({type: Ops.REMOVE_STRUCTURE, data: {...this.getStructure(viewId, structureId), ...{view: {id: viewId}}}});
+        this.pushHistoryOp({type: Ops.REMOVE_STRUCTURE, data: {...this.getStructure(viewId, structureId), ...{view: {id: viewId}}}});
       }
       this.removeStructure(viewId, structureId);
     } else if (type === "fixture") {
       if (!undo) {
-        this.history.push({type: Ops.REMOVE_FIXTURE, data: {...this.getFixture(viewId, structureId, fixtureId), ...{structure: {id: structureId}}}});
+        this.pushHistoryOp({type: Ops.REMOVE_FIXTURE, data: {...this.getFixture(viewId, structureId, fixtureId), ...{structure: {id: structureId}}}});
       }
       this.removeFixture(viewId, structureId, fixtureId);
     }
@@ -1010,12 +1010,19 @@ export class DrawingEditor extends Component {
         return;
       }
       const op = this.history.pop();
-      this.undoOperation(op);
+      this.undoOperation(op, false);
+    } else if (event.keyCode === 89 && event.ctrlKey) {
+      if (this.undoHistory.length === 0) {
+        return;
+      }
+      const op = this.undoHistory.pop();
+      this.undoOperation(op, true);
     }
   }
 
-  undoOperation = async (op) => {
-    let result;
+  undoOperation = async (op, redo) => {
+    console.log(op);
+    let result, op2;
     switch (op.type) {
       case Ops.ADD_FIXTURE:
         result = {success: false}
@@ -1027,11 +1034,14 @@ export class DrawingEditor extends Component {
 
         if (result && result.success) {
           this.onRemoveObject(result.data.type, result.data.viewId, result.data.structureId, result.data.fixtureId, true);
-          this.undoHistory.push(op);
+          op2 = {
+            type: Ops.REMOVE_FIXTURE,
+            data: op.data
+          }
         } else {
           this.setAlertError("Failed to undo fixture add");
         }
-        return;
+        break;
       case Ops.REMOVE_FIXTURE:
         let tempFData = op.data;
         tempFData.id = null;
@@ -1043,11 +1053,14 @@ export class DrawingEditor extends Component {
         ).catch(err => {console.error(err); result.success = false});
 
         if (result && result.success) {
-          this.undoHistory.push(op);
+          op2 = {
+            type: Ops.ADD_FIXTURE,
+            data: result.data
+          }
         } else {
           this.setAlertError("Failed to undo fixture delete");
         }
-        return;
+        break;
 
       case Ops.ADD_STRUCTURE:
         result = {success: false}
@@ -1059,11 +1072,14 @@ export class DrawingEditor extends Component {
 
         if (result && result.success) {
           this.onRemoveObject(result.data.type, result.data.viewId, result.data.structureId, result.data.fixtureId, true);
-          this.undoHistory.push(op);
+          op2 = {
+            type: Ops.REMOVE_STRUCTURE,
+            data: op.data
+          };
         } else {
           this.setAlertError("Failed to undo structure add");
         }
-        return;
+        break;
       case Ops.MOVE_STRUCTURE:
         result = await this.state.hub.invoke(
           "UpdateStructureGeometry",
@@ -1073,11 +1089,17 @@ export class DrawingEditor extends Component {
         ).catch(err => {console.error(err); result = false});
 
         if (result) {
-          this.undoHistory.push(op);
+          const temp = op.data.prevValue;
+          op.data.prevValue = op.data.newValue;
+          op.data.newValue = temp;
+          op2 = {
+            type: Ops.MOVE_STRUCTURE,
+            data: op.data
+          };
         } else {
           this.setAlertError("Failed to undo structure move");
         }
-        return;
+        break;
       case Ops.REMOVE_STRUCTURE:
         let tempSData = op.data;
         tempSData.id = null;
@@ -1092,11 +1114,14 @@ export class DrawingEditor extends Component {
         ).catch(err => {console.error(err); result.success = false});
 
         if (result && result.success) {
-          this.undoHistory.push(op);
+          op2 = {
+            type: Ops.ADD_STRUCTURE,
+            data: result.data
+          };
         } else {
           this.setAlertError("Failed to undo structure remove");
         }
-        return;
+        break;
 
       case Ops.UPDATE_PROPERTY:
         let structureData, fixtureData = null;
@@ -1144,17 +1169,32 @@ export class DrawingEditor extends Component {
         ).catch(err => {console.error(err); result = false});
 
         if (result) {
-          this.undoHistory.push(op);
+          const temp = op.data.prevValue;
+          op.data.prevValue = op.data.newValue;
+          op.data.newValue = temp;
+          op2 = {
+            type: Ops.UPDATE_PROPERTY,
+            data: op.data
+          };
         } else {
           this.setAlertError("Failed to undo property change");
         }
-        return;
+        break;
       default:
         return;
+    }
+
+    if (op2) {
+      if (!redo) {
+        this.undoHistory.push(op2);
+      } else {
+        this.history.push(op2)
+      }
     }
   }
 
   pushHistoryOp = (op) => {
     this.history.push(op);
+    this.undoHistory = [];
   }
 }
