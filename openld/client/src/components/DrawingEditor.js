@@ -197,6 +197,7 @@ export class DrawingEditor extends Component {
                 hub = {this.state.hub}
                 hubConnected = {this.state.hubConnected}
                 tooltipVisible = {this.state.tooltipVisible}
+                currentView = {this.state.currentView}
 
                 onMoveStructure = {this.moveStructure}
                 onMoveFixture = {this.moveFixture}
@@ -218,6 +219,9 @@ export class DrawingEditor extends Component {
                 setTooltipVisible = {this.setTooltipVisible}
                 pushHistoryOp = {this.pushHistoryOp}
                 setAlertError = {this.setAlertError}
+                setAlertIcon = {this.setAlertIcon}
+                getStructure = {this.getStructure}
+                getFixture = {this.getFixture}
               />
             </Col>
             <Sidebar
@@ -1068,13 +1072,13 @@ export class DrawingEditor extends Component {
   }
 
   handleKeyDown = (event) => {
-    if (event.keyCode === 90 && event.ctrlKey) {
+    if (event.keyCode === 90 && event.ctrlKey && !event.shiftKey) { // ctrl+z
       if (this.history.length === 0) {
         return;
       }
       const op = this.history.pop();
       this.undoOperation(op, false);
-    } else if (event.keyCode === 89 && event.ctrlKey) {
+    } else if (event.keyCode === 90 && event.ctrlKey && event.shiftKey) { // ctrl+shift+z
       if (this.undoHistory.length === 0) {
         return;
       }

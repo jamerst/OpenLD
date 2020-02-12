@@ -26,20 +26,24 @@ export class Drawing extends Component {
       newFixturePos: {x: 0, y: 0},
       selectedFixtureStructure: ""
     };
+
+    this.stageRef = React.createRef();
+    this.copiedObject = {type: "", viewId: "", structureId: "", fixtureId: ""}
   }
 
   componentDidMount = () => {
-    window.addEventListener("keyup", this.handleKeyUp);
+    window.addEventListener("keydown", this.handleKeyDown);
   }
 
   componentWillUnmount = () => {
-    window.removeEventListener("keyup", this.handleKeyUp);
+    window.removeEventListener("keydown", this.handleKeyDown);
   }
 
   render = () => {
     return (
       <Fragment>
         <Stage
+          ref = {this.stageRef}
           x = {0}
           y = {0}
           width = {this.props.width}
@@ -226,33 +230,107 @@ export class Drawing extends Component {
     this.props.setScale(newScale);
   }
 
-  handleKeyUp = async (event) => {
-    if (this.props.selectedTool !== "none" && event.keyCode === 27) {
-      this.setState({
-        lastLinePoint: [],
-        nextLinePoint: [],
-        newLinePoints: []
-      }, () => {
-        this.props.setTooltipVisible(false);
-        this.props.setIsDrawing(false);
-        this.props.setTool("none");
-        this.props.setCursor("grab");
-        this.props.setHintText("");
-      });
-    } else if ((this.props.selectedObjectType === "structure" || this.props.selectedObjectType === "fixture") && event.keyCode === 46) {
-      if (this.props.hubConnected === true) {
+  handleKeyDown = async (event) => {
+    if (this.props.selectedTool !== "none" && event.keyCode === 27) { // ESC and no tool selected
+      this.cancelCreateStructure();
+    } else if ((this.props.selectedObjectType === "structure" || this.props.selectedObjectType === "fixture") && event.keyCode === 46) { // DELETE and object selected
+      this.deleteObject();
+    } else if (event.keyCode === 67 && event.ctrlKey) { // ctrl+c
+      this.copyObject();
+    } else if (event.keyCode === 86 && event.ctrlKey) { // ctrl+v
+      this.pasteObject();
+    }
+  }
+
+  cancelCreateStructure = () => {
+    this.setState({
+      lastLinePoint: [],
+      nextLinePoint: [],
+      newLinePoints: []
+    }, () => {
+      this.props.setTooltipVisible(false);
+      this.props.setIsDrawing(false);
+      this.props.setTool("none");
+      this.props.setCursor("grab");
+      this.props.setHintText("");
+    });
+  }
+
+  deleteObject = async () => {
+    if (this.props.hubConnected === true) {
+      let result = {success: false};
+      result = await this.props.hub.invoke(
+        "DeleteObject",
+        this.props.selectedObjectType,
+        this.props.selectedObjectId
+      ).catch(err => {console.error(err); result.success = false});
+
+      if (result && result.success) {
+        this.props.onRemoveObject(result.data.type, result.data.viewId, result.data.structureId, result.data.fixtureId, false);
+      } else {
+        this.props.setAlertError(`Failed to delete ${result.data ? result.data : "object"}`)
+      }
+    }
+  }
+
+  copyObject = () => {
+    if (this.props.selectedObjectType === "structure") {
+      this.copiedObject = {type: this.props.selectedObjectType, viewId: this.props.currentView, structureId: this.props.selectedObjectId, fixtureId: ""};
+    } else if (this.props.selectedObjectType === "fixture") {
+      this.copiedObject = {type: this.props.selectedObjectType, viewId: this.props.currentView, structureId: this.state.selectedFixtureStructure, fixtureId: this.props.selectedObjectId};
+    } else {
+      this.props.setAlertIcon("info", "Select an object to copy", "info");
+    }
+  }
+
+  pasteObject = async () => {
+    if (this.copiedObject.type === "structure") {
+      // get original structure
+      let copied = this.props.getStructure(this.copiedObject.viewId, this.copiedObject.structureId);
+
+      // find nearest snap point to current pointer location, and change required to move original to that point
+      const snapPos = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(this.stageRef.current), this.props.snapGridSize);
+      const change = DrawingUtils.getDifference(snapPos, copied.geometry.points[0]);
+
+      let result = {success: false};
+      result = await this.props.hub.invoke(
+        "CopyStructure",
+        copied,
+        change,
+        this.props.currentView
+      ).catch(err => {console.error(err); result.success = false});
+
+      if (result && result.success) {
+        this.props.pushHistoryOp({type: Ops.ADD_STRUCTURE, data: result.data});
+      } else {
+        this.props.setAlertError("Error inserting copied structure")
+      }
+
+    } else if (this.copiedObject.type === "fixture") {
+      if (this.props.selectedObjectType === "structure") {
+        // get original fixture, and currently selected structure
+        let copied = this.props.getFixture(this.copiedObject.viewId, this.copiedObject.structureId, this.copiedObject.fixtureId);
+        let selectedStructure = this.props.getStructure(this.props.currentView, this.props.selectedObjectId);
+
+        // find nearest snap point on selected structure
+        const nearestPoint = DrawingUtils.nearestLinePoint(selectedStructure.geometry.points, DrawingUtils.getRelativePointerPos(this.stageRef.current));
+        const snapPos = DrawingUtils.getNearestSnapPos(nearestPoint, this.props.snapGridSize);
+
         let result = {success: false};
         result = await this.props.hub.invoke(
-          "DeleteObject",
-          this.props.selectedObjectType,
+          "CopyFixture",
+          copied,
+          snapPos,
           this.props.selectedObjectId
         ).catch(err => {console.error(err); result.success = false});
 
         if (result && result.success) {
-          this.props.onRemoveObject(result.data.type, result.data.viewId, result.data.structureId, result.data.fixtureId, false);
+          this.props.pushHistoryOp({type: Ops.ADD_FIXTURE, data: result.data});
         } else {
-          this.props.setAlertError(`Failed to delete ${result.data ? result.data : "object"}`)
+          this.props.setAlertError("Error inserting copied fixture")
         }
+      } else {
+        this.props.setAlertIcon("info", "Select a structure to add copied fixture", "info");
       }
     }
   }

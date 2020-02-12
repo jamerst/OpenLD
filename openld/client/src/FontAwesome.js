@@ -5,8 +5,10 @@ import { faBan,
   faDrawPolygon,
   faEraser,
   faExclamation,
+  faInfo,
   faPlusCircle,
-  faTrash } from '@fortawesome/free-solid-svg-icons';
+  faTrash
+} from '@fortawesome/free-solid-svg-icons';
 
 import { faQuestionCircle } from '@fortawesome/free-regular-svg-icons';
 
@@ -16,6 +18,7 @@ library.add(faChevronDown);
 library.add(faDrawPolygon);
 library.add(faEraser);
 library.add(faExclamation);
+library.add(faInfo);
 library.add(faPlusCircle);
 library.add(faQuestionCircle);
 library.add(faTrash);

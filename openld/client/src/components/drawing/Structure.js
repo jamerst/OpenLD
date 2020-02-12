@@ -161,8 +161,8 @@ export class Structure extends Component {
     const newFixtures = DrawingUtils.moveFixtures(this.props.fixtures, change);
     this.props.onMoveStructure(this.props.id, newStructurePoints, newFixtures, this.startPoints, this.startFixtures);
     event.target.position({x: 0, y: 0});
-
     event.target.getLayer().draw();
+
     this.props.setTooltip({x: 0, y: 0}, false, "");
     this.props.setHintText("");
   }
@@ -254,7 +254,7 @@ export class Structure extends Component {
         this.setState({newFixtureVisible: false});
       } else if (this.props.selectedTool === "none") {
         this.props.setStructureColour(this.props.id, "#007bff");
-        this.props.setHintText("Modify structure properties above.\nPress delete to remove structure.")
+        this.props.setHintText("Modify structure properties above.\nPress delete to remove structure.\nPress Ctrl+C to copy structure.")
       }
     }
   }

@@ -53,6 +53,17 @@ namespace openld.Services {
             return newView;
         }
 
+        public async Task<View> GetViewAsync(string viewId) {
+            View view;
+            try {
+                view = await _context.Views.FirstAsync(v => v.Id == viewId);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("View ID not found");
+            }
+
+            return view;
+        }
+
         public async Task DeleteViewAsync(string viewId) {
             View view;
             try {
@@ -112,6 +123,7 @@ namespace openld.Services {
     public interface IViewService {
         Task<Drawing> GetDrawingAsync(View view);
         Task<View> CreateViewAsync(View view);
+        Task<View> GetViewAsync(string viewId);
         Task DeleteViewAsync(string viewId);
         Task UpdateLastModifiedAsync(View view);
         Task<Tuple<List<UsedFixtureResult>, List<RiggedFixture>>> GetUsedFixturesAsync(string id);

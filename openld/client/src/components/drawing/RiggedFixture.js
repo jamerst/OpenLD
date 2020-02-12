@@ -170,7 +170,7 @@ export class RiggedFixture extends Component {
 
       if (this.props.selectedTool === "none") {
         this.props.setFixtureColour(this.props.data.id, "#007bff");
-        this.props.setHintText("Modify fixture properties above.\nPress delete to remove fixture.")
+        this.props.setHintText("Modify fixture properties above.\nPress delete to remove fixture.\nPress Ctrl+C to copy fixture.")
       }
     }
   }
