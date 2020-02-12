@@ -12,10 +12,12 @@ using openld.Models;
 namespace openld.Services {
     public class DrawingService : IDrawingService {
         private readonly OpenLDContext _context;
+        private readonly ITemplateService _templateService;
         private readonly IViewService _viewService;
         private readonly IMapper _mapper;
-        public DrawingService(OpenLDContext context, IViewService viewService, IMapper mapper) {
+        public DrawingService(OpenLDContext context, ITemplateService templateService, IViewService viewService, IMapper mapper) {
             _context = context;
+            _templateService = templateService;
             _viewService = viewService;
             _mapper = mapper;
         }
@@ -155,6 +157,11 @@ namespace openld.Services {
                 drawing = await _context.Drawings.FirstAsync(d => d.Id == id);
             } catch (InvalidOperationException) {
                 throw new KeyNotFoundException("Drawing ID not found");
+            }
+
+            // remove templates if they exist
+            if (await _templateService.IsTemplateAsync(id)) {
+                _context.Templates.Remove(await _context.Templates.FirstAsync(t => t.Drawing.Id == id));
             }
 
             _context.Drawings.Remove(drawing);
