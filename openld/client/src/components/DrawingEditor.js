@@ -199,6 +199,7 @@ export class DrawingEditor extends Component {
                 tooltipVisible = {this.state.tooltipVisible}
 
                 onMoveStructure = {this.moveStructure}
+                onMoveFixture = {this.moveFixture}
                 onSelectObject = {this.selectObject}
                 deselectObject = {this.deselectObject}
                 onRemoveObject = {this.onRemoveObject}
@@ -298,16 +299,17 @@ export class DrawingEditor extends Component {
     this.state.hub.on("DeleteObject", this.onObjectRemoved);
 
     this.state.hub.on("AddFixture", this.insertNewFixture);
+    this.state.hub.on("UpdateFixturePosition", this.updateFixturePos);
   }
 
   onHubDisconnect = () => {
     this.setAlertIcon("danger", "Lost connection to OpenLD. Please reconnect to make changes.", "exclamation");
-    this.setState({hubConnected: false});
+    this.setState({hubConnected: false, connectedUsers: []});
   }
 
   onHubReconnecting = () => {
     this.setAlertSpinner("info", "Reconnecting to OpenLD..");
-    this.setState({hubConnected: false});
+    this.setState({hubConnected: false, connectedUsers: []});
   }
 
   onHubReconnect = () => {
@@ -383,7 +385,7 @@ export class DrawingEditor extends Component {
         fixtures
     ).catch(err => {console.error(err); result = false;});
 
-    if (result) {
+    if (result === true) {
       this.pushHistoryOp({
         type: Ops.MOVE_STRUCTURE,
         data: {
@@ -393,7 +395,7 @@ export class DrawingEditor extends Component {
         }
       });
     } else {
-      this.setAlertError("Failed to move structure")
+      this.setAlertError("Failed to move structure");
     }
   }
 
@@ -418,6 +420,67 @@ export class DrawingEditor extends Component {
 
       return {
         views: views
+      };
+    });
+  }
+
+  moveFixture = async (id, pos, prevPos) => {
+    let result = false;
+    result = await this.state.hub.invoke(
+      "UpdateFixturePosition",
+      {
+        id: id,
+        position: pos
+      }
+    ).catch(err => {console.error(err); result = false});
+
+    if (result === true) {
+      this.pushHistoryOp({
+        type: Ops.MOVE_FIXTURE,
+        data: {
+          id: id,
+          prevValue: prevPos,
+          newValue: pos
+        }
+      });
+    } else {
+      this.setAlertError("Failed to move fixture");
+    }
+  }
+
+  updateFixturePos = (fixture) => {
+    this.setState((prevState) => {
+      let views = [...prevState.views];
+      const viewIndex = views.findIndex(v => v.id === fixture.structure.view.id);
+      if (viewIndex < 0) {
+        console.error(`updateFixturePos error: view ID "${fixture.structure.view.id}" not found`);
+        return;
+      }
+      let view = views[viewIndex];
+
+      let structures = [...view.structures];
+      const structureIndex = structures.findIndex(s => s.id === fixture.structure.id);
+      if (structureIndex < 0) {
+        console.error(`updateFixturePos error: structure ID "${fixture.structure.id}" not found`);
+        return;
+      }
+      let structure = structures[structureIndex];
+
+      let fixtures = [...structure.fixtures];
+      const fixtureIndex = fixtures.findIndex(f => f.id === fixture.id);
+      if (fixtureIndex < 0) {
+        console.error(`updateFixturePos error: fixture ID "${fixture.id}" not found`);
+        return;
+      }
+
+      fixtures[fixtureIndex].position = fixture.position;
+
+      structures[structureIndex].fixtures = fixtures;
+      view.structures = structures;
+      views[viewIndex] = view;
+
+      return {
+        views: views,
       };
     });
   }
@@ -1021,8 +1084,8 @@ export class DrawingEditor extends Component {
   }
 
   undoOperation = async (op, redo) => {
-    console.log(op);
     let result, op2;
+    // perform inverse for each operation, and add inverse operation to undo history stack
     switch (op.type) {
       case Ops.ADD_FIXTURE:
         result = {success: false}
@@ -1042,9 +1105,29 @@ export class DrawingEditor extends Component {
           this.setAlertError("Failed to undo fixture add");
         }
         break;
+      case Ops.MOVE_FIXTURE:
+        result = await this.state.hub.invoke(
+          "UpdateFixturePosition",
+            {
+              id: op.data.id,
+              position: op.data.prevValue
+            }
+        ).catch(err => {console.error(err); result = false});
+
+        if (result) {
+          const temp = op.data.prevValue;
+          op.data.prevValue = op.data.newValue;
+          op.data.newValue = temp;
+          op2 = {
+            type: Ops.MOVE_FIXTURE,
+            data: op.data
+          };
+        } else {
+          this.setAlertError("Failed to undo fixture move");
+        }
+        break;
       case Ops.REMOVE_FIXTURE:
         let tempFData = op.data;
-        tempFData.id = null;
 
         result = {success: false};
         result = await this.state.hub.invoke(
@@ -1102,10 +1185,6 @@ export class DrawingEditor extends Component {
         break;
       case Ops.REMOVE_STRUCTURE:
         let tempSData = op.data;
-        tempSData.id = null;
-        tempSData.fixtures.forEach((f, index) => {
-          tempSData.fixtures[index].id = null;
-        });
 
         result = {success: false}
         result = await this.state.hub.invoke(
@@ -1185,6 +1264,7 @@ export class DrawingEditor extends Component {
     }
 
     if (op2) {
+      // push reverse operation to correct stack whether currently undoing or redoing
       if (!redo) {
         this.undoHistory.push(op2);
       } else {

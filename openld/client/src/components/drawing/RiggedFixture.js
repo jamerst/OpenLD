@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { Circle, Group, Image, Label, Tag, Text } from "react-konva";
+import { DrawingUtils } from "./DrawingUtils";
 
 export class RiggedFixture extends Component {
   constructor(props) {
@@ -8,7 +9,8 @@ export class RiggedFixture extends Component {
     this.state = {
       symbol: null,
       symbolWidth: 0,
-      symbolHeight: 0
+      symbolHeight: 0,
+      startPos: 0
     }
   }
 
@@ -107,6 +109,13 @@ export class RiggedFixture extends Component {
         x = {this.props.data.position.x}
         y = {this.props.data.position.y}
         rotation = {360-this.props.data.angle}
+        draggable = {this.props.hubConnected}
+
+        onDragStart = {this.handleDragStart}
+        onDragMove = {this.handleDragMove}
+        onDragEnd = {this.handleDragEnd}
+
+        dragBoundFunc = {this.dragBounds}
       >
         {highlight}
         <Image
@@ -132,7 +141,7 @@ export class RiggedFixture extends Component {
 
     if (this.props.selectedTool === "none" && !this.props.selected) {
       this.props.setCursor("pointer");
-      this.props.setHintText("Click to select fixture");
+      this.props.setHintText("Click to select fixture.\nClick and hold to move fixture.");
     }
   }
 
@@ -164,5 +173,33 @@ export class RiggedFixture extends Component {
         this.props.setHintText("Modify fixture properties above.\nPress delete to remove fixture.")
       }
     }
+  }
+
+  handleDragStart = (event) => {
+    event.cancelBubble = true;
+    this.setState({startPos: this.props.data.position});
+    this.props.setHintText("Release to confirm position");
+  }
+
+  handleDragMove = (event) => {
+    event.cancelBubble = true;
+
+    const newPos = DrawingUtils.nearestLinePoint(this.props.structurePoints, event.target.position());
+    event.target.position(newPos);
+    event.target.draw();
+
+    const snapPos = DrawingUtils.getNearestSnapPos(newPos, this.props.snapGridSize);
+
+    this.props.setTooltip({x: newPos.x, y: newPos.y + 50 / this.props.scale}, true, `(${snapPos.x.toFixed(1)},${snapPos.y.toFixed(1)})`);
+  }
+
+  handleDragEnd = (event) => {
+    event.cancelBubble = true;
+
+    const newPos = DrawingUtils.nearestLinePoint(this.props.structurePoints, event.target.position());
+    const snapPos = DrawingUtils.getNearestSnapPos(newPos, this.props.snapGridSize);
+
+    this.props.onMoveFixture(this.props.data.id, snapPos, this.state.startPos);
+    this.props.setTooltip({x: 0, y: 0}, false, "");
   }
 }

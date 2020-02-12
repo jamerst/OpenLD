@@ -101,12 +101,33 @@ namespace openld.Services {
         public async Task<RiggedFixture> UpdatePropsAsync(RiggedFixture fixture) {
             RiggedFixture existing;
             try {
-                existing = await _context.RiggedFixtures.Include(rf => rf.Mode).Include(rf => rf.Structure).FirstAsync(f => f.Id == fixture.Id);
+                existing = await _context.RiggedFixtures
+                    .Include(rf => rf.Mode)
+                    .Include(rf => rf.Structure)
+                    .FirstAsync(f => f.Id == fixture.Id);
             } catch (InvalidOperationException) {
-                throw new KeyNotFoundException("Structure ID not found");
+                throw new KeyNotFoundException("Fixture ID not found");
             }
 
             _mapper.Map(fixture, existing);
+            await _context.SaveChangesAsync();
+
+            await _structureService.UpdateLastModifiedAsync(existing.Structure);
+            return existing;
+        }
+
+        public async Task<RiggedFixture> UpdatePositionAsync(RiggedFixture fixture) {
+            RiggedFixture existing;
+            try {
+                existing = await _context.RiggedFixtures
+                    .Include(rf => rf.Structure)
+                        .ThenInclude(s => s.View)
+                    .FirstAsync(f => f.Id == fixture.Id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("Fixture ID not found");
+            }
+
+            existing.Position = fixture.Position;
             await _context.SaveChangesAsync();
 
             await _structureService.UpdateLastModifiedAsync(existing.Structure);
@@ -135,6 +156,7 @@ namespace openld.Services {
         Task<Structure> GetStructureAsync(RiggedFixture fixture);
         Task<RiggedFixture> GetRiggedFixtureAsync(string id);
         Task<RiggedFixture> UpdatePropsAsync(RiggedFixture fixture);
+        Task<RiggedFixture> UpdatePositionAsync(RiggedFixture fixture);
         Task DeleteAsync(string id);
     }
 }

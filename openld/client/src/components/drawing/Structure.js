@@ -79,7 +79,7 @@ export class Structure extends Component {
       <Group
         draggable = {this.props.hubConnected}
         onDragStart = {this.handleDragStart}
-        onDragMove = {this.handleDrag}
+        onDragMove = {this.handleDragMove}
         onDragEnd = {this.handleDragEnd}
       >
         {structure}
@@ -88,7 +88,7 @@ export class Structure extends Component {
           x = {this.state.newFixturePos.x}
           y = {this.state.newFixturePos.y}
           fill = {"#007bff"}
-          radius = {this.props.viewDimension / 100}
+          radius = {Math.log10(this.props.viewDimension) / 10}
           visible = {this.state.newFixtureVisible && this.props.selectedTool === "add-fixture"}
           onClick = {this.onClick}
         />
@@ -121,8 +121,13 @@ export class Structure extends Component {
               selectedFixtureStructure = {this.props.selectedFixtureStructure}
               setCursor = {this.props.setCursor}
               setHintText = {this.props.setHintText}
+              setTooltip = {this.props.setTooltip}
               onSymbolLoad = {this.onSymbolLoad}
               viewDimension = {this.props.viewDimension}
+              structurePoints = {this.props.points}
+              scale = {this.props.scale}
+              snapGridSize = {this.props.snapGridSize}
+              onMoveFixture = {this.props.onMoveFixture}
             />
           )
         })}
@@ -137,7 +142,7 @@ export class Structure extends Component {
     this.startFixtures = DrawingUtils.clone(this.props.fixtures);
   }
 
-  handleDrag = (event) => {
+  handleDragMove = (event) => {
     const pos = event.target.position();
     const change = DrawingUtils.getDifference(pos, this.state.startPos);
     const newPoint = {x: this.props.points[0].x + change.x, y: this.props.points[0].y + change.y};
@@ -154,7 +159,7 @@ export class Structure extends Component {
     const newStructurePoints = DrawingUtils.movePoints(this.props.points, change);
 
     const newFixtures = DrawingUtils.moveFixtures(this.props.fixtures, change);
-    this.props.updatePoints(this.props.id, newStructurePoints, newFixtures, this.startPoints, this.startFixtures);
+    this.props.onMoveStructure(this.props.id, newStructurePoints, newFixtures, this.startPoints, this.startFixtures);
     event.target.position({x: 0, y: 0});
 
     event.target.getLayer().draw();

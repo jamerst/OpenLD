@@ -132,6 +132,21 @@ namespace openld.Hubs {
             return true;
         }
 
+        public async Task<bool> UpdateFixturePosition(RiggedFixture fixture) {
+            if (! await _authUtils.hasAccess(fixture, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                throw new HubException("401: Unauthorised");
+            }
+
+            try {
+                fixture = await  _rFixtureService.UpdatePositionAsync(fixture);
+            } catch (Exception) {
+                return false;
+            }
+
+            await Clients.Group(connectionDrawing[Context.ConnectionId]).UpdateFixturePosition(fixture);
+            return true;
+        }
+
         public async Task<string> CreateView(View view) {
             if (! await _authUtils.hasAccess(view.Drawing.Id, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 throw new HubException("401: Unauthorised");

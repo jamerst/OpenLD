@@ -83,7 +83,8 @@ export class Drawing extends Component {
           <View
               data={this.props.viewData}
               snapGridSize = {this.props.snapGridSize}
-              updatePoints = {this.props.onMoveStructure}
+              onMoveStructure = {this.props.onMoveStructure}
+              onMoveFixture = {this.props.onMoveFixture}
               setTooltip = {this.setTooltip}
               setCursor = {this.props.setCursor}
               setHintText = {this.props.setHintText}

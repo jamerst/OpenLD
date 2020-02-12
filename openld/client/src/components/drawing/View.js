@@ -34,7 +34,8 @@ export class View extends Component {
             snapGridSize = {this.props.snapGridSize}
             setTooltip = {this.props.setTooltip}
             setHintText = {this.props.setHintText}
-            updatePoints = {this.props.updatePoints}
+            onMoveStructure = {this.props.onMoveStructure}
+            onMoveFixture = {this.props.onMoveFixture}
             onDragStart = {this.props.onDragStart}
             onDragMove = {this.props.onDragMove}
             onDragEnd = {this.props.onDragEnd}

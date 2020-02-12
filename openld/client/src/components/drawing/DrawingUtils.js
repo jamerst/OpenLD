@@ -1,5 +1,6 @@
 export const Ops = {
     ADD_FIXTURE: 'addFixture',
+    MOVE_FIXTURE: 'moveFixture',
     REMOVE_FIXTURE: 'removeFixture',
 
     ADD_STRUCTURE: 'addStructure',
