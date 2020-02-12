@@ -100,6 +100,22 @@ namespace openld.Controllers {
             return new JsonResponse<PrintDrawing> { success = true, data = drawing };
         }
 
+        [HttpPost("{drawingId}")]
+        [Authorize]
+        public async Task<ActionResult<bool>> DeleteDrawing(string drawingId) {
+            if (! await _drawingService.IsOwnerAsync(drawingId, HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
+                return Unauthorized();
+            }
+
+            try {
+                await _drawingService.DeleteDrawingAsync(drawingId);
+            } catch (Exception) {
+                return false;
+            }
+
+            return true;
+        }
+
         [HttpGet("{drawingId}")]
         [Authorize]
         public async Task<ActionResult<JsonResponse<List<UserDrawing>>>> GetSharedUsers(string drawingId) {

@@ -149,6 +149,18 @@ namespace openld.Services {
             return result;
         }
 
+        public async Task DeleteDrawingAsync(string id) {
+            Drawing drawing;
+            try {
+                drawing = await _context.Drawings.FirstAsync(d => d.Id == id);
+            } catch (InvalidOperationException) {
+                throw new KeyNotFoundException("Drawing ID not found");
+            }
+
+            _context.Drawings.Remove(drawing);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task<bool> DrawingExistsAsync(string id) {
             return await _context.Drawings.Where(d => d.Id == id).AnyAsync();
         }
@@ -282,6 +294,7 @@ namespace openld.Services {
         Task<string> CreateDrawingFromTemplateAsync(string userId, Drawing drawing, Template template);
         Task<Drawing> GetDrawingAsync(string id);
         Task<PrintDrawing> GetPrintDrawingAsync(string id);
+        Task DeleteDrawingAsync(string id);
         Task<bool> DrawingExistsAsync(string id);
         Task<List<UserDrawing>> GetSharedUsersAsync(string drawingId);
         Task<UserDrawing> ShareWithUserAsync(string email, string drawingId);

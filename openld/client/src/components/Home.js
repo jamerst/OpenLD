@@ -6,6 +6,8 @@ import {
 import Moment from "react-moment";
 import authService from './api-authorization/AuthorizeService';
 import { CreateDrawingForm } from './drawing/CreateDrawingForm';
+import { DeleteDrawingModal } from "./drawing/DeleteDrawingModal";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 export class Home extends Component {
   static displayName = Home.name;
@@ -20,7 +22,10 @@ export class Home extends Component {
       sharedDrawings: [],
       authenticated: false,
       loadingOwned: true,
-      loadingShared: true
+      loadingShared: true,
+      deletedId: "",
+      deletedTitle: "",
+      deleteModalOpen: false
     }
   }
 
@@ -47,17 +52,18 @@ export class Home extends Component {
                 <Row><h2>Your Drawings</h2></Row>
                 {this.state.ownedDrawings.map(drawing => {
                   return (
-                    <Link to={`/drawing/${drawing.id}`} className="text-dark" key={drawing.id}>
-                      <Card className="mb-3">
+                    <Card className="mb-3">
+                      <Link to={`/drawing/${drawing.id}`} className="text-dark" key={drawing.id}>
                         <CardHeader><h4 className="mb-0">{drawing.title}</h4></CardHeader>
                         <CardBody>
                           <strong>Owner:</strong> {drawing.owner.userName}
                         </CardBody>
-                        <CardFooter className="text-right small">
+                      </Link>
+                        <CardFooter className="d-flex small justify-content-between align-items-center">
+                          <Button close size="sm" onClick={() => this.handleDelete(drawing.id, drawing.title)}><FontAwesomeIcon icon="trash"/></Button>
                           <em>Last modified <Moment date={drawing.lastModified} fromNow/></em>
                         </CardFooter>
-                      </Card>
-                    </Link>
+                    </Card>
                   );
                 })}
               </Col>
@@ -98,7 +104,15 @@ export class Home extends Component {
         <CreateDrawingForm
           isOpen = {this.state.createModalOpen}
           onSubmitSuccess = {this.redirect}
-          toggle = {this.toggle}
+          toggle = {this.toggleCreateModal}
+        />
+
+        <DeleteDrawingModal
+          isOpen = {this.state.deleteModalOpen}
+          toggle = {this.toggleDeleteModal}
+          deleteDrawing = {this.deleteDrawing}
+          drawingId = {this.state.deletedId}
+          drawingTitle = {this.state.deletedTitle}
         />
 
         {drawings}
@@ -106,8 +120,12 @@ export class Home extends Component {
     );
   }
 
-  toggle = () => {
+  toggleCreateModal = () => {
     this.setState({createModalOpen: !this.state.createModalOpen});
+  }
+
+  toggleDeleteModal = () => {
+    this.setState({deleteModalOpen: !this.state.deleteModalOpen});
   }
 
   redirect = (id) => {
@@ -116,7 +134,7 @@ export class Home extends Component {
 
   renderActions = async () => {
     if (await authService.isAuthenticated()) {
-      this.setState({actions: <Fragment><hr/><Button color="primary" size="lg" onClick={this.toggle}>Create Drawing</Button></Fragment>});
+      this.setState({actions: <Fragment><hr/><Button color="primary" size="lg" onClick={this.toggleCreateModal}>Create Drawing</Button></Fragment>});
     }
   }
 
@@ -153,5 +171,26 @@ export class Home extends Component {
         }
       }
     }
+  }
+
+  handleDelete = (id, title) => {
+    this.setState({
+      deletedId: id,
+      deletedTitle: title,
+      deleteModalOpen: true
+    });
+  }
+
+  deleteDrawing = (id) => {
+    this.setState(prevState => {
+      let owned = [...prevState.ownedDrawings];
+      const deletedIndex = owned.findIndex(drawing => drawing.id === id);
+
+      owned.splice(deletedIndex, 1);
+
+      return {
+        ownedDrawings: owned
+      };
+    });
   }
 }
