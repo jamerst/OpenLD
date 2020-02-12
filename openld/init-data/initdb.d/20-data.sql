@@ -149,6 +149,12 @@ c6d7bd11-5d1c-4237-b53d-5b632a8ca64c	tkeL2B//bPtGvECB8eMg7G0JujKQp7bBlC0WyqT7ULA
 c3b63a6e-9d68-4abf-9106-f3ca88534a51	6wYkvYm9FAp6k/9BR0D5Boh76IK43cpGBPty5fFNsrA=	/openld-data/fixture-symbol-bitmaps/l3f4a1ix.e0t
 68a0253b-94a8-456a-a8bb-69732657876a	isLb8Z0RFVWFbpTJr5PXlXkbUciOcyY+JdSa12L2LSE=	/openld-data/fixture-symbol-bitmaps/dxuscapp.qjc
 677cd50e-9e4e-4894-a7fb-fb744b9c2e51	/yxZ47Op5RHAkjG9D/woQQLDLmFtFIuf5cZ0VmzrYKQ=	/openld-data/fixture-symbol-bitmaps/qnl4e2vi.ebz
+074b3b5c-df8f-41b8-9d49-4f24bf8b7567	i4ziibj4XXLNLuC3CbPuC78PTyl1xjCpoRN4JpVgjnw=	/openld-data/fixture-images/yuxy2vpb.dj5
+1aebe167-5036-4c11-8913-2ee3ee1f150b	JINDmWJ7IDC83bFw95cIAms+rMvDXLnG3TRHUeDtC6U=	/openld-data/fixture-symbol-bitmaps/ey5t42ez.i3o
+a265cdb9-be0a-4692-839b-be9ec9e5a68e	T483lVS4I3Vl7kbX8gRg9MaXRt1/BOgXbBLn9zrqG5Y=	/openld-data/fixture-images/hblmy0bb.zm4
+0914a9bd-90d6-40e7-bb6a-a71f38923946	GwAnmiMJkVdeQckPugoTC5K2ZLfrb+6Y4mCNzMrYb5E=	/openld-data/fixture-symbol-bitmaps/y30cz1zo.g5n
+00848d28-04e4-4354-bb9c-b748108f973e	tmQ3Nu6f6XKxiQV4Kdrdoz/BKSWv+7FKqqAvtc5RhvM=	/openld-data/fixture-images/mi30ee35.gyt
+2bb4eed3-4b0a-4860-9129-9f5182ac6187	foffr1fdsXwwx7c0y+D97aqdwOHb5371wtnaypm2KbE=	/openld-data/fixture-symbol-bitmaps/0vwkjz33.p0n
 \.
 
 
@@ -173,6 +179,9 @@ b6abef11-d07d-4449-bc50-1eb5c3f5231d	e+TOzw7Q8X3zFH3y0c5+Ppj5mebakxBtzBeBUEs6ezQ
 66b1d027-99ff-4502-b716-0398e4e71fc3	w3YrR6yWLpIdaaBJHFjjVZMpV4ZOsNWBQbKY/nQb2/0=	/openld-data/fixture-symbols/anht4jjr.ztr	c3b63a6e-9d68-4abf-9106-f3ca88534a51
 14ede821-f10e-4bde-b2a4-785fe8edd2e8	wjxvPfiUhkY/ie+6b4b8d3TTHrJfRlPnqQ/RD9R5MLk=	/openld-data/fixture-symbols/o1txqq3l.3bt	68a0253b-94a8-456a-a8bb-69732657876a
 24cbbbc2-779f-4b44-9833-107170119fa5	oPx3JqY6Mz3sNngHU1N1lsYWC85bJ7q+7jCUI+aJyL4=	/openld-data/fixture-symbols/edshgxmk.u4o	677cd50e-9e4e-4894-a7fb-fb744b9c2e51
+18d64b5e-9c60-43f7-87bd-f4addfb73d63	vHYRf76OSiegSjpOXM1tpFbGEAl60lQ9k5sWoM8RuKc=	/openld-data/fixture-symbols/nczk1ypq.5fd	1aebe167-5036-4c11-8913-2ee3ee1f150b
+8cca929b-c7b1-4e5d-8b9b-f51d5f003f4a	vxQte3bqd70CvxemFlhXJXHpJ33h7MrOEHPsBouNCTY=	/openld-data/fixture-symbols/qdqvkqyb.3f2	0914a9bd-90d6-40e7-bb6a-a71f38923946
+da6ac5b5-a429-49b5-8103-b4303b4f1ba6	Z2O64yeci5g71r5ajBYzfcpEeX1j/oVdGSqiq/opXR8=	/openld-data/fixture-symbols/ujaducsx.eej	2bb4eed3-4b0a-4860-9129-9f5182ac6187
 \.
 
 
@@ -197,6 +206,9 @@ e748832b-eab3-4915-be84-88f8d05ecb42	LEDWash 800	Robe	2019-12-12 20:42:45.035	c3
 8e0eb758-59e5-4e91-a8d5-3a814506d827	DF-50 Diffusion Hazer	Reel EFX	2020-01-17 16:18:53.464	9193519b-21be-4ca9-b99d-7f4929d05e5f	400	16	09957726-5be8-46ee-9ec0-e9cf6ded28eb	b6abef11-d07d-4449-bc50-1eb5c3f5231d
 cb322e2a-a92c-4fee-9bfa-2d805397b75d	MVS Hazer	Le Maitre	2020-01-17 17:03:48.236	9193519b-21be-4ca9-b99d-7f4929d05e5f	300	12	ae0abe90-364c-48b8-9520-97e44bbb5c44	0b9a3ff2-ae90-46af-a870-11c527f46199
 fe9367ae-ab57-441f-8192-c6f65c7e9363	Ghibli	Ayrton	2020-01-17 16:28:44.583	bf10c60c-3452-4b4d-b14d-74d345b5daa1	800	35.6	2181bef5-1fc9-4973-a5f2-d0a8de97a6bf	24cbbbc2-779f-4b44-9833-107170119fa5
+6c0a0ab8-364e-44eb-923f-d8184890f20f	Europe DS105	ADB	2020-02-12 19:24:37.413	05b5b806-884f-41ad-9ff8-932f66d4d824	1200	14	074b3b5c-df8f-41b8-9d49-4f24bf8b7567	18d64b5e-9c60-43f7-87bd-f4addfb73d63
+f8915759-3804-493a-a931-383108509f3b	Pacific 23°-50° Zoomspot	Philips Selecon	2020-02-12 19:27:16.597	05b5b806-884f-41ad-9ff8-932f66d4d824	1000	8.7	a265cdb9-be0a-4692-839b-be9ec9e5a68e	8cca929b-c7b1-4e5d-8b9b-f51d5f003f4a
+968605b1-8b8c-48e9-9b9e-1fdf5c79530a	Pacific 14°-35° Zoomspot	Philips Selecon	2020-02-12 19:32:03.265	05b5b806-884f-41ad-9ff8-932f66d4d824	1000	9.8	00848d28-04e4-4354-bb9c-b748108f973e	da6ac5b5-a429-49b5-8103-b4303b4f1ba6
 \.
 
 
@@ -243,6 +255,9 @@ f4c1e191-646f-4716-92a9-e18059325c76	6	e748832b-eab3-4915-be84-88f8d05ecb42	37
 da216e40-2bfe-4bc6-a5e7-850cc772494f	Standard	fe9367ae-ab57-441f-8192-c6f65c7e9363	38
 dfa996b6-873d-48cd-99e1-8f6752fd325e	Basic	fe9367ae-ab57-441f-8192-c6f65c7e9363	36
 afcc5da0-78e2-44a7-81f8-409bb29abcf1	Extended	fe9367ae-ab57-441f-8192-c6f65c7e9363	58
+81fc9333-67ad-44e8-825a-0e16e7c669fb	Default	6c0a0ab8-364e-44eb-923f-d8184890f20f	1
+f274afdd-a105-4307-aa10-93551f754db6	Default	f8915759-3804-493a-a931-383108509f3b	1
+02139ec6-2619-4ea6-b12c-a312afd5766a	Default	968605b1-8b8c-48e9-9b9e-1fdf5c79530a	1
 \.
 
 
