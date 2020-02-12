@@ -61,7 +61,7 @@ export class CreateDrawingForm extends Component {
                 <Col xs="12">
                   <FormGroup check>
                     <Label check>
-                      <Input type="checkbox" value={this.state.useTemplate} onChange={this.handleUseTemplateChange}/>
+                      <Input type="checkbox" value={this.state.useTemplate} onChange={this.handleUseTemplateChange} disabled={this.state.templates.length === 0}/>
                       Use a template
                     </Label>
                   </FormGroup>
@@ -170,7 +170,7 @@ export class CreateDrawingForm extends Component {
       const data = await response.json();
       this.setState({
         templates: data,
-        template: data[0].id
+        template: data.length > 0 ? data[0].id : ""
       });
     }
   }
