@@ -119,6 +119,4 @@ export class DrawingUtils {
     static vectorLen = (A, B) => {
         return Math.sqrt(Math.pow(A.x - B.x, 2) + Math.pow(A.y - B.y, 2));
     }
-
-    static clone = (items) => items.map(item => Array.isArray(item) ? this.clone(item) : { ...item });
 }

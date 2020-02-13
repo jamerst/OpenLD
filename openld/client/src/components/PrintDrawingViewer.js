@@ -25,7 +25,7 @@ export class PrintDrawingViewer extends Component {
       dataLoaded: false,
       symbolsLoaded: false,
       rendered: false,
-      loadingStatus: "Fetching Data"
+      loadingStatus: "Loading Data"
     }
     this.loadedSymbols = {};
     this.images = {};
@@ -135,7 +135,7 @@ export class PrintDrawingViewer extends Component {
       this.setState({
         drawingData: data.data,
         dataLoaded: true,
-        loadingStatus: "Loading Fixture Symbols"
+        loadingStatus: "Loading Symbols"
       }, () => {
         this.sizeStage(this.scaleStage);
       });

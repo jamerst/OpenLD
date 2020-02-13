@@ -12,13 +12,27 @@ export class Structure extends Component {
       startPos: {x: 0, y: 0},
       singlePoint: this.props.points !== null && this.props.points.length === 1,
       newFixturePos: {x: 0, y: 0},
-      newFixtureVisible: false
+      newFixtureVisible: false,
+      symbolsLoaded: {}
     }
 
     this.startPoints = [];
     this.startFixtures = [];
 
     this.symbolsLoaded = {};
+
+    this.lodash = require('lodash/lang');
+  }
+
+  static getDerivedStateFromProps = (nextProps) => {
+    let symbols = {};
+    nextProps.fixtures.forEach(fixture => {
+      symbols[fixture.id] = false;
+    });
+
+    return {
+      symbolsLoaded: symbols
+    };
   }
 
   componentDidMount = () => {
@@ -26,6 +40,8 @@ export class Structure extends Component {
     if (this.props.fixtures.length === 0) {
       this.props.onSymbolLoad(this.props.id);
     }
+
+    this.symbolsLoaded = this.state.symbolsLoaded;
   }
 
   render = () => {
@@ -103,8 +119,6 @@ export class Structure extends Component {
           fill = "#000"
         />
         {this.props.fixtures.map(fixture => {
-          this.symbolsLoaded[fixture.id] = false;
-
           return (
             <RiggedFixture
               key = {`rf-${fixture.id}`}
@@ -125,6 +139,7 @@ export class Structure extends Component {
               onSymbolLoad = {this.onSymbolLoad}
               viewDimension = {this.props.viewDimension}
               structurePoints = {this.props.points}
+              singlePointStructure = {this.state.singlePoint}
               scale = {this.props.scale}
               snapGridSize = {this.props.snapGridSize}
               onMoveFixture = {this.props.onMoveFixture}
@@ -138,8 +153,8 @@ export class Structure extends Component {
   handleDragStart = (event) => {
     this.setState({startPos: event.target.position()});
     this.props.setHintText("Release to confirm position");
-    this.startPoints = DrawingUtils.clone(this.props.points);
-    this.startFixtures = DrawingUtils.clone(this.props.fixtures);
+    this.startPoints = this.lodash.cloneDeep(this.props.points);
+    this.startFixtures = this.lodash.cloneDeep(this.props.fixtures);
   }
 
   handleDragMove = (event) => {

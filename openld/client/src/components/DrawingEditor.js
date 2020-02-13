@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Alert,
@@ -19,7 +19,8 @@ export class DrawingEditor extends Component {
     super(props);
 
     this.state = {
-      loading: true,
+      loadingData: true,
+      loadingSymbols: true,
       error: false,
       errorTitle: "",
       errorMsg: "",
@@ -79,6 +80,7 @@ export class DrawingEditor extends Component {
   }
 
   render = () => {
+    let loadingSymbols;
     if (this.state.error === true) {
       return (
         <Container className="h-100">
@@ -92,171 +94,188 @@ export class DrawingEditor extends Component {
           </Col>
         </Container>
         );
-    } else if (this.state.loading === true) {
+    } else if (this.state.loadingData === true) {
       return (
       <Container className="h-100">
         <Col className="h-100">
-          <Row className="align-items-center justify-content-center h-100">
+          <Row className="align-items-center justify-content-center h-100 flex-column">
             <Spinner style={{width: "10rem", height: "10rem"}}/>
+            <h3 className="mt-3">Loading Data</h3>
           </Row>
         </Col>
       </Container>
       );
+    } else if (this.state.loadingSymbols === true) {
+      loadingSymbols = (
+        <Container className="h-100 z4">
+          <Col className="h-100">
+            <Row className="align-items-center justify-content-center h-100 flex-column">
+              <Spinner style={{width: "10rem", height: "10rem"}}/>
+              <h3 className="mt-3">Loading Symbols</h3>
+            </Row>
+          </Col>
+        </Container>
+      )
     }
 
     return (
-      <div className="d-flex flex-column h-100">
-        <Navbar color="dark">
-          <NavbarBrand className="text-light">{this.state.drawingData.title}</NavbarBrand>
-          <div className="d-flex">
-            {this.state.connectedUsers.map(u => {
-              return (
-                <div
-                  key={`userCircle-${u.id}`}
-                  className={"rounded-circle font-weight-bold d-flex align-items-center justify-content-center ml-2 " + (u.lightText ? "text-dark" : "text-light")}
-                  style={{width: "2.5em", height: "2.5em", backgroundColor: u.colour}}
-                >
-                  <div id={`userCircle-${u.id}`} style={{fontSize: "130%"}}>
-                    {u.userName.charAt(0).toUpperCase()}
+      <Fragment>
+        {loadingSymbols}
+        <div className="d-flex flex-column h-100">
+          <Navbar color="dark">
+            <NavbarBrand className="text-light">{this.state.drawingData.title}</NavbarBrand>
+            <div className="d-flex">
+              {this.state.connectedUsers.map(u => {
+                return (
+                  <div
+                    key={`userCircle-${u.id}`}
+                    className={"rounded-circle font-weight-bold d-flex align-items-center justify-content-center ml-2 " + (u.lightText ? "text-dark" : "text-light")}
+                    style={{width: "2.5em", height: "2.5em", backgroundColor: u.colour}}
+                  >
+                    <div id={`userCircle-${u.id}`} style={{fontSize: "130%"}}>
+                      {u.userName.charAt(0).toUpperCase()}
+                    </div>
+                    <UncontrolledTooltip placement="bottom" target={`userCircle-${u.id}`} style={{zIndex: 1000}}>{u.userName}</UncontrolledTooltip>
                   </div>
-                  <UncontrolledTooltip placement="bottom" target={`userCircle-${u.id}`} style={{zIndex: 1000}}>{u.userName}</UncontrolledTooltip>
+                );
+              })}
+              <NavLink tag={Link} to="/"><Button className="text-light" close/></NavLink>
+            </div>
+          </Navbar>
+          <Container fluid className="pl-0 d-flex flex-grow-1">
+            <Row className="d-flex flex-grow-1">
+              <Col xs="auto" className="pr-0 bg-light">
+                <ButtonGroup vertical>
+                  <Button
+                    outline
+                    color="primary"
+                    size="lg"
+                    className="rounded-0"
+                    onClick={() => this.handleToolSelect("polygon")}
+                    active={this.state.selectedTool === "polygon"}
+                    disabled={!this.state.hubConnected}
+                    onMouseEnter = {() => this.setHintText("Insert new structure")}
+                    onMouseLeave = {this.onToolButtonLeave}
+                  >
+                    <FontAwesomeIcon icon="draw-polygon"/>
+                  </Button>
+
+                  <Button
+                    outline
+                    color="primary"
+                    size="lg"
+                    className="rounded-0"
+                    onClick={() => this.handleToolSelect("add-fixture")}
+                    active={this.state.selectedTool === "add-fixture"}
+                    disabled={!this.state.hubConnected}
+                    onMouseEnter = {() => this.setHintText("Insert new fixture")}
+                    onMouseLeave = {this.onToolButtonLeave}
+                  >
+                    <FontAwesomeIcon icon="plus-circle"/>
+                  </Button>
+
+                  <Button
+                    outline
+                    color="danger"
+                    size="lg"
+                    className="rounded-0"
+                    onClick={() => this.handleToolSelect("eraser")}
+                    active={this.state.selectedTool === "eraser"}
+                    disabled={!this.state.hubConnected}
+                    onMouseEnter = {() => this.setHintText("Remove object")}
+                    onMouseLeave = {this.onToolButtonLeave}
+                  >
+                    <FontAwesomeIcon icon="eraser"/>
+                  </Button>
+                </ButtonGroup>
+              </Col>
+              <Col id="stage-container" className="p-0 m-0 bg-secondary">
+                <div style={{position: "absolute", width: "100%", zIndex: "1000"}}>
+                  <Alert color={this.state.alertColour} isOpen={this.state.alertOpen} toggle={this.toggleAlert} className="d-flex justify-content-center align-items-center">
+                    <span className="mr-3">{this.state.alertIcon}</span>
+                    <span className="h5 m-0">{this.state.alertContent}</span>
+                  </Alert>
                 </div>
-              );
-            })}
-            <NavLink tag={Link} to="/"><Button className="text-light" close/></NavLink>
-          </div>
-        </Navbar>
-        <Container fluid className="pl-0 d-flex flex-grow-1">
-          <Row className="d-flex flex-grow-1">
-            <Col xs="auto" className="pr-0 bg-light">
-              <ButtonGroup vertical>
-                <Button
-                  outline
-                  color="primary"
-                  size="lg"
-                  className="rounded-0"
-                  onClick={() => this.handleToolSelect("polygon")}
-                  active={this.state.selectedTool === "polygon"}
-                  disabled={!this.state.hubConnected}
-                  onMouseEnter = {() => this.setHintText("Insert new structure")}
-                  onMouseLeave = {this.onToolButtonLeave}
-                >
-                  <FontAwesomeIcon icon="draw-polygon"/>
-                </Button>
+                <Drawing
+                  width = {this.state.stageWidth}
+                  height = {this.state.stageHeight}
+                  scale = {this.state.stageScale}
+                  x = {this.state.stageX}
+                  y = {this.state.stageY}
+                  position = {this.state.stagePosition}
 
-                <Button
-                  outline
-                  color="primary"
-                  size="lg"
-                  className="rounded-0"
-                  onClick={() => this.handleToolSelect("add-fixture")}
-                  active={this.state.selectedTool === "add-fixture"}
-                  disabled={!this.state.hubConnected}
-                  onMouseEnter = {() => this.setHintText("Insert new fixture")}
-                  onMouseLeave = {this.onToolButtonLeave}
-                >
-                  <FontAwesomeIcon icon="plus-circle"/>
-                </Button>
+                  viewData = {this.getCurrentView()}
+                  isDrawing = {this.state.isDrawing}
+                  selectedTool = {this.state.selectedTool}
+                  cursor = {this.state.stageCursor}
+                  selectedObjectId = {this.state.selectedObjectId}
+                  selectedObjectType = {this.state.selectedObjectType}
+                  hub = {this.state.hub}
+                  hubConnected = {this.state.hubConnected}
+                  tooltipVisible = {this.state.tooltipVisible}
+                  currentView = {this.state.currentView}
 
-                <Button
-                  outline
-                  color="danger"
-                  size="lg"
-                  className="rounded-0"
-                  onClick={() => this.handleToolSelect("eraser")}
-                  active={this.state.selectedTool === "eraser"}
-                  disabled={!this.state.hubConnected}
-                  onMouseEnter = {() => this.setHintText("Remove object")}
-                  onMouseLeave = {this.onToolButtonLeave}
-                >
-                  <FontAwesomeIcon icon="eraser"/>
-                </Button>
-              </ButtonGroup>
-            </Col>
-            <Col id="stage-container" className="p-0 m-0 bg-secondary">
-              <div style={{position: "absolute", width: "100%", zIndex: "1000"}}>
-                <Alert color={this.state.alertColour} isOpen={this.state.alertOpen} toggle={this.toggleAlert} className="d-flex justify-content-center align-items-center">
-                  <span className="mr-3">{this.state.alertIcon}</span>
-                  <span className="h5 m-0">{this.state.alertContent}</span>
-                </Alert>
-              </div>
-              <Drawing
-                width = {this.state.stageWidth}
+                  onMoveStructure = {this.moveStructure}
+                  onMoveFixture = {this.moveFixture}
+                  onSelectObject = {this.selectObject}
+                  deselectObject = {this.deselectObject}
+                  onRemoveObject = {this.onRemoveObject}
+                  onSymbolLoad = {this.onSymbolLoad}
+
+                  gridEnabled = {this.state.gridEnabled}
+                  gridSize = {this.state.gridSize}
+                  snapGridSize = {this.state.snapGridSize}
+
+                  setScale = {this.setScale}
+                  setPosition = {this.setPosition}
+                  setTool = {this.setTool}
+                  setIsDrawing = {this.setIsDrawing}
+                  setCursor = {this.setCursor}
+                  setStructureColour = {this.setStructureColour}
+                  setFixtureColour = {this.setFixtureColour}
+                  setHintText = {this.setHintText}
+                  setTooltipVisible = {this.setTooltipVisible}
+                  pushHistoryOp = {this.pushHistoryOp}
+                  setAlertError = {this.setAlertError}
+                  setAlertIcon = {this.setAlertIcon}
+                  getStructure = {this.getStructure}
+                  getFixture = {this.getFixture}
+                />
+              </Col>
+              <Sidebar
+                drawingId = {this.state.drawingData.id}
+
                 height = {this.state.stageHeight}
-                scale = {this.state.stageScale}
-                x = {this.state.stageX}
-                y = {this.state.stageY}
-                position = {this.state.stagePosition}
+                width = "22em"
 
-                viewData = {this.getCurrentView()}
-                isDrawing = {this.state.isDrawing}
-                selectedTool = {this.state.selectedTool}
-                cursor = {this.state.stageCursor}
-                selectedObjectId = {this.state.selectedObjectId}
-                selectedObjectType = {this.state.selectedObjectType}
+                views = {this.state.views}
+                currentView = {this.state.currentView}
                 hub = {this.state.hub}
                 hubConnected = {this.state.hubConnected}
-                tooltipVisible = {this.state.tooltipVisible}
-                currentView = {this.state.currentView}
-
-                onMoveStructure = {this.moveStructure}
-                onMoveFixture = {this.moveFixture}
-                onSelectObject = {this.selectObject}
-                deselectObject = {this.deselectObject}
-                onRemoveObject = {this.onRemoveObject}
-
                 gridEnabled = {this.state.gridEnabled}
                 gridSize = {this.state.gridSize}
-                snapGridSize = {this.state.snapGridSize}
+                structure = {this.state.selectedStructure}
+                fixture = {this.state.selectedFixture}
+                selectedObjectId = {this.state.selectedObjectId}
+                selectedObjectType = {this.state.selectedObjectType}
+                modifiedCurrent = {this.state.modifiedCurrent}
+                hintText = {this.state.hintText}
+                owner = {this.state.drawingData.owner}
 
-                setScale = {this.setScale}
-                setTool = {this.setTool}
-                setIsDrawing = {this.setIsDrawing}
-                setCursor = {this.setCursor}
-                setStructureColour = {this.setStructureColour}
-                setFixtureColour = {this.setFixtureColour}
-                setHintText = {this.setHintText}
-                setTooltipVisible = {this.setTooltipVisible}
+                onClickView = {this.switchView}
+                toggleGrid = {this.toggleGrid}
+                setGridSize = {this.setGridSize}
+                getStructure = {this.getStructure}
+                setModifiedCurrent = {this.setModifiedCurrent}
+                setAlertIcon = {this.setAlertIcon}
                 pushHistoryOp = {this.pushHistoryOp}
                 setAlertError = {this.setAlertError}
-                setAlertIcon = {this.setAlertIcon}
-                getStructure = {this.getStructure}
-                getFixture = {this.getFixture}
+                deleteView = {this.deleteView}
               />
-            </Col>
-            <Sidebar
-              drawingId = {this.state.drawingData.id}
-
-              height = {this.state.stageHeight}
-              width = "22em"
-
-              views = {this.state.views}
-              currentView = {this.state.currentView}
-              hub = {this.state.hub}
-              hubConnected = {this.state.hubConnected}
-              gridEnabled = {this.state.gridEnabled}
-              gridSize = {this.state.gridSize}
-              structure = {this.state.selectedStructure}
-              fixture = {this.state.selectedFixture}
-              selectedObjectId = {this.state.selectedObjectId}
-              selectedObjectType = {this.state.selectedObjectType}
-              modifiedCurrent = {this.state.modifiedCurrent}
-              hintText = {this.state.hintText}
-              owner = {this.state.drawingData.owner}
-
-              onClickView = {this.switchView}
-              toggleGrid = {this.toggleGrid}
-              setGridSize = {this.setGridSize}
-              getStructure = {this.getStructure}
-              setModifiedCurrent = {this.setModifiedCurrent}
-              setAlertIcon = {this.setAlertIcon}
-              pushHistoryOp = {this.pushHistoryOp}
-              setAlertError = {this.setAlertError}
-              deleteView = {this.deleteView}
-            />
-          </Row>
-        </Container>
-      </div>
+            </Row>
+          </Container>
+        </div>
+      </Fragment>
     );
   }
 
@@ -334,7 +353,7 @@ export class DrawingEditor extends Component {
 
       this.setState({
         drawingData: data.data,
-        loading: false,
+        loadingData: false,
         currentView: data.data.views[0].id,
         views: data.data.views
       }, async () => {
@@ -358,6 +377,12 @@ export class DrawingEditor extends Component {
         errorIcon: <FontAwesomeIcon icon={["far", "question-circle"]} style={{width: "15rem", height: "15rem", color: "#1565C0"}}/>
       });
     }
+  }
+
+  onSymbolLoad = () => {
+    this.setState({
+      loadingSymbols: false
+    });
   }
 
   insertNewStructure = (structure) => {
@@ -841,6 +866,10 @@ export class DrawingEditor extends Component {
 
   setScale = (scale) => {
     this.setState({stageScale: scale});
+  }
+
+  setPosition = (position) => {
+    this.setState({stagePosition: position});
   }
 
   setTool = (tool) => {

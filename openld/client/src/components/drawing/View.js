@@ -5,7 +5,22 @@ import { Structure } from "./Structure";
 export class View extends Component {
   constructor(props) {
     super(props);
+
+    this.state = {
+      symbolsLoaded: {}
+    }
     this.symbolsLoaded = {};
+  }
+
+  static getDerivedStateFromProps = (nextProps) => {
+    let symbols = {};
+    nextProps.data.structures.forEach(structure => {
+      symbols[structure.id] = false;
+    });
+
+    return {
+      symbolsLoaded: symbols
+    }
   }
 
   componentDidMount = () => {
@@ -13,6 +28,8 @@ export class View extends Component {
     if (this.props.data.structures.length === 0) {
       this.props.onSymbolLoad(this.props.data.id);
     }
+
+    this.symbolsLoaded = this.state.symbolsLoaded;
   }
 
   render = () => {
@@ -22,8 +39,6 @@ export class View extends Component {
 
     return (<Layer>
       {this.props.data.structures.map(structure => {
-        this.symbolsLoaded[structure.id] = false;
-
         return (
           <Structure
             key={`s-${structure.id}`}

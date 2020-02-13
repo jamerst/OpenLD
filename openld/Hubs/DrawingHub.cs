@@ -110,33 +110,6 @@ namespace openld.Hubs {
             return new JsonResponse<Structure> {success = true, data = newStructure};
         }
 
-        public async Task<JsonResponse<Structure>> CopyStructure(Structure original, Point change, string destView) {
-            if (! await _authUtils.hasAccess(original, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
-                throw new HubException("401: Unauthorised");
-            }
-
-            Structure newStructure = original.Clone();
-            foreach(Point p in newStructure.Geometry.Points) {
-                p.x += change.x;
-                p.y += change.y;
-            }
-            foreach(RiggedFixture rf in newStructure.Fixtures) {
-                rf.Position.x += change.x;
-                rf.Position.y += change.y;
-            }
-
-            newStructure.View = await _viewService.GetViewAsync(destView);
-
-            try {
-                newStructure = await _structureService.AddStructureAsync(newStructure);
-            } catch (Exception) {
-                return new JsonResponse<Structure> {success = false};
-            }
-
-            await Clients.Group(connectionDrawing[Context.ConnectionId]).NewStructure(newStructure);
-            return new JsonResponse<Structure> {success = true, data = newStructure};
-        }
-
         public async Task<bool> UpdateStructureGeometry(string structureId, Geometry geometry, List<RiggedFixture> fixtures) {
             if (! await _authUtils.hasAccess(new Structure {Id = structureId}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
                 throw new HubException("401: Unauthorised");
@@ -392,29 +365,6 @@ namespace openld.Hubs {
             );
 
             return new JsonResponse<RiggedFixture> {success = true, data = fixture};
-        }
-
-        public async Task<JsonResponse<RiggedFixture>> CopyFixture(RiggedFixture original, Point newPoint, string destStructure) {
-            if (! await _authUtils.hasAccess(new Structure {Id = destStructure}, Context.User.FindFirst(ClaimTypes.NameIdentifier).Value)) {
-                throw new HubException("401: Unauthorised");
-            }
-
-            RiggedFixture newFixture = original.Clone();
-            newFixture.Structure = await _structureService.GetStructureAsync(destStructure);
-            newFixture.Position.x = newPoint.x;
-            newFixture.Position.y = newPoint.y;
-
-            try {
-                newFixture = await _rFixtureService.AddRiggedFixtureAsync(newFixture);
-            } catch (Exception) {
-                return new JsonResponse<RiggedFixture> {success = false};
-            }
-
-            await Clients.Group(connectionDrawing[Context.ConnectionId]).AddFixture(
-                (await _structureService.GetViewAsync(newFixture.Structure)).Id,
-                newFixture
-            );
-            return new JsonResponse<RiggedFixture> {success = true, data = newFixture};
         }
     }
 }

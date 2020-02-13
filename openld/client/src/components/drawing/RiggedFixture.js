@@ -109,13 +109,11 @@ export class RiggedFixture extends Component {
         x = {this.props.data.position.x}
         y = {this.props.data.position.y}
         rotation = {360-this.props.data.angle}
-        draggable = {this.props.hubConnected}
+        draggable = {this.props.hubConnected && !this.props.singlePointStructure}
 
         onDragStart = {this.handleDragStart}
         onDragMove = {this.handleDragMove}
         onDragEnd = {this.handleDragEnd}
-
-        dragBoundFunc = {this.dragBounds}
       >
         {highlight}
         <Image

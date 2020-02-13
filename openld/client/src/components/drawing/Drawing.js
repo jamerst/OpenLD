@@ -28,7 +28,8 @@ export class Drawing extends Component {
     };
 
     this.stageRef = React.createRef();
-    this.copiedObject = {type: "", viewId: "", structureId: "", fixtureId: ""}
+    this.copiedObject = {type: "", data: null}
+    this.lodash = require('lodash/lang');
   }
 
   componentDidMount = () => {
@@ -106,7 +107,7 @@ export class Drawing extends Component {
               selectedTool = {this.props.selectedTool}
               setTool = {this.props.setTool}
               onFixturePlace = {this.onFixturePlace}
-              onSymbolLoad = {() => void(0)}
+              onSymbolLoad = {this.props.onSymbolLoad}
           />
           <Layer>
             <Tooltip
@@ -225,8 +226,12 @@ export class Drawing extends Component {
 
   handleStageWheel = (event) => {
     event.evt.preventDefault();
+    console.log(event);
 
-    const newScale = event.evt.deltaY < 0 ? this.props.scale * 1.25 : this.props.scale / 1.25;
+    let newScale = event.evt.deltaY < 0 ? this.props.scale * 1.25 : this.props.scale / 1.25;
+    if (newScale < 8) {
+      newScale = 8;
+    }
     this.props.setScale(newScale);
   }
 
@@ -275,9 +280,9 @@ export class Drawing extends Component {
 
   copyObject = () => {
     if (this.props.selectedObjectType === "structure") {
-      this.copiedObject = {type: this.props.selectedObjectType, viewId: this.props.currentView, structureId: this.props.selectedObjectId, fixtureId: ""};
+      this.copiedObject = {type: this.props.selectedObjectType, data: this.props.getStructure(this.props.currentView, this.props.selectedObjectId)};
     } else if (this.props.selectedObjectType === "fixture") {
-      this.copiedObject = {type: this.props.selectedObjectType, viewId: this.props.currentView, structureId: this.state.selectedFixtureStructure, fixtureId: this.props.selectedObjectId};
+      this.copiedObject = {type: this.props.selectedObjectType, data: this.props.getFixture(this.props.currentView, this.state.selectedFixtureStructure, this.props.selectedObjectId)};
     } else {
       this.props.setAlertIcon("info", "Select an object to copy", "info");
     }
@@ -285,19 +290,24 @@ export class Drawing extends Component {
 
   pasteObject = async () => {
     if (this.copiedObject.type === "structure") {
-      // get original structure
-      let copied = this.props.getStructure(this.copiedObject.viewId, this.copiedObject.structureId);
-
+      let newStructure = this.lodash.cloneDeep(this.copiedObject.data);
       // find nearest snap point to current pointer location, and change required to move original to that point
       const snapPos = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(this.stageRef.current), this.props.snapGridSize);
-      const change = DrawingUtils.getDifference(snapPos, copied.geometry.points[0]);
+      const change = DrawingUtils.getDifference(snapPos, newStructure.geometry.points[0]);
+
+      newStructure.geometry.points = DrawingUtils.movePoints(newStructure.geometry.points, change);
+      newStructure.fixtures = DrawingUtils.moveFixtures(newStructure.fixtures, change);
+      newStructure.view = {id: this.props.currentView}
+      newStructure.id = null;
+      newStructure.fixtures.forEach((f, i) => {
+        newStructure.fixtures[i].id = null;
+      });
+
 
       let result = {success: false};
       result = await this.props.hub.invoke(
-        "CopyStructure",
-        copied,
-        change,
-        this.props.currentView
+        "AddStructure",
+        newStructure
       ).catch(err => {console.error(err); result.success = false});
 
       if (result && result.success) {
@@ -308,20 +318,22 @@ export class Drawing extends Component {
 
     } else if (this.copiedObject.type === "fixture") {
       if (this.props.selectedObjectType === "structure") {
+        let newFixture = this.lodash.cloneDeep(this.copiedObject.data);
         // get original fixture, and currently selected structure
-        let copied = this.props.getFixture(this.copiedObject.viewId, this.copiedObject.structureId, this.copiedObject.fixtureId);
         let selectedStructure = this.props.getStructure(this.props.currentView, this.props.selectedObjectId);
 
         // find nearest snap point on selected structure
         const nearestPoint = DrawingUtils.nearestLinePoint(selectedStructure.geometry.points, DrawingUtils.getRelativePointerPos(this.stageRef.current));
         const snapPos = DrawingUtils.getNearestSnapPos(nearestPoint, this.props.snapGridSize);
 
+        newFixture.id = null;
+        newFixture.position = snapPos;
+        newFixture.structure = {id: this.props.selectedObjectId};
+
         let result = {success: false};
         result = await this.props.hub.invoke(
-          "CopyFixture",
-          copied,
-          snapPos,
-          this.props.selectedObjectId
+          "AddFixture",
+          newFixture
         ).catch(err => {console.error(err); result.success = false});
 
         if (result && result.success) {

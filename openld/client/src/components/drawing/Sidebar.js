@@ -192,7 +192,7 @@ export class Sidebar extends Component {
             <Row form>
               <Col xs="12">
                 <Label for="name" className="mb-0">Name</Label>
-                <Input type="text" value={this.state.name} name="name" id="name" bsSize="sm" onChange={this.handlePropertyChange}/>
+                <Input type="text" value={this.state.name ? this.state.name : ""} name="name" id="name" bsSize="sm" onChange={this.handlePropertyChange}/>
               </Col>
 
               <Col xs="12" xl="8">
@@ -217,7 +217,7 @@ export class Sidebar extends Component {
 
               <Col xs="12">
                 <Label for="notes" className="mb-0 mt-2">Notes</Label>
-                <Input type="textarea" value={this.state.notes} name="notes" id="notes" rows="4" onChange={this.handlePropertyChange}/>
+                <Input type="textarea" value={this.state.notes ? this.state.notes : ""} name="notes" id="notes" rows="4" onChange={this.handlePropertyChange}/>
               </Col>
             </Row>
           </Form>
@@ -242,7 +242,7 @@ export class Sidebar extends Component {
               </Col>
               <Col xs="12">
                 <Label for="name" className="mb-0">Name</Label>
-                <Input type="text" value={this.state.name} name="name" id="name" bsSize="sm" onChange={this.handlePropertyChange}/>
+                <Input type="text" value={this.state.name ? this.state.name : ""} name="name" id="name" bsSize="sm" onChange={this.handlePropertyChange}/>
               </Col>
 
               <Col xs="12" xl="8">
@@ -265,28 +265,28 @@ export class Sidebar extends Component {
                 </InputGroup>
               </Col>
 
-              <Col xs="12">
+              <Col xs="4">
                   <Label for="channel" className="mb-0 mt-2">Channel</Label>
                   <Input type="number" value={this.state.channel} name="channel" id="channel" step="1" min="1" max="512" onChange={this.handlePropertyChange}/>
               </Col>
 
-              <Col xs="6">
+              <Col xs="4">
                   <Label for="universe" className="mb-0 mt-2">Universe</Label>
                   <Input type="number" value={this.state.universe} name="universe" id="universe" step="1" min="1" onChange={this.handlePropertyChange}/>
               </Col>
-              <Col xs="6">
+              <Col xs="4">
                   <Label for="address" className="mb-0 mt-2">Address</Label>
                   <Input type="number" value={this.state.address} name="address" id="address" step="1" min="1" max="512" onChange={this.handlePropertyChange}/>
               </Col>
 
               <Col xs="12">
                   <Label for="colour" className="mb-0 mt-2">Colour</Label>
-                  <Input type="text" value={this.state.colour} name="colour" id="colour" onChange={this.handlePropertyChange}/>
+                  <Input type="text" value={this.state.colour ? this.state.colour : ""} name="colour" id="colour" onChange={this.handlePropertyChange}/>
               </Col>
 
               <Col xs="12">
                 <Label for="notes" className="mb-0 mt-2">Notes</Label>
-                <Input type="textarea" value={this.state.notes} name="notes" id="notes" rows="4" onChange={this.handlePropertyChange}/>
+                <Input type="textarea" value={this.state.notes ? this.state.notes : ""} name="notes" id="notes" rows="4" onChange={this.handlePropertyChange}/>
               </Col>
             </Row>
           </Form>
