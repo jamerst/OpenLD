@@ -159,6 +159,8 @@ export class Drawing extends Component {
         const point = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.props.snapGridSize);
 
         this.addLabel(point);
+        this.props.setTool("none");
+        this.props.setTooltipVisible(false);
       } else if (this.props.selectedObjectId !== "") {
         this.props.deselectObject(this.state.selectedFixtureStructure);
         this.props.setHintText("");
@@ -239,7 +241,7 @@ export class Drawing extends Component {
         }
 
         this.setState({
-          tooltipPos: {x: snapPos.x - 0.5, y: snapPos.y - 0.5},
+          tooltipPos: {x: snapPos.x, y: snapPos.y + 0.5},
           tooltipText: `(${snapPos.x.toFixed(1)},${snapPos.y.toFixed(1)})`
         });
         this.props.setTooltipVisible(true);

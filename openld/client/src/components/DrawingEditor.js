@@ -224,7 +224,7 @@ export class DrawingEditor extends Component {
                   cursor = {this.state.stageCursor}
                   selectedObjectId = {this.state.selectedObjectId}
                   selectedObjectType = {this.state.selectedObjectType}
-                  hub = {this.state.hub}
+                  hub = {this.hub}
                   hubConnected = {this.state.hubConnected}
                   tooltipVisible = {this.state.tooltipVisible}
                   currentView = {this.state.currentView}
