@@ -25,6 +25,7 @@ export class Sidebar extends Component {
       deletedViewId: "",
       deletedViewName: "",
       types: [],
+      id: "",
       name: "",
       type: "",
       rating: "",
@@ -36,6 +37,7 @@ export class Sidebar extends Component {
       universe: "",
       mode: "",
       colour: "",
+      text: "",
       canTemplate: false
     };
   }
@@ -49,6 +51,7 @@ export class Sidebar extends Component {
     // update state from props if current state has not been modified
     if (!nextProps.modifiedCurrent && nextProps.selectedObjectType === "structure") {
       return {
+        id: nextProps.structure.id,
         name: nextProps.structure.name,
         type: nextProps.structure.type.id,
         rating: nextProps.structure.rating,
@@ -56,6 +59,7 @@ export class Sidebar extends Component {
       };
     } else if (!nextProps.modifiedCurrent && nextProps.selectedObjectType === "fixture") {
       return {
+        id: nextProps.fixture.id,
         name: nextProps.fixture.name,
         fixture: nextProps.fixture.fixture,
         angle: nextProps.fixture.angle,
@@ -65,6 +69,11 @@ export class Sidebar extends Component {
         mode: nextProps.fixture.mode.id,
         notes: nextProps.fixture.notes,
         colour: nextProps.fixture.colour
+      }
+    } else if (!nextProps.modifiedCurrent && nextProps.selectedObjectType === "label") {
+      return {
+        id: nextProps.label.id,
+        text: nextProps.label.text
       }
     } else {
       return null;
@@ -291,6 +300,13 @@ export class Sidebar extends Component {
             </Row>
           </Form>
         );
+      case "label":
+        return (
+          <div style={{width: "100%"}}>
+            <Label for="text" className="mb-0 mt-2">Text</Label>
+            <Input type="textarea" value={this.state.text ? this.state.text : ""} name="text" id="text" rows="4" onChange={this.handlePropertyChange}/>
+          </div>
+        );
       case "none":
       default:
         return (
@@ -309,7 +325,7 @@ export class Sidebar extends Component {
   }
 
   sendChanges = async (field, value) => {
-    let structureData, fixtureData = null;
+    let structureData, fixtureData, labelData = null;
 
     if (this.props.selectedObjectType === "structure") {
       structureData = {
@@ -341,6 +357,11 @@ export class Sidebar extends Component {
           [field]: {id: value}
         }
       }
+    } else if (this.props.selectedObjectType === "label") {
+      labelData = {
+        id: this.props.label.id,
+        [field]: value
+      };
     }
     let result = {success: false};
     result = await this.props.hub.invoke(
@@ -348,13 +369,13 @@ export class Sidebar extends Component {
       this.props.selectedObjectType,
       field,
       structureData,
-      fixtureData
+      fixtureData,
+      labelData
     ).catch(err => {console.error(err); result.success = false});
 
     this.props.setModifiedCurrent(false);
     if (result && result.success) {
-      let id = this.props.selectedObjectType === "structure" ? this.props.structure.id : this.props.fixture.id;
-      this.props.pushHistoryOp({type: Ops.UPDATE_PROPERTY, data: {type: this.props.selectedObjectType, id: id, field: field, prevValue: result.data, newValue: value}});
+      this.props.pushHistoryOp({type: Ops.UPDATE_PROPERTY, data: {type: this.props.selectedObjectType, id: this.state.id, field: field, prevValue: result.data, newValue: value}});
     } else {
       this.props.setAlertError("Failed to update property value");
     }

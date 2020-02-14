@@ -19,11 +19,11 @@ namespace openld.Controllers {
         private readonly IStructureService _structureService;
         private readonly ITemplateService _templateService;
         private readonly AuthUtils _authUtils;
-        public DrawingController(IDrawingService drawingService, IRiggedFixtureService rFixtureService, IStructureService structureService, ITemplateService templateService, IViewService viewService) {
+        public DrawingController(IDrawingService drawingService, ILabelService labelService, IRiggedFixtureService rFixtureService, IStructureService structureService, ITemplateService templateService, IViewService viewService) {
             _drawingService = drawingService;
             _structureService = structureService;
             _templateService = templateService;
-            _authUtils = new AuthUtils(drawingService, rFixtureService, structureService, viewService);
+            _authUtils = new AuthUtils(drawingService, labelService, rFixtureService, structureService, viewService);
         }
 
         public class CreateRequest {

@@ -17,9 +17,9 @@ namespace openld.Controllers {
     public class ViewController : ControllerBase {
         private readonly IViewService _viewService;
         private readonly AuthUtils _authUtils;
-        public ViewController(IDrawingService drawingService, IRiggedFixtureService rFixtureService, IStructureService structureService, IViewService viewService) {
+        public ViewController(IDrawingService drawingService, ILabelService labelService, IRiggedFixtureService rFixtureService, IStructureService structureService, IViewService viewService) {
             _viewService = viewService;
-            _authUtils = new AuthUtils(drawingService, rFixtureService, structureService, viewService);
+            _authUtils = new AuthUtils(drawingService, labelService, rFixtureService, structureService, viewService);
         }
     }
 }

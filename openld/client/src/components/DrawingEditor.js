@@ -44,6 +44,7 @@ export class DrawingEditor extends Component {
       selectedObjectId: "",
       selectedStructure: {id: "", name: "", type: "", rating: "", notes: ""},
       selectedFixture: {id: "", name: "", fixture: "", address: "", universe: "", mode: "", notes: "", colour: "", angle: ""},
+      selectedLabel: {id: "", text: ""},
       modifiedCurrent: false,
 
       drawingData: {},
@@ -51,7 +52,6 @@ export class DrawingEditor extends Component {
       views: [],
       connectedUsers: [],
 
-      hub: null,
       hubConnected: false,
 
       alertIcon: "",
@@ -61,7 +61,7 @@ export class DrawingEditor extends Component {
 
       hintText: "Use the buttons on the left to select a tool"
     }
-
+    this.hub = null;
     this.history = [];
     this.undoHistory = [];
 
@@ -72,10 +72,10 @@ export class DrawingEditor extends Component {
     this.fetchDrawing();
   }
 
-  componentWillUnmount = () => {
+  componentWillUnmount = async () => {
     window.removeEventListener("resize", this.sizeStage);
     if (this.state.hubConnected) {
-      this.state.hub.stop();
+      await this.hub.stop();
     }
   }
 
@@ -176,6 +176,20 @@ export class DrawingEditor extends Component {
 
                   <Button
                     outline
+                    color="primary"
+                    size="lg"
+                    className="rounded-0"
+                    onClick={() => this.handleToolSelect("add-label")}
+                    active={this.state.selectedTool === "add-label"}
+                    disabled={!this.state.hubConnected}
+                    onMouseEnter = {() => this.setHintText("Add a label")}
+                    onMouseLeave = {this.onToolButtonLeave}
+                  >
+                    <FontAwesomeIcon icon="i-cursor"/>
+                  </Button>
+
+                  <Button
+                    outline
                     color="danger"
                     size="lg"
                     className="rounded-0"
@@ -217,6 +231,7 @@ export class DrawingEditor extends Component {
 
                   onMoveStructure = {this.moveStructure}
                   onMoveFixture = {this.moveFixture}
+                  onMoveLabel = {this.moveLabel}
                   onSelectObject = {this.selectObject}
                   deselectObject = {this.deselectObject}
                   onRemoveObject = {this.onRemoveObject}
@@ -233,6 +248,7 @@ export class DrawingEditor extends Component {
                   setCursor = {this.setCursor}
                   setStructureColour = {this.setStructureColour}
                   setFixtureColour = {this.setFixtureColour}
+                  setLabelColour = {this.setLabelColour}
                   setHintText = {this.setHintText}
                   setTooltipVisible = {this.setTooltipVisible}
                   pushHistoryOp = {this.pushHistoryOp}
@@ -240,6 +256,7 @@ export class DrawingEditor extends Component {
                   setAlertIcon = {this.setAlertIcon}
                   getStructure = {this.getStructure}
                   getFixture = {this.getFixture}
+                  getLabel = {this.getLabel}
                 />
               </Col>
               <Sidebar
@@ -250,12 +267,13 @@ export class DrawingEditor extends Component {
 
                 views = {this.state.views}
                 currentView = {this.state.currentView}
-                hub = {this.state.hub}
+                hub = {this.hub}
                 hubConnected = {this.state.hubConnected}
                 gridEnabled = {this.state.gridEnabled}
                 gridSize = {this.state.gridSize}
                 structure = {this.state.selectedStructure}
                 fixture = {this.state.selectedFixture}
+                label = {this.state.selectedLabel}
                 selectedObjectId = {this.state.selectedObjectId}
                 selectedObjectType = {this.state.selectedObjectType}
                 modifiedCurrent = {this.state.modifiedCurrent}
@@ -282,47 +300,48 @@ export class DrawingEditor extends Component {
   initHubConnection = async () => {
     let token = await authService.getAccessToken();
 
-    this.setState({
-      hub: new HubConnectionBuilder()
-        .withUrl("/api/drawing/hub", { accessTokenFactory: () => token })
-        .withAutomaticReconnect([0, 1000, 1000, 2000, 2000, 5000, 5000, 5000, 10000, 10000, 20000])
-        .build()
-    }, () => {
-      this.state.hub
-        .start()
-        .then(() => {
-          this.addHubHandlers();
-          this.setState({hubConnected: true});
-          this.state.hub.invoke("OpenDrawing", this.state.drawingData.id)
-            .catch(err => console.error(err.toString()));
-        })
-        .catch(err => console.error(`Hub error: ${err}`));
+    this.hub = new HubConnectionBuilder()
+      .withUrl("/api/drawing/hub", { accessTokenFactory: () => token })
+      .withAutomaticReconnect([0, 1000, 1000, 2000, 2000, 5000, 5000, 5000, 10000, 10000, 20000])
+      .build();
 
-      this.state.hub.onreconnecting(this.onHubReconnecting);
-      this.state.hub.onreconnected(this.onHubReconnect);
-      this.state.hub.onclose(this.onHubDisconnect);
-    });
+    this.hub
+      .start()
+      .then(() => {
+        this.addHubHandlers();
+        this.setState({hubConnected: true});
+        this.hub.invoke("OpenDrawing", this.state.drawingData.id)
+          .catch(err => console.error(err.toString()));
+      })
+      .catch(err => console.error(`Hub error: ${err}`));
+
+      this.hub.onreconnecting(this.onHubReconnecting);
+      this.hub.onreconnected(this.onHubReconnect);
+      this.hub.onclose(this.onHubDisconnect);
   }
 
   addHubHandlers = () => {
-    this.state.hub.on("ConnectedUsers", this.setConnectedUsers);
-    this.state.hub.on("UserJoined", this.userJoin);
-    this.state.hub.on("UserLeft", this.userLeave);
+    this.hub.on("ConnectedUsers", this.setConnectedUsers);
+    this.hub.on("UserJoined", this.userJoin);
+    this.hub.on("UserLeft", this.userLeave);
 
-    this.state.hub.on("NewView", this.insertNewView);
-    this.state.hub.on("DeleteView", this.onDeleteView);
+    this.hub.on("NewView", this.insertNewView);
+    this.hub.on("DeleteView", this.onDeleteView);
 
-    this.state.hub.on("SelectObject", this.userSelectObject);
-    this.state.hub.on("DeselectObject", this.userDeselectObject);
+    this.hub.on("SelectObject", this.userSelectObject);
+    this.hub.on("DeselectObject", this.userDeselectObject);
 
-    this.state.hub.on("NewStructure", this.insertNewStructure);
+    this.hub.on("NewStructure", this.insertNewStructure);
 
-    this.state.hub.on("UpdateStructureGeometry", (structure, fixtures) => this.updateStructurePos(structure.view.id, structure.id, structure.geometry.points, fixtures));
-    this.state.hub.on("UpdateObjectProperty", this.onObjectUpdate);
-    this.state.hub.on("DeleteObject", this.onObjectRemoved);
+    this.hub.on("UpdateStructureGeometry", (structure, fixtures) => this.updateStructurePos(structure.view.id, structure.id, structure.geometry.points, fixtures));
+    this.hub.on("UpdateObjectProperty", this.onObjectUpdate);
+    this.hub.on("DeleteObject", this.onObjectRemoved);
 
-    this.state.hub.on("AddFixture", this.insertNewFixture);
-    this.state.hub.on("UpdateFixturePosition", this.updateFixturePos);
+    this.hub.on("AddFixture", this.insertNewFixture);
+    this.hub.on("UpdateFixturePosition", this.updateFixturePos);
+
+    this.hub.on("AddLabel", this.insertNewLabel);
+    this.hub.on("UpdateLabelPosition", this.updateLabelPos);
   }
 
   onHubDisconnect = () => {
@@ -339,7 +358,7 @@ export class DrawingEditor extends Component {
     this.setAlertIcon("success", "Successfully reconnected to OpenLD.", "check");
     window.setTimeout(() => this.setState({alertOpen: false}), 10000);
     this.setState({hubConnected: true});
-    this.state.hub.invoke("OpenDrawing", this.state.drawingData.id)
+    this.hub.invoke("OpenDrawing", this.state.drawingData.id)
       .catch(err => console.error(err.toString()));
   }
 
@@ -407,7 +426,7 @@ export class DrawingEditor extends Component {
 
   moveStructure = async (id, points, fixtures, prevPoints, prevFixtures) => {
     let result;
-    result = await this.state.hub.invoke(
+    result = await this.hub.invoke(
       "UpdateStructureGeometry",
         id,
         {points: points},
@@ -455,7 +474,7 @@ export class DrawingEditor extends Component {
 
   moveFixture = async (id, pos, prevPos) => {
     let result = false;
-    result = await this.state.hub.invoke(
+    result = await this.hub.invoke(
       "UpdateFixturePosition",
       {
         id: id,
@@ -514,55 +533,110 @@ export class DrawingEditor extends Component {
     });
   }
 
-  userSelectObject = (type, viewId, structureId, fixtureId, userId) => {
-    if (type === "structure") {
-      this.setStructureColour(viewId, structureId, this.getUserColour(userId));
-    } else if (type === "fixture") {
-      this.setFixtureColour(viewId, structureId, fixtureId, this.getUserColour(userId));
+  moveLabel = async (id, pos, prevPos) => {
+    let result = false;
+    result = await this.hub.invoke(
+      "UpdateLabelPosition",
+      {
+        id: id,
+        position: pos
+      }
+    ).catch(err => {console.error(err); result = false});
+
+    if (result === true) {
+      this.pushHistoryOp({
+        type: Ops.MOVE_LABEL,
+        data: {
+          id: id,
+          prevValue: prevPos,
+          newValue: pos
+        }
+      });
+    } else {
+      this.setAlertError("Failed to move label");
     }
   }
 
-  userDeselectObject = (type, viewId, structureId, fixtureId) => {
+  updateLabelPos = (label) => {
+    this.setState((prevState) => {
+      let views = [...prevState.views];
+      const viewIndex = views.findIndex(view => view.id === label.view.id);
+      const modifiedView = views[viewIndex];
+
+      const labelIndex = modifiedView.labels.findIndex(l => l.id === label.id);
+
+      modifiedView.labels[labelIndex].position = label.position;
+
+      views[viewIndex] = modifiedView;
+
+      return {
+        views: views
+      };
+    });
+  }
+
+  userSelectObject = (type, id, userId, viewId, structureId) => {
     if (type === "structure") {
-      if (this.state.selectedObjectType === "structure" && this.state.selectedObjectId === structureId) {
-        this.setStructureColour(viewId, structureId, "#007bff");
+      this.setStructureColour(viewId, id, this.getUserColour(userId));
+    } else if (type === "fixture") {
+      this.setFixtureColour(viewId, structureId, id, this.getUserColour(userId));
+    } else if (type === "label") {
+      this.setLabelColour(viewId, id, this.getUserColour(userId));
+    }
+  }
+
+  userDeselectObject = (type, id, viewId, structureId) => {
+    if (type === "structure") {
+      if (this.state.selectedObjectType === "structure" && this.state.selectedObjectId === id) {
+        this.setStructureColour(viewId, id, "#007bff");
       } else {
-        this.setStructureColour(viewId, structureId, "#000");
+        this.setStructureColour(viewId, id, "#000");
       }
     } else if (type === "fixture") {
-      if (this.state.selectedObjectType === "fixture" && this.state.selectedObjectId === fixtureId) {
-        this.setFixtureColour(viewId, structureId, fixtureId, "#007bff");
+      if (this.state.selectedObjectType === "fixture" && this.state.selectedObjectId === id) {
+        this.setFixtureColour(viewId, structureId, id, "#007bff");
       } else {
-        this.setFixtureColour(viewId, structureId, fixtureId, "#000");
+        this.setFixtureColour(viewId, structureId, id, "#000");
+      }
+    } else if (type === "label") {
+      if (this.state.selectedObjectType === "label" && this.state.selectedObjectId === id) {
+        this.setLabelColour(viewId, id, "#007bff");
+      } else {
+        this.setLabelColour(viewId, id, "#fff");
       }
     }
   }
 
-  onObjectRemoved = (type, viewId, structureId, fixtureId) => {
+  onObjectRemoved = (type, id, viewId, structureId) => {
+    if (this.state.selectedObjectType === type && this.state.selectedObjectId === id) {
+      this.setAlertIcon("warning", `The ${type} you were working on was deleted.`, "exclamation");
+    }
+
     if (type === "structure") {
-      if (this.state.selectedObjectType === type && this.state.selectedObjectId === structureId) {
-        this.setAlertIcon("warning", "The structure you were working on was deleted.", "exclamation");
-      }
-      this.removeStructure(viewId, structureId);
+      this.removeStructure(viewId, id);
     } else if (type === "fixture") {
-      if (this.state.selectedObjectType === type && this.state.selectedObjectId === fixtureId) {
-        this.setAlertIcon("warning", "The fixture you were working on was deleted.", "exclamation");
-      }
-      this.removeFixture(viewId, structureId, fixtureId);
+      this.removeFixture(viewId, structureId, id);
+    } else if (type === "label") {
+      this.removeLabel(viewId, id);
     }
   }
 
-  onRemoveObject = (type, viewId, structureId, fixtureId, undo) => {
+  onRemoveObject = (type, id, viewId, structureId, undo) => {
     if (type === "structure") {
       if (!undo) {
-        this.pushHistoryOp({type: Ops.REMOVE_STRUCTURE, data: {...this.getStructure(viewId, structureId), ...{view: {id: viewId}}}});
+        this.pushHistoryOp({type: Ops.REMOVE_STRUCTURE, data: {...this.getStructure(viewId, id), ...{view: {id: viewId}}}});
       }
-      this.removeStructure(viewId, structureId);
+      this.removeStructure(viewId, id);
     } else if (type === "fixture") {
       if (!undo) {
-        this.pushHistoryOp({type: Ops.REMOVE_FIXTURE, data: {...this.getFixture(viewId, structureId, fixtureId), ...{structure: {id: structureId}}}});
+        this.pushHistoryOp({type: Ops.REMOVE_FIXTURE, data: {...this.getFixture(viewId, structureId, id), ...{structure: {id: structureId}}}});
       }
-      this.removeFixture(viewId, structureId, fixtureId);
+      this.removeFixture(viewId, structureId, id);
+    } else if (type === "label") {
+      if (!undo) {
+        this.pushHistoryOp({type: Ops.REMOVE_LABEL, data: {...this.getLabel(viewId, id), ...{view: {id: viewId}}}});
+      }
+      this.removeLabel(viewId, id);
     }
   }
 
@@ -638,19 +712,58 @@ export class DrawingEditor extends Component {
     });
   }
 
-  selectObject = (type, structureId, fixtureId) => {
+  removeLabel = (viewId, labelId) => {
+    if (this.state.selectedObjectType === "label" && this.state.selectedObjectId === labelId) {
+      this.setState({selectedObjectType: "none", selectedObjectId: ""});
+      this.setHintText("");
+    }
+
+    this.setState(prevState => {
+      let views = [...prevState.views];
+      const viewIndex = views.findIndex(v => v.id === viewId);
+      if (viewIndex < 0) {
+        return;
+      }
+
+
+      let view = views[viewIndex];
+
+      let labels = [...view.labels];
+      const labelIndex = labels.findIndex(l => l.id === labelId);
+      if (labelIndex < 0) {
+        return;
+      }
+
+      labels.splice(labelIndex, 1);
+
+      view.labels = labels;
+      views[viewIndex] = view;
+
+      return {
+        views: views
+      };
+    })
+  }
+
+  selectObject = (type, id, structureId) => {
     if (type === "structure") {
-      this.state.hub.invoke("SelectObject", type, structureId).catch(err => console.error(err));
+      this.hub.invoke("SelectObject", type, id).catch(err => console.error(err));
       this.setState({
-        selectedStructure: this.getStructure(this.state.currentView, structureId),
-        selectedObjectId: structureId
+        selectedStructure: this.getStructure(this.state.currentView, id),
+        selectedObjectId: id
       });
 
     } else if (type === "fixture") {
-      this.state.hub.invoke("SelectObject", type, fixtureId).catch(err => console.error(err));
+      this.hub.invoke("SelectObject", type, id).catch(err => console.error(err));
       this.setState({
-        selectedFixture: this.getFixture(this.state.currentView, structureId, fixtureId),
-        selectedObjectId: fixtureId
+        selectedFixture: this.getFixture(this.state.currentView, structureId, id),
+        selectedObjectId: id
+      });
+    } else if (type === "label") {
+      this.hub.invoke("SelectObject", type, id).catch(err => console.error(err));
+      this.setState({
+        selectedLabel: this.getLabel(this.state.currentView, id),
+        selectedObjectId: id
       });
     }
 
@@ -665,11 +778,15 @@ export class DrawingEditor extends Component {
     if (this.state.selectedObjectType === "structure") {
       this.setStructureColour(this.state.currentView, this.state.selectedObjectId, "#000");
 
-      this.state.hub.invoke("DeselectObject", "structure", this.state.selectedObjectId).catch(err => console.error(err));
+      this.hub.invoke("DeselectObject", "structure", this.state.selectedObjectId).catch(err => console.error(err));
     } else if (this.state.selectedObjectType === "fixture") {
       this.setFixtureColour(this.state.currentView, structureId, this.state.selectedObjectId);
 
-      this.state.hub.invoke("DeselectObject", "fixture", this.state.selectedObjectId).catch(err => console.error(err));
+      this.hub.invoke("DeselectObject", "fixture", this.state.selectedObjectId).catch(err => console.error(err));
+    } else if (this.state.selectedObjectType === "label") {
+      this.setLabelColour(this.state.currentView, this.state.selectedObjectId, "#fff");
+
+      this.hub.invoke("DeselectObject", "label", this.state.selectedObjectId).catch(err => console.error(err));
     }
 
     this.setState({
@@ -679,11 +796,13 @@ export class DrawingEditor extends Component {
     })
   }
 
-  onObjectUpdate = (type, field, viewId, structure, fixture) => {
+  onObjectUpdate = (type, field, viewId, structure, fixture, label) => {
     if (type === "structure") {
       this.setStructureField(viewId, field, structure);
     } else if (type === "fixture") {
       this.setFixtureField(viewId, structure.id, field, fixture);
+    } else if (type === "label") {
+      this.setLabelField(viewId, field, label);
     }
   }
 
@@ -766,6 +885,22 @@ export class DrawingEditor extends Component {
     })
   }
 
+  insertNewLabel = (viewId, label) => {
+    this.setState(prevState => {
+      let views = [...prevState.views];
+      const viewIndex = views.findIndex(v => v.id === viewId);
+
+      if (viewIndex < 0) {
+        return;
+      }
+      views[viewIndex].labels.push(label);
+
+      return {
+        views: views
+      };
+    });
+  }
+
   handleToolSelect = (tool) => {
     if (this.state.selectedTool === tool) {
       if (this.state.isDrawing === true) {
@@ -777,6 +912,8 @@ export class DrawingEditor extends Component {
       this.setState({selectedTool: tool, stageCursor: "crosshair", hintText: "Click to create a point.\nDouble click to create final point.\nPress escape to cancel."});
     } else if (tool === "add-fixture") {
       this.setState({selectedTool: tool, hintText: "Click to place fixture on structure"});
+    } else if (tool === "add-label") {
+      this.setState({selectedTool: tool, stageCursor: "text", hintText: "Click to place label"});
     } else if (tool === "eraser") {
       this.setState({selectedTool: tool, stageCursor: "copy", hintText: "Click an object to remove."});
     }
@@ -1025,6 +1162,67 @@ export class DrawingEditor extends Component {
     })
   }
 
+  setLabelField = (viewId, field, label) => {
+    this.setState(prevState => {
+      let views = [...prevState.views];
+      const viewIndex = views.findIndex(v => v.id === viewId);
+      if (viewIndex < 0) {
+        console.error(`setLabelField error: view ID "${viewId}" not found`);
+        return;
+      }
+      let view = views[viewIndex];
+
+      let labels = [...view.labels];
+      const labelIndex = labels.findIndex(l => l.id === label.id);
+      if (labelIndex < 0) {
+        console.error(`setLabelField error: label ID "${label.id}" not found`);
+        return;
+      }
+
+      labels[labelIndex][field] = label[field];
+      view.labels = labels;
+      views[viewIndex] = view;
+
+      return {
+        views: views,
+      };
+    }, () => {
+      if (this.state.selectedObjectType === "label" && this.state.selectedObjectId === label.id) {
+        this.setState({
+          selectedStructure: this.getStructure(viewId, label.id)
+        });
+      }
+    });
+  }
+
+  setLabelColour = (viewId, labelId, colour) => {
+    this.setState(prevState => {
+      let views = [...prevState.views];
+      const viewIndex = views.findIndex(v => v.id === viewId);
+      if (viewIndex < 0) {
+        console.error(`setLabelColour error: view ID "${viewId}" not found`);
+        return;
+      }
+
+      let view = views[viewIndex];
+
+      let labels = [...view.labels];
+      const labelIndex = labels.findIndex(s => s.id === labelId);
+      if (labelIndex < 0) {
+        console.error(`setLabelColour error: label ID "${labelId}" not found`);
+        return;
+      }
+
+      labels[labelIndex].colour = colour;
+      view.labels = labels;
+      views[viewIndex] = view;
+
+      return {
+        views: views
+      };
+    })
+  }
+
   setModifiedCurrent = (value) => {
     this.setState({modifiedCurrent: value});
   }
@@ -1100,6 +1298,12 @@ export class DrawingEditor extends Component {
     return structure.fixtures.find(f => f.id === fixtureId);
   }
 
+  getLabel = (viewId, labelId) => {
+    const view = this.state.views.find(v => v.id === viewId);
+
+    return view.labels.find(l => l.id === labelId);
+  }
+
   handleKeyDown = (event) => {
     if (event.keyCode === 90 && event.ctrlKey && !event.shiftKey) { // ctrl+z
       if (this.history.length === 0) {
@@ -1122,14 +1326,14 @@ export class DrawingEditor extends Component {
     switch (op.type) {
       case Ops.ADD_FIXTURE:
         result = {success: false}
-        result = await this.state.hub.invoke(
+        result = await this.hub.invoke(
           "DeleteObject",
           "fixture",
           op.data.id
         ).catch(err => {console.error(err); result.success = false});
 
         if (result && result.success) {
-          this.onRemoveObject(result.data.type, result.data.viewId, result.data.structureId, result.data.fixtureId, true);
+          this.onRemoveObject(result.data.type, result.data.id, result.data.viewId, result.data.structureId, true);
           op2 = {
             type: Ops.REMOVE_FIXTURE,
             data: op.data
@@ -1139,7 +1343,7 @@ export class DrawingEditor extends Component {
         }
         break;
       case Ops.MOVE_FIXTURE:
-        result = await this.state.hub.invoke(
+        result = await this.hub.invoke(
           "UpdateFixturePosition",
             {
               id: op.data.id,
@@ -1160,12 +1364,10 @@ export class DrawingEditor extends Component {
         }
         break;
       case Ops.REMOVE_FIXTURE:
-        let tempFData = op.data;
-
         result = {success: false};
-        result = await this.state.hub.invoke(
+        result = await this.hub.invoke(
           "AddFixture",
-          tempFData
+          op.data
         ).catch(err => {console.error(err); result.success = false});
 
         if (result && result.success) {
@@ -1178,16 +1380,72 @@ export class DrawingEditor extends Component {
         }
         break;
 
+      case Ops.ADD_LABEL:
+        result = {success: false}
+        result = await this.hub.invoke(
+          "DeleteObject",
+          "label",
+          op.data.id
+        ).catch(err => {console.error(err); result.success = false});
+
+        if (result && result.success) {
+          this.onRemoveObject(result.data.type, result.data.id, result.data.viewId, result.data.structureId, true);
+          op2 = {
+            type: Ops.REMOVE_LABEL,
+            data: op.data
+          };
+        } else {
+          this.setAlertError("Failed to undo label add");
+        }
+        break;
+      case Ops.MOVE_LABEL:
+        result = await this.hub.invoke(
+          "UpdateLabelPosition",
+            {
+              id: op.data.id,
+              position: op.data.prevValue
+            }
+        ).catch(err => {console.error(err); result = false});
+
+        if (result) {
+          const temp = op.data.prevValue;
+          op.data.prevValue = op.data.newValue;
+          op.data.newValue = temp;
+          op2 = {
+            type: Ops.MOVE_LABEL,
+            data: op.data
+          };
+        } else {
+          this.setAlertError("Failed to undo label move");
+        }
+        break;
+      case Ops.REMOVE_LABEL:
+        result = {success: false}
+        result = await this.hub.invoke(
+          "AddLabel",
+          op.data
+        ).catch(err => {console.error(err); result.success = false});
+
+        if (result && result.success) {
+          op2 = {
+            type: Ops.ADD_LABEL,
+            data: result.data
+          };
+        } else {
+          this.setAlertError("Failed to undo label remove");
+        }
+        break;
+
       case Ops.ADD_STRUCTURE:
         result = {success: false}
-        result = await this.state.hub.invoke(
+        result = await this.hub.invoke(
           "DeleteObject",
           "structure",
           op.data.id
         ).catch(err => {console.error(err); result.success = false});
 
         if (result && result.success) {
-          this.onRemoveObject(result.data.type, result.data.viewId, result.data.structureId, result.data.fixtureId, true);
+          this.onRemoveObject(result.data.type, result.data.id, result.data.viewId, result.data.structureId, true);
           op2 = {
             type: Ops.REMOVE_STRUCTURE,
             data: op.data
@@ -1197,7 +1455,7 @@ export class DrawingEditor extends Component {
         }
         break;
       case Ops.MOVE_STRUCTURE:
-        result = await this.state.hub.invoke(
+        result = await this.hub.invoke(
           "UpdateStructureGeometry",
             op.data.id,
             {points: op.data.prevValue.points},
@@ -1217,12 +1475,10 @@ export class DrawingEditor extends Component {
         }
         break;
       case Ops.REMOVE_STRUCTURE:
-        let tempSData = op.data;
-
         result = {success: false}
-        result = await this.state.hub.invoke(
+        result = await this.hub.invoke(
           "AddStructure",
-          tempSData
+          op.data
         ).catch(err => {console.error(err); result.success = false});
 
         if (result && result.success) {
@@ -1236,7 +1492,7 @@ export class DrawingEditor extends Component {
         break;
 
       case Ops.UPDATE_PROPERTY:
-        let structureData, fixtureData = null;
+        let structureData, fixtureData, labelData = null;
         if (op.data.prevValue === null) {
           op.data.prevValue = "";
         }
@@ -1270,14 +1526,20 @@ export class DrawingEditor extends Component {
               [op.data.field]: {id: op.data.prevValue}
             }
           }
+        } else if (op.data.type === "label") {
+          labelData = {
+            id: op.data.id,
+            [op.data.field]: op.data.prevValue
+          };
         }
 
-        result = await this.state.hub.invoke(
+        result = await this.hub.invoke(
           "UpdateObjectProperty",
           op.data.type,
           op.data.field,
           structureData,
-          fixtureData
+          fixtureData,
+          labelData
         ).catch(err => {console.error(err); result = false});
 
         if (result) {

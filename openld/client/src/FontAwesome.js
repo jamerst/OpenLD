@@ -5,6 +5,7 @@ import { faBan,
   faDrawPolygon,
   faEraser,
   faExclamation,
+  faICursor,
   faInfo,
   faPlusCircle,
   faTrash
@@ -19,6 +20,7 @@ library.add(faDrawPolygon);
 library.add(faEraser);
 library.add(faExclamation);
 library.add(faInfo);
+library.add(faICursor);
 library.add(faPlusCircle);
 library.add(faQuestionCircle);
 library.add(faTrash);

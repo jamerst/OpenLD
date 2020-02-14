@@ -12,8 +12,7 @@ export class Structure extends Component {
       startPos: {x: 0, y: 0},
       singlePoint: this.props.points !== null && this.props.points.length === 1,
       newFixturePos: {x: 0, y: 0},
-      newFixtureVisible: false,
-      symbolsLoaded: {}
+      newFixtureVisible: false
     }
 
     this.startPoints = [];
@@ -24,15 +23,10 @@ export class Structure extends Component {
     this.lodash = require('lodash/lang');
   }
 
-  static getDerivedStateFromProps = (nextProps) => {
-    let symbols = {};
-    nextProps.fixtures.forEach(fixture => {
-      symbols[fixture.id] = false;
+  UNSAFE_componentWillMount = () => {
+    this.props.fixtures.forEach(fixture => {
+      this.symbolsLoaded[fixture.id] = false;
     });
-
-    return {
-      symbolsLoaded: symbols
-    };
   }
 
   componentDidMount = () => {
@@ -40,8 +34,6 @@ export class Structure extends Component {
     if (this.props.fixtures.length === 0) {
       this.props.onSymbolLoad(this.props.id);
     }
-
-    this.symbolsLoaded = this.state.symbolsLoaded;
   }
 
   render = () => {

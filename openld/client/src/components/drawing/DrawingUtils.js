@@ -7,6 +7,10 @@ export const Ops = {
     MOVE_STRUCTURE: 'moveStructure',
     REMOVE_STRUCTURE: 'removeStructure',
 
+    ADD_LABEL: 'addLabel',
+    MOVE_LABEL: 'moveLabel',
+    REMOVE_LABEL: 'removeLabel',
+
     UPDATE_PROPERTY: 'updateProperty'
 }
 

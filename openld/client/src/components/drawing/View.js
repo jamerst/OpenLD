@@ -1,26 +1,19 @@
 import React, { Component } from "react";
 import { Layer } from "react-konva";
 import { Structure } from "./Structure";
+import { DrawingLabel } from "./DrawingLabel";
 
 export class View extends Component {
   constructor(props) {
     super(props);
 
-    this.state = {
-      symbolsLoaded: {}
-    }
     this.symbolsLoaded = {};
   }
 
-  static getDerivedStateFromProps = (nextProps) => {
-    let symbols = {};
-    nextProps.data.structures.forEach(structure => {
-      symbols[structure.id] = false;
-    });
-
-    return {
-      symbolsLoaded: symbols
-    }
+  UNSAFE_componentWillMount = () => {
+    this.props.data.structures.forEach(structure => {
+      this.symbolsLoaded[structure.id] = false;
+    })
   }
 
   componentDidMount = () => {
@@ -28,14 +21,14 @@ export class View extends Component {
     if (this.props.data.structures.length === 0) {
       this.props.onSymbolLoad(this.props.data.id);
     }
-
-    this.symbolsLoaded = this.state.symbolsLoaded;
   }
 
   render = () => {
     if (typeof(this.props.data) === "undefined" || !this.props.data.structures) {
       return null;
     }
+
+    const viewDimension = this.props.data.width >= this.props.data.height ? this.props.data.width : this.props.data.height;
 
     return (<Layer>
       {this.props.data.structures.map(structure => {
@@ -72,7 +65,29 @@ export class View extends Component {
             setTool = {this.props.setTool}
             onFixturePlace = {this.props.onFixturePlace}
             onSymbolLoad = {this.onSymbolLoad}
-            viewDimension = {this.props.data.width >= this.props.data.height ? this.props.data.width : this.props.data.height}
+            viewDimension = {viewDimension}
+          />
+        )
+      })}
+      {this.props.data.labels.map(label => {
+        return (
+          <DrawingLabel
+            key={`dl-${label.id}`}
+            data = {label}
+            selected = {this.props.selectedObjectId === label.id && this.props.selectedObjectType === "label"}
+            selectedFixtureStructure = {this.props.selectedFixtureStructure}
+            viewDimension = {viewDimension}
+            hubConnected = {this.props.hubConnected}
+            onSelectObject = {this.props.onSelectObject}
+            deselectObject = {this.props.deselectObject}
+            setLabelColour = {this.setLabelColour}
+            setHintText = {this.props.setHintText}
+            setTooltip = {this.props.setTooltip}
+            selectedTool = {this.props.selectedTool}
+            onMoveLabel = {this.props.onMoveLabel}
+            setCursor = {this.props.setCursor}
+            snapGridSize = {this.props.snapGridSize}
+            scale = {this.props.scale}
           />
         )
       })}
@@ -85,6 +100,10 @@ export class View extends Component {
 
   setFixtureColour = (structureId, fixtureId, colour) => {
     this.props.setFixtureColour(this.props.data.id, structureId, fixtureId, colour);
+  }
+
+  setLabelColour = (id, colour) => {
+    this.props.setLabelColour(this.props.data.id, id, colour);
   }
 
   onSymbolLoad = (id) => {

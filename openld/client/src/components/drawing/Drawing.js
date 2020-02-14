@@ -90,6 +90,7 @@ export class Drawing extends Component {
               snapGridSize = {this.props.snapGridSize}
               onMoveStructure = {this.props.onMoveStructure}
               onMoveFixture = {this.props.onMoveFixture}
+              onMoveLabel = {this.props.onMoveLabel}
               setTooltip = {this.setTooltip}
               setCursor = {this.props.setCursor}
               setHintText = {this.props.setHintText}
@@ -101,6 +102,7 @@ export class Drawing extends Component {
               selectedObjectType = {this.props.selectedObjectType}
               setStructureColour = {this.props.setStructureColour}
               setFixtureColour = {this.props.setFixtureColour}
+              setLabelColour = {this.props.setLabelColour}
               selectedFixtureStructure = {this.state.selectedFixtureStructure}
               setSelectedFixtureStructure = {this.setSelectedFixtureStructure}
               hubConnected = {this.props.hubConnected}
@@ -152,6 +154,11 @@ export class Drawing extends Component {
             }, () => {this.props.setIsDrawing(true)});
           }
         }
+      } else if (this.props.selectedTool === "add-label") {
+        const stage = event.target.getStage();
+        const point = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.props.snapGridSize);
+
+        this.addLabel(point);
       } else if (this.props.selectedObjectId !== "") {
         this.props.deselectObject(this.state.selectedFixtureStructure);
         this.props.setHintText("");
@@ -220,13 +227,28 @@ export class Drawing extends Component {
           nextLinePoint: [snapPos.x, snapPos.y]
         });
         this.props.setTooltipVisible(true);
+      } else if (this.props.selectedTool === "add-label") {
+        const stage = event.target.getStage();
+        const snapPos = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(stage), this.props.snapGridSize);
+
+        if (snapPos.x < 0 || snapPos.x > this.props.viewData.width ||
+        snapPos.y < 0 || snapPos.y > this.props.viewData.height) {
+            this.props.setCursor("not-allowed");
+        } else {
+          this.props.setCursor("text");
+        }
+
+        this.setState({
+          tooltipPos: {x: snapPos.x - 0.5, y: snapPos.y - 0.5},
+          tooltipText: `(${snapPos.x.toFixed(1)},${snapPos.y.toFixed(1)})`
+        });
+        this.props.setTooltipVisible(true);
       }
     }
   }
 
   handleStageWheel = (event) => {
     event.evt.preventDefault();
-    console.log(event);
 
     let newScale = event.evt.deltaY < 0 ? this.props.scale * 1.25 : this.props.scale / 1.25;
     if (newScale < 8) {
@@ -236,14 +258,16 @@ export class Drawing extends Component {
   }
 
   handleKeyDown = async (event) => {
-    if (this.props.selectedTool !== "none" && event.keyCode === 27) { // ESC and no tool selected
-      this.cancelCreateStructure();
-    } else if ((this.props.selectedObjectType === "structure" || this.props.selectedObjectType === "fixture") && event.keyCode === 46) { // DELETE and object selected
-      this.deleteObject();
-    } else if (event.keyCode === 67 && event.ctrlKey) { // ctrl+c
-      this.copyObject();
-    } else if (event.keyCode === 86 && event.ctrlKey) { // ctrl+v
-      this.pasteObject();
+    if (this.props.hubConnected) {
+      if (this.props.selectedTool !== "none" && event.keyCode === 27) { // ESC and no tool selected
+        this.cancelCreateStructure();
+      } else if ((this.props.selectedObjectType === "structure" || this.props.selectedObjectType === "fixture" || this.props.selectedObjectType === "label") && event.keyCode === 46) { // DELETE and object selected
+        this.deleteObject();
+      } else if (event.keyCode === 67 && event.ctrlKey) { // ctrl+c
+        this.copyObject();
+      } else if (event.keyCode === 86 && event.ctrlKey) { // ctrl+v
+        this.pasteObject();
+      }
     }
   }
 
@@ -271,7 +295,7 @@ export class Drawing extends Component {
       ).catch(err => {console.error(err); result.success = false});
 
       if (result && result.success) {
-        this.props.onRemoveObject(result.data.type, result.data.viewId, result.data.structureId, result.data.fixtureId, false);
+        this.props.onRemoveObject(result.data.type, result.data.id, result.data.viewId, result.data.structureId, false);
       } else {
         this.props.setAlertError(`Failed to delete ${result.data ? result.data : "object"}`)
       }
@@ -283,6 +307,8 @@ export class Drawing extends Component {
       this.copiedObject = {type: this.props.selectedObjectType, data: this.props.getStructure(this.props.currentView, this.props.selectedObjectId)};
     } else if (this.props.selectedObjectType === "fixture") {
       this.copiedObject = {type: this.props.selectedObjectType, data: this.props.getFixture(this.props.currentView, this.state.selectedFixtureStructure, this.props.selectedObjectId)};
+    } else if (this.props.selectedObjectType === "label") {
+      this.copiedObject = {type: this.props.selectedObjectType, data: this.props.getLabel(this.props.currentView, this.props.selectedObjectId)};
     } else {
       this.props.setAlertIcon("info", "Select an object to copy", "info");
     }
@@ -344,6 +370,22 @@ export class Drawing extends Component {
       } else {
         this.props.setAlertIcon("info", "Select a structure to add copied fixture", "info");
       }
+    } else if (this.copiedObject.type === "label") {
+      let newLabel = this.lodash.cloneDeep(this.copiedObject.data);
+      // find nearest snap point to current pointer location
+      newLabel.position = DrawingUtils.getNearestSnapPos(DrawingUtils.getRelativePointerPos(this.stageRef.current), this.props.snapGridSize);
+      newLabel.id = null;
+      newLabel.view = {id: this.props.currentView};
+
+      let result = {success: false};
+      result = await this.props.hub.invoke(
+        "AddLabel",
+        newLabel
+      ).catch(err => {console.error(err); result.success = false});
+
+      if (result.success === true) {
+        this.props.pushHistoryOp({type: Ops.ADD_LABEL, data: result.data});
+      }
     }
   }
 
@@ -367,6 +409,24 @@ export class Drawing extends Component {
         this.props.pushHistoryOp({type: Ops.ADD_FIXTURE, data: result.data});
       } else {
         this.props.setAlertError("Failed to insert new fixture");
+      }
+    }
+  }
+
+  addLabel = async (point) => {
+    if (this.props.hubConnected) {
+      let result = {success: false};
+      result = await this.props.hub.invoke(
+        "AddLabel",
+        {
+          view: {id: this.props.currentView},
+          position: point,
+          text: "Testing"
+        }
+      ).catch(err => {console.error(err); result.success = false});
+
+      if (result.success === true) {
+        this.props.pushHistoryOp({type: Ops.ADD_LABEL, data: result.data});
       }
     }
   }

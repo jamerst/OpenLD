@@ -37,6 +37,12 @@ namespace openld.Data {
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
 
+            builder.Entity<View>()
+                .HasMany(v => v.Labels)
+                .WithOne(l => l.View)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
             builder.Entity<Structure>()
                 .HasMany(s => s.Fixtures)
                 .WithOne(f => f.Structure)
@@ -54,6 +60,7 @@ namespace openld.Data {
         public DbSet<UserDrawing> UserDrawings { get; set; }
         public DbSet<Drawing> Drawings { get; set; }
         public DbSet<View> Views { get; set; }
+        public DbSet<Label> Labels { get; set; }
         public DbSet<Structure> Structures { get; set; }
         public DbSet<StructureType> StructureTypes { get; set; }
         public DbSet<RiggedFixture> RiggedFixtures { get; set; }

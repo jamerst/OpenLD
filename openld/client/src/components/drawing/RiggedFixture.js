@@ -164,7 +164,7 @@ export class RiggedFixture extends Component {
       event.cancelBubble = true;
       this.props.deselectObject(this.props.selectedFixtureStructure);
       this.props.setSelectedFixtureStructure(this.props.structureId);
-      this.props.onSelectObject("fixture", this.props.structureId, this.props.data.id);
+      this.props.onSelectObject("fixture", this.props.data.id, this.props.structureId);
 
       if (this.props.selectedTool === "none") {
         this.props.setFixtureColour(this.props.data.id, "#007bff");

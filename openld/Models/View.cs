@@ -9,6 +9,7 @@ namespace openld.Models {
         public Drawing Drawing { get; set; }
         public string Name { get; set; }
         public List<Structure> Structures { get; set; }
+        public List<Label> Labels { get; set; }
         public float Width { get; set; }
         public float Height { get; set; }
         public int Type { get; set; }
@@ -18,6 +19,7 @@ namespace openld.Models {
                 Drawing = null,
                 Name = this.Name,
                 Structures = new List<Structure>(),
+                Labels = new List<Label>(),
                 Width = this.Width,
                 Height = this.Height,
                 Type = this.Type
@@ -25,6 +27,10 @@ namespace openld.Models {
 
             foreach(Structure s in this.Structures) {
                 view.Structures.Add(s.Clone());
+            }
+
+            foreach(Label l in this.Labels) {
+                view.Labels.Add(l.clone());
             }
 
             return view;
