@@ -2,19 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.ApiAuthorization.IdentityServer;
 using IdentityServer4.EntityFramework.Options;
 using Microsoft.Extensions.Options;
-using Npgsql;
 
 using openld.Models;
 
 namespace openld.Data {
     public class OpenLDContext : ApiAuthorizationDbContext<User> {
         public OpenLDContext(DbContextOptions<OpenLDContext> options, IOptions<OperationalStoreOptions> operationalStoreOptions) : base(options, operationalStoreOptions) {}
-
-        protected override void OnConfiguring(DbContextOptionsBuilder builder) {
-            builder.UseNpgsql("Host=db; Database=openld_db; Username=openld; Password=openld");
-            // use JSON.NET for JSON type mapping, not System.Text.Json
-            NpgsqlConnection.GlobalTypeMapper.UseJsonNet();
-        }
 
         protected override void OnModelCreating(ModelBuilder builder) {
             base.OnModelCreating(builder);

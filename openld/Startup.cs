@@ -9,10 +9,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
+using Npgsql;
 
 using openld.Hubs;
 using openld.Services;
@@ -29,7 +31,11 @@ namespace openld {
         public void ConfigureServices(IServiceCollection services) {
             services.AddControllersWithViews();
 
-            services.AddDbContext<Data.OpenLDContext>();
+            services.AddDbContext<Data.OpenLDContext>(builder => {
+                builder.UseNpgsql("Host=db; Database=openld_db; Username=openld; Password=openld");
+                // use JSON.NET for JSON type mapping, not System.Text.Json
+                NpgsqlConnection.GlobalTypeMapper.UseJsonNet();
+            });
 
             services.AddDefaultIdentity<Models.User>()
                 .AddEntityFrameworkStores<Data.OpenLDContext>();
