@@ -423,7 +423,7 @@ export class Drawing extends Component {
         {
           view: {id: this.props.currentView},
           position: point,
-          text: "Testing"
+          text: "New Label"
         }
       ).catch(err => {console.error(err); result.success = false});
 

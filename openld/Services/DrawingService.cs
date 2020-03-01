@@ -72,6 +72,8 @@ namespace openld.Services {
                     .Include(d => d.Views)
                         .ThenInclude(v => v.Structures)
                             .ThenInclude(s => s.Type)
+                    .Include(d => d.Views)
+                        .ThenInclude(v => v.Labels)
                     .FirstAsync(d => d.Id == template.Drawing.Id);
             } catch (InvalidOperationException) {
                 throw new KeyNotFoundException("Drawing ID not found");

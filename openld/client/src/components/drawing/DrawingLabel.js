@@ -78,7 +78,6 @@ export class DrawingLabel extends Component {
     const snapPos = DrawingUtils.getNearestSnapPos(event.target.position(), this.props.snapGridSize);
 
     this.props.onMoveLabel(this.props.data.id, snapPos, this.state.startPos);
-    console.log(this.state.startPos);
     this.props.setTooltip({x: 0, y: 0}, false, "");
   }
 }

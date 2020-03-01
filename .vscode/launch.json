@@ -8,7 +8,7 @@
             "name": ".NET Core Attach Docker",
             "type": "coreclr",
             "request": "attach",
-            "processId": "${command:pickRemoteProcess}",
+            "processName": "openld",
             "pipeTransport": {
                 "pipeCwd": "${workspaceFolder}/openld",
                 "pipeProgram": "/usr/bin/docker",
