@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Http;
@@ -21,8 +20,8 @@ namespace openld.Services {
 
         public async Task<List<Fixture>> SearchAllFixturesAsync(SearchParams search) {
             var query = _context.Fixtures.AsNoTracking()
-                    .Where(f => EF.Functions.ILike(f.Name, $"%{search.name}%"))
-                    .Where(f => EF.Functions.ILike(f.Manufacturer, $"%{search.manufacturer}%"));
+                    .Where(f => EF.Functions.Like(f.Name.ToLower(), $"%{search.name.ToLower()}%"))
+                    .Where(f => EF.Functions.Like(f.Manufacturer.ToLower(), $"%{search.manufacturer.ToLower()}%"));
 
             // if type specified
             if (search.type != "") {
