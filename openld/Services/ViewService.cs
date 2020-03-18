@@ -112,7 +112,7 @@ namespace openld.Services {
 
             List<UsedFixtureResult> used = riggedFixtures
                 .GroupBy(rf => rf.Fixture)
-                .Select(g => new UsedFixtureResult {Fixture = g.Key, Count = g.Count()})
+                .Select(g => new UsedFixtureResult { Fixture = g.Key, Count = g.Count() })
                 .ToList();
 
             return new Tuple<List<UsedFixtureResult>, List<RiggedFixture>>(used, riggedFixtures);

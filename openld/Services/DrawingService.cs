@@ -148,7 +148,7 @@ namespace openld.Services {
             result.UsedFixtures = new List<List<UsedFixtureResult>>();
             result.RiggedFixtures = new List<RiggedFixture>();
 
-            foreach(View view in drawing.Views) {
+            foreach (View view in drawing.Views) {
                 var fixtures = await _viewService.GetUsedFixturesAsync(view.Id);
                 result.UsedFixtures.Add(fixtures.Item1);
                 result.RiggedFixtures.AddRange(fixtures.Item2);
@@ -180,7 +180,7 @@ namespace openld.Services {
 
         public async Task<List<UserDrawing>> GetSharedUsersAsync(string drawingId) {
             List<UserDrawing> UserDrawing;
-            UserDrawing =  await _context.UserDrawings
+            UserDrawing = await _context.UserDrawings
                 .AsNoTracking()
                 .Where(ud => ud.Drawing.Id == drawingId)
                 .Include(ud => ud.User)

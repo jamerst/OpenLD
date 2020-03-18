@@ -2,8 +2,8 @@ using AutoMapper;
 
 using openld.Models;
 
-public class RiggedStructureProfile : Profile {
-    public RiggedStructureProfile() {
+public class RiggedFixtureProfile : Profile {
+    public RiggedFixtureProfile() {
         CreateMap<RiggedFixture, RiggedFixture>()
             // ignore properties not to be overwritten
             .ForMember(f => f.Id, opt => opt.Ignore())

@@ -9,8 +9,7 @@ using Xunit;
 using openld.Models;
 using openld.Services;
 
-namespace openld.Tests
-{
+namespace openld.Tests {
     public class FixtureServiceTest {
         private readonly TestFixture _fixture = new TestFixture();
 
@@ -64,7 +63,7 @@ namespace openld.Tests
         };
 
         [Fact]
-        public async Task SearchFixturesNoParams() {
+        public async Task SearchAllFixturesAsync_NoParams() {
             await _fixture.RunWithDatabaseAsync<List<Fixture>>(
                 async context => {
                     context.FixtureTypes.AddRange(testTypes);
@@ -72,16 +71,16 @@ namespace openld.Tests
                     await context.SaveChangesAsync();
                 },
                 context => new FixtureService(context).SearchAllFixturesAsync(
-                    new Utils.SearchParams {name = "", manufacturer = "", type =""}
+                    new Utils.SearchParams { name = "", manufacturer = "", type = "" }
                 ),
                 (result, context) => result.Should()
                     .BeOfType<List<Fixture>>()
-                    .And.HaveCount(testFixtures.Length)
+                    .And.BeEquivalentTo(testFixtures)
             );
         }
 
         [Fact]
-        public async Task SearchFixtureName() {
+        public async Task SearchAllFixturesAsync_Name() {
             await _fixture.RunWithDatabaseAsync<List<Fixture>>(
                 async context => {
                     context.FixtureTypes.AddRange(testTypes);
@@ -89,33 +88,17 @@ namespace openld.Tests
                     await context.SaveChangesAsync();
                 },
                 context => new FixtureService(context).SearchAllFixturesAsync(
-                    new Utils.SearchParams {name = "testfixture1", manufacturer = "", type = ""}
-                ),
-                (result, context) => result.Should()
-                    .BeOfType<List<Fixture>>()
-                    .And.HaveCount(1)
-            );
-        }
-
-        [Fact]
-        public async Task SearchFixtureNameManf() {
-            await _fixture.RunWithDatabaseAsync<List<Fixture>>(
-                async context => {
-                    context.FixtureTypes.AddRange(testTypes);
-                    context.Fixtures.AddRange(testFixtures);
-                    await context.SaveChangesAsync();
-                },
-                context => new FixtureService(context).SearchAllFixturesAsync(
-                    new Utils.SearchParams {name = "Testfixture1", manufacturer = "testmanf1", type = ""}
+                    new Utils.SearchParams { name = "testfixture1", manufacturer = "", type = "" }
                 ),
                 (result, context) => result.Should()
                     .BeOfType<List<Fixture>>()
                     .And.HaveCount(1)
+                    .And.BeEquivalentTo(testFixtures[0])
             );
         }
 
         [Fact]
-        public async Task SearchFixtureManf() {
+        public async Task SearchAllFixturesAsync_NameNoResults() {
             await _fixture.RunWithDatabaseAsync<List<Fixture>>(
                 async context => {
                     context.FixtureTypes.AddRange(testTypes);
@@ -123,24 +106,7 @@ namespace openld.Tests
                     await context.SaveChangesAsync();
                 },
                 context => new FixtureService(context).SearchAllFixturesAsync(
-                    new Utils.SearchParams {name = "", manufacturer = "Testmanf1", type = ""}
-                ),
-                (result, context) => result.Should()
-                    .BeOfType<List<Fixture>>()
-                    .And.HaveCount(2)
-            );
-        }
-
-        [Fact]
-        public async Task SearchFixtureTypeEmpty() {
-            await _fixture.RunWithDatabaseAsync<List<Fixture>>(
-                async context => {
-                    context.FixtureTypes.AddRange(testTypes);
-                    context.Fixtures.AddRange(testFixtures);
-                    await context.SaveChangesAsync();
-                },
-                context => new FixtureService(context).SearchAllFixturesAsync(
-                    new Utils.SearchParams {name = "", manufacturer = "", type = "testType2"}
+                    new Utils.SearchParams { name = "doesn't exist", manufacturer = "", type = "" }
                 ),
                 (result, context) => result.Should()
                     .BeOfType<List<Fixture>>()
@@ -149,7 +115,7 @@ namespace openld.Tests
         }
 
         [Fact]
-        public async Task SearchFixtureType() {
+        public async Task SearchAllFixturesAsync_NameManf() {
             await _fixture.RunWithDatabaseAsync<List<Fixture>>(
                 async context => {
                     context.FixtureTypes.AddRange(testTypes);
@@ -157,33 +123,17 @@ namespace openld.Tests
                     await context.SaveChangesAsync();
                 },
                 context => new FixtureService(context).SearchAllFixturesAsync(
-                    new Utils.SearchParams {name = "", manufacturer = "", type = "testType1"}
-                ),
-                (result, context) => result.Should()
-                    .BeOfType<List<Fixture>>()
-                    .And.HaveCount(2)
-            );
-        }
-
-        [Fact]
-        public async Task SearchFixtureNameType() {
-            await _fixture.RunWithDatabaseAsync<List<Fixture>>(
-                async context => {
-                    context.FixtureTypes.AddRange(testTypes);
-                    context.Fixtures.AddRange(testFixtures);
-                    await context.SaveChangesAsync();
-                },
-                context => new FixtureService(context).SearchAllFixturesAsync(
-                    new Utils.SearchParams {name = "testfixture2", manufacturer = "", type = "testType1"}
+                    new Utils.SearchParams { name = "Testfixture1", manufacturer = "testmanf1", type = "" }
                 ),
                 (result, context) => result.Should()
                     .BeOfType<List<Fixture>>()
                     .And.HaveCount(1)
+                    .And.BeEquivalentTo(testFixtures[0])
             );
         }
 
         [Fact]
-        public async Task SearchFixtureNoResults() {
+        public async Task SearchAllFixturesAsync_Manf() {
             await _fixture.RunWithDatabaseAsync<List<Fixture>>(
                 async context => {
                     context.FixtureTypes.AddRange(testTypes);
@@ -191,7 +141,113 @@ namespace openld.Tests
                     await context.SaveChangesAsync();
                 },
                 context => new FixtureService(context).SearchAllFixturesAsync(
-                    new Utils.SearchParams {name = "doesn't exist", manufacturer = "doesn't exist", type = "doesn't exist"}
+                    new Utils.SearchParams { name = "", manufacturer = "Testmanf1", type = "" }
+                ),
+                (result, context) => result.Should()
+                    .BeOfType<List<Fixture>>()
+                    .And.HaveCount(2)
+                    .And.BeEquivalentTo(new List<Fixture> { testFixtures[0], testFixtures[1] })
+            );
+        }
+
+        [Fact]
+        public async Task SearchAllFixturesAsync_ManfNoResults() {
+            await _fixture.RunWithDatabaseAsync<List<Fixture>>(
+                async context => {
+                    context.FixtureTypes.AddRange(testTypes);
+                    context.Fixtures.AddRange(testFixtures);
+                    await context.SaveChangesAsync();
+                },
+                context => new FixtureService(context).SearchAllFixturesAsync(
+                    new Utils.SearchParams { name = "", manufacturer = "doesn't exist", type = "" }
+                ),
+                (result, context) => result.Should()
+                    .BeOfType<List<Fixture>>()
+                    .And.BeEmpty()
+            );
+        }
+
+        [Fact]
+        public async Task SearchAllFixturesAsync_Type() {
+            await _fixture.RunWithDatabaseAsync<List<Fixture>>(
+                async context => {
+                    context.FixtureTypes.AddRange(testTypes);
+                    context.Fixtures.AddRange(testFixtures);
+                    await context.SaveChangesAsync();
+                },
+                context => new FixtureService(context).SearchAllFixturesAsync(
+                    new Utils.SearchParams { name = "", manufacturer = "", type = "testType1" }
+                ),
+                (result, context) => result.Should()
+                    .BeOfType<List<Fixture>>()
+                    .And.HaveCount(2)
+                    .And.BeEquivalentTo(new List<Fixture> { testFixtures[0], testFixtures[1] })
+            );
+        }
+
+        [Fact]
+        public async Task SearchAllFixturesAsync_NameType() {
+            await _fixture.RunWithDatabaseAsync<List<Fixture>>(
+                async context => {
+                    context.FixtureTypes.AddRange(testTypes);
+                    context.Fixtures.AddRange(testFixtures);
+                    await context.SaveChangesAsync();
+                },
+                context => new FixtureService(context).SearchAllFixturesAsync(
+                    new Utils.SearchParams { name = "testfixture2", manufacturer = "", type = "testType1" }
+                ),
+                (result, context) => result.Should()
+                    .BeOfType<List<Fixture>>()
+                    .And.HaveCount(1)
+                    .And.BeEquivalentTo(testFixtures[1])
+            );
+        }
+
+        [Fact]
+        public async Task SearchAllFixturesAsync_TypeNoResults() {
+            await _fixture.RunWithDatabaseAsync<List<Fixture>>(
+                async context => {
+                    context.FixtureTypes.AddRange(testTypes);
+                    context.Fixtures.AddRange(testFixtures);
+                    await context.SaveChangesAsync();
+                },
+                context => new FixtureService(context).SearchAllFixturesAsync(
+                    new Utils.SearchParams { name = "", manufacturer = "", type = "testType2" }
+                ),
+                (result, context) => result.Should()
+                    .BeOfType<List<Fixture>>()
+                    .And.BeEmpty()
+            );
+        }
+
+        [Fact]
+        public async Task SearchAllFixturesAsync_NameManfType() {
+            await _fixture.RunWithDatabaseAsync<List<Fixture>>(
+                async context => {
+                    context.FixtureTypes.AddRange(testTypes);
+                    context.Fixtures.AddRange(testFixtures);
+                    await context.SaveChangesAsync();
+                },
+                context => new FixtureService(context).SearchAllFixturesAsync(
+                    new Utils.SearchParams { name = "Testfixture1", manufacturer = "testmanf1", type = "testType1" }
+                ),
+                (result, context) => result.Should()
+                    .BeOfType<List<Fixture>>()
+                    .And.HaveCount(1)
+                    .And.BeEquivalentTo(testFixtures[0])
+            );
+        }
+
+        [Fact]
+        public async Task SearchAllFixturesAsync_NoResults() {
+            await _fixture.RunWithDatabaseAsync<List<Fixture>>(
+                async context => {
+                    context.FixtureTypes.AddRange(testTypes);
+                    context.Fixtures.AddRange(testFixtures);
+                    await context.SaveChangesAsync();
+                },
+                context => new FixtureService(context).SearchAllFixturesAsync(
+                    new Utils.SearchParams { name = "doesn't exist", manufacturer = "doesn't exist", type = "doesn't exist" }
                 ),
                 (result, context) => result.Should()
                     .BeOfType<List<Fixture>>()
@@ -222,10 +278,13 @@ namespace openld.Tests
                     await context.SaveChangesAsync();
                 },
                 context => new FixtureService(context).CreateFixtureAsync(newFixture),
-                context => context.Fixtures.Include(f => f.Image).Include(f => f.Symbol).Include(f => f.Modes)
-                    .Where(f => f.Id == newFixture.Id).ToList().Should()
-                    .HaveCount(1)
-                    .And.Equal(new List<Fixture> {newFixture})
+                context => context.Fixtures
+                    .Include(f => f.Image)
+                    .Include(f => f.Symbol)
+                    .Include(f => f.Modes)
+                    .First(f => f.Id == newFixture.Id).Should()
+                    .NotBeNull()
+                    .And.Be(newFixture)
             );
         }
 
@@ -270,10 +329,13 @@ namespace openld.Tests
                     await context.SaveChangesAsync();
                 },
                 context => new FixtureService(context).CreateFixtureAsync(newFixture),
-                context => context.Fixtures.Include(f => f.Image).Include(f => f.Symbol).Include(f => f.Modes)
-                    .Where(f => f.Id == newFixture.Id).ToList().Should()
-                    .HaveCount(1)
-                    .And.Equal(new List<Fixture> {newFixture})
+                context => context.Fixtures
+                    .Include(f => f.Image)
+                    .Include(f => f.Symbol)
+                    .Include(f => f.Modes)
+                    .First(f => f.Id == newFixture.Id).Should()
+                    .NotBeNull()
+                    .And.Be(newFixture)
             );
         }
 
@@ -301,7 +363,7 @@ namespace openld.Tests
                 Id = "testFixture4",
                 Name = "testFixture4",
                 Manufacturer = "testManf1",
-                Type = new FixtureType {Id = "doesn't exist"},
+                Type = new FixtureType { Id = "doesn't exist" },
                 Power = 100,
                 Weight = 5F,
                 Image = testImages[0],
@@ -322,7 +384,7 @@ namespace openld.Tests
             );
         }
 
-         [Fact]
+        [Fact]
         public async Task CreateFixtureNoImage() {
             List<FixtureMode> newModes = new List<FixtureMode> {
                 new FixtureMode {
@@ -349,7 +411,7 @@ namespace openld.Tests
                 Type = testTypes[0],
                 Power = 100,
                 Weight = 5F,
-                Image = new StoredImage {Id = "doesn't exist"},
+                Image = new StoredImage { Id = "doesn't exist" },
                 Symbol = testSymbols[0],
                 Modes = newModes
             };
@@ -367,7 +429,7 @@ namespace openld.Tests
             );
         }
 
-         [Fact]
+        [Fact]
         public async Task CreateFixtureNoSymbol() {
             List<FixtureMode> newModes = new List<FixtureMode> {
                 new FixtureMode {
@@ -395,7 +457,7 @@ namespace openld.Tests
                 Power = 100,
                 Weight = 5F,
                 Image = testImages[0],
-                Symbol = new Symbol {Id = "doesn't exist"},
+                Symbol = new Symbol { Id = "doesn't exist" },
                 Modes = newModes
             };
 

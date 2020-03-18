@@ -23,14 +23,14 @@ namespace openld.Tests {
                 var options = new DbContextOptionsBuilder<OpenLDContext>()
                     .UseSqlite(connection);
 
-                using (var context = new OpenLDContext(options.Options, Options.Create<OperationalStoreOptions>(new OperationalStoreOptions()))) {
+                using (var context = new OpenLDTestContext(options.Options)) {
                     await context.Database.EnsureCreatedAsync();
                     if (arrange != null) {
                         await arrange.Invoke(context);
                     }
                 }
 
-                using (var context = new OpenLDContext(options.Options, Options.Create<OperationalStoreOptions>(new OperationalStoreOptions()))) {
+                using (var context = new OpenLDTestContext(options.Options)) {
                     var result = await act(context);
                     assert(result, context);
                 }
@@ -51,14 +51,14 @@ namespace openld.Tests {
                 var options = new DbContextOptionsBuilder<OpenLDContext>()
                     .UseSqlite(connection);
 
-                using (var context = new OpenLDContext(options.Options, Options.Create<OperationalStoreOptions>(new OperationalStoreOptions()))) {
+                using (var context = new OpenLDTestContext(options.Options)) {
                     await context.Database.EnsureCreatedAsync();
                     if (arrange != null) {
                         await arrange.Invoke(context);
                     }
                 }
 
-                using (var context = new OpenLDContext(options.Options, Options.Create<OperationalStoreOptions>(new OperationalStoreOptions()))) {
+                using (var context = new OpenLDTestContext(options.Options)) {
                     await act(context);
                     assert(context);
                 }
@@ -79,14 +79,14 @@ namespace openld.Tests {
                 var options = new DbContextOptionsBuilder<OpenLDContext>()
                     .UseSqlite(connection);
 
-                using (var context = new OpenLDContext(options.Options, Options.Create<OperationalStoreOptions>(new OperationalStoreOptions()))) {
+                using (var context = new OpenLDTestContext(options.Options)) {
                     await context.Database.EnsureCreatedAsync();
                     if (arrange != null) {
                         await arrange.Invoke(context);
                     }
                 }
 
-                using (var context = new OpenLDContext(options.Options, Options.Create<OperationalStoreOptions>(new OperationalStoreOptions()))) {
+                using (var context = new OpenLDTestContext(options.Options)) {
                     Func<Task> executeAct = async () => await act(context);
                     assert(executeAct, context);
                 }

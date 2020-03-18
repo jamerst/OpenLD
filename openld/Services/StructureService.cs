@@ -73,7 +73,7 @@ namespace openld.Services {
             }
 
             if (structure.Fixtures != null) {
-                foreach(RiggedFixture fixture in structure.Fixtures) {
+                foreach (RiggedFixture fixture in structure.Fixtures) {
                     fixture.Fixture = await _context.Fixtures.FirstAsync(f => f.Id == fixture.Fixture.Id);
                     fixture.Mode = await _context.FixtureModes.FirstAsync(fm => fm.Id == fixture.Mode.Id);
                 }
@@ -113,7 +113,7 @@ namespace openld.Services {
                 throw new KeyNotFoundException("Structure ID not found");
             }
 
-            for(int i = 0; i < structure.Fixtures.Count; i++) {
+            for (int i = 0; i < structure.Fixtures.Count; i++) {
                 structure.Fixtures[i].Position = points[i];
             }
 

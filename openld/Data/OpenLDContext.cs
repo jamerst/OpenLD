@@ -7,7 +7,7 @@ using openld.Models;
 
 namespace openld.Data {
     public class OpenLDContext : ApiAuthorizationDbContext<User> {
-        public OpenLDContext(DbContextOptions<OpenLDContext> options, IOptions<OperationalStoreOptions> operationalStoreOptions) : base(options, operationalStoreOptions) {}
+        public OpenLDContext(DbContextOptions<OpenLDContext> options, IOptions<OperationalStoreOptions> operationalStoreOptions) : base(options, operationalStoreOptions) { }
 
         protected override void OnModelCreating(ModelBuilder builder) {
             base.OnModelCreating(builder);
