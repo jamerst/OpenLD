@@ -66,5 +66,33 @@ namespace openld.Tests {
                 await connection.CloseAsync();
             }
         }
+
+        public async Task RunWithDatabaseAsync(
+            Func<OpenLDContext, Task> arrange,
+            Func<OpenLDContext, Task> act,
+            Action<Func<Task>, OpenLDContext> assert
+        ) {
+            var connection = new SqliteConnection("DataSource=:memory:");
+            await connection.OpenAsync();
+
+            try {
+                var options = new DbContextOptionsBuilder<OpenLDContext>()
+                    .UseSqlite(connection);
+
+                using (var context = new OpenLDContext(options.Options, Options.Create<OperationalStoreOptions>(new OperationalStoreOptions()))) {
+                    await context.Database.EnsureCreatedAsync();
+                    if (arrange != null) {
+                        await arrange.Invoke(context);
+                    }
+                }
+
+                using (var context = new OpenLDContext(options.Options, Options.Create<OperationalStoreOptions>(new OperationalStoreOptions()))) {
+                    Func<Task> executeAct = async () => await act(context);
+                    assert(executeAct, context);
+                }
+            } finally {
+                await connection.CloseAsync();
+            }
+        }
     }
 }

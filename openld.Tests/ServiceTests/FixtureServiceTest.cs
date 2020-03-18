@@ -276,5 +276,140 @@ namespace openld.Tests
                     .And.Equal(new List<Fixture> {newFixture})
             );
         }
+
+        [Fact]
+        public async Task CreateFixtureNoType() {
+            List<FixtureMode> newModes = new List<FixtureMode> {
+                new FixtureMode {
+                    Id = "testFixture4Mode1",
+                    Name = "testFixture4Mode1",
+                    Channels = 1
+                },
+                new FixtureMode {
+                    Id = "testFixture4Mode2",
+                    Name = "testFixture4Mode2",
+                    Channels = 2
+                },
+                new FixtureMode {
+                    Id = "testFixture4Mode3",
+                    Name = "testFixture4Mode3",
+                    Channels = 3
+                }
+            };
+
+            Fixture newFixture = new Fixture {
+                Id = "testFixture4",
+                Name = "testFixture4",
+                Manufacturer = "testManf1",
+                Type = new FixtureType {Id = "doesn't exist"},
+                Power = 100,
+                Weight = 5F,
+                Image = testImages[0],
+                Symbol = testSymbols[0],
+                Modes = newModes
+            };
+
+            await _fixture.RunWithDatabaseAsync(
+                async context => {
+                    context.FixtureTypes.AddRange(testTypes);
+                    context.Fixtures.AddRange(testFixtures);
+                    context.StoredImages.AddRange(testImages);
+                    context.Symbols.AddRange(testSymbols);
+                    await context.SaveChangesAsync();
+                },
+                context => new FixtureService(context).CreateFixtureAsync(newFixture),
+                async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
+            );
+        }
+
+         [Fact]
+        public async Task CreateFixtureNoImage() {
+            List<FixtureMode> newModes = new List<FixtureMode> {
+                new FixtureMode {
+                    Id = "testFixture4Mode1",
+                    Name = "testFixture4Mode1",
+                    Channels = 1
+                },
+                new FixtureMode {
+                    Id = "testFixture4Mode2",
+                    Name = "testFixture4Mode2",
+                    Channels = 2
+                },
+                new FixtureMode {
+                    Id = "testFixture4Mode3",
+                    Name = "testFixture4Mode3",
+                    Channels = 3
+                }
+            };
+
+            Fixture newFixture = new Fixture {
+                Id = "testFixture4",
+                Name = "testFixture4",
+                Manufacturer = "testManf1",
+                Type = testTypes[0],
+                Power = 100,
+                Weight = 5F,
+                Image = new StoredImage {Id = "doesn't exist"},
+                Symbol = testSymbols[0],
+                Modes = newModes
+            };
+
+            await _fixture.RunWithDatabaseAsync(
+                async context => {
+                    context.FixtureTypes.AddRange(testTypes);
+                    context.Fixtures.AddRange(testFixtures);
+                    context.StoredImages.AddRange(testImages);
+                    context.Symbols.AddRange(testSymbols);
+                    await context.SaveChangesAsync();
+                },
+                context => new FixtureService(context).CreateFixtureAsync(newFixture),
+                async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
+            );
+        }
+
+         [Fact]
+        public async Task CreateFixtureNoSymbol() {
+            List<FixtureMode> newModes = new List<FixtureMode> {
+                new FixtureMode {
+                    Id = "testFixture4Mode1",
+                    Name = "testFixture4Mode1",
+                    Channels = 1
+                },
+                new FixtureMode {
+                    Id = "testFixture4Mode2",
+                    Name = "testFixture4Mode2",
+                    Channels = 2
+                },
+                new FixtureMode {
+                    Id = "testFixture4Mode3",
+                    Name = "testFixture4Mode3",
+                    Channels = 3
+                }
+            };
+
+            Fixture newFixture = new Fixture {
+                Id = "testFixture4",
+                Name = "testFixture4",
+                Manufacturer = "testManf1",
+                Type = testTypes[0],
+                Power = 100,
+                Weight = 5F,
+                Image = testImages[0],
+                Symbol = new Symbol {Id = "doesn't exist"},
+                Modes = newModes
+            };
+
+            await _fixture.RunWithDatabaseAsync(
+                async context => {
+                    context.FixtureTypes.AddRange(testTypes);
+                    context.Fixtures.AddRange(testFixtures);
+                    context.StoredImages.AddRange(testImages);
+                    context.Symbols.AddRange(testSymbols);
+                    await context.SaveChangesAsync();
+                },
+                context => new FixtureService(context).CreateFixtureAsync(newFixture),
+                async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
+            );
+        }
     }
 }
