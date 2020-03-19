@@ -194,13 +194,11 @@ namespace openld.Tests {
                     new List<UsedFixtureResult> {
                         new UsedFixtureResult {
                             Fixture = testFixture,
-                            Count = 1
+                            Count = 2
                         }
                     }
                 },
-                RiggedFixtures = new List<RiggedFixture> {
-                    testDrawings[0].Views[0].Structures[0].Fixtures[0]
-                }
+                RiggedFixtures = new List<RiggedFixture>(testDrawings[0].Views[0].Structures[0].Fixtures)
             };
 
             await _fixture.RunWithDatabaseAsync<PrintDrawing>(
@@ -214,9 +212,9 @@ namespace openld.Tests {
                     expected,
                     options => options.IgnoringCyclicReferences()
                         .Excluding(d => d.SelectedMemberPath.EndsWith(".Owner"))
-                        .Excluding(d => d.SelectedMemberPath.EndsWith(".Fixture.Type"))
                         .Excluding(d => d.SelectedMemberPath.EndsWith(".Fixture.Modes"))
                         .Excluding(d => d.SelectedMemberPath.EndsWith(".Mode.Fixture"))
+                        .Excluding(d => d.SelectedMemberPath.Contains(".Type"))
                         .Excluding(d => d.SelectedMemberPath.Contains(".Structure.View."))
                         .Excluding(d => d.Drawing.UserDrawings)
                 )

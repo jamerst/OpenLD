@@ -219,6 +219,7 @@ namespace openld.Tests {
                     options => options.IgnoringCyclicReferences()
                         .Excluding(s => s.View)
                         .Excluding(s => s.Fixtures)
+                        .Excluding(s => s.Type)
                 )
             );
         }

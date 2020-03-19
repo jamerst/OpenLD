@@ -48,6 +48,21 @@ namespace openld.Tests {
             }
         };
 
+        protected static StructureType[] testStructureTypes = {
+            new StructureType {
+                Id = "testStructureType1",
+                Name = "testStructureType1"
+            },
+            new StructureType {
+                Id = "testStructureType2",
+                Name = "testStructureType2"
+            },
+            new StructureType {
+                Id = "testStructureTypeBar",
+                Name = "Bar"
+            }
+        };
+
         protected static Drawing[] testDrawings = {
             new Drawing {
                 Id = "testDrawing1",
@@ -80,8 +95,33 @@ namespace openld.Tests {
                                         Universe = 1,
                                         Colour = "L202",
                                         Notes = ""
+                                    },
+                                    new RiggedFixture {
+                                        Id = "testDrawing1_View1_Struct1_RFixture2",
+                                        Name = "testDrawing1_View1_Struct1_RFixture2",
+                                        Position = new Point {x = 1, y = 1},
+                                        Fixture = testFixture,
+                                        Mode = testFixture.Modes[1],
+                                        Angle = 0,
+                                        Channel = 2,
+                                        Address = 21,
+                                        Universe = 1,
+                                        Colour = "",
+                                        Notes = ""
                                     }
-                                }
+                                },
+                                Type = testStructureTypes[0]
+                            },
+                            new Structure {
+                                Id = "testDrawing1_View1_Struct2",
+                                Name = "testDrawing1_View1_Struct2",
+                                Geometry = new Geometry {
+                                    Points = new List<Point> {
+                                        new Point {x = 1, y = 1},
+                                        new Point {x = 2, y = 2}
+                                    }
+                                },
+                                Fixtures = new List<RiggedFixture> { }
                             }
                         },
                         Labels = new List<Label> {
