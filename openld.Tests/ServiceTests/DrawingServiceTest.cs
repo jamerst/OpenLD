@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-using AutoMapper;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -12,157 +11,7 @@ using openld.Models;
 using openld.Services;
 
 namespace openld.Tests {
-    public class DrawingServiceTest {
-        private readonly TestFixture _fixture = new TestFixture();
-
-        private readonly IMapper _mapper = new MapperConfiguration(cfg => {
-            cfg.AddProfile<LabelProfile>();
-            cfg.AddProfile<RiggedFixtureProfile>();
-            cfg.AddProfile<StructureProfile>();
-        }).CreateMapper();
-
-        private static User[] testUsers = {
-            new User {
-                Id = "user1",
-                UserName = "user1",
-                Email = "userEmail1"
-            },
-            new User {
-                Id = "user2",
-                UserName = "user2",
-                Email = "userEmail2"
-            }
-        };
-
-        private static Fixture testFixture = new Fixture {
-            Id = "testFixture1",
-            Name = "testFixture1",
-            Manufacturer = "testManf1",
-            Type = new FixtureType { Id = "testType1", Name = "testType1" },
-            Power = 100,
-            Weight = 3.5F,
-            Modes = new List<FixtureMode> {
-                new FixtureMode {
-                    Id = "testFixture1_Mode1",
-                    Name = "testFixture1_Mode1",
-                    Channels = 10
-                },
-                new FixtureMode {
-                    Id = "testFixture1_Mode2",
-                    Name = "testFixture1_Mode2",
-                    Channels = 20
-                },
-            }
-        };
-
-        private static Drawing[] testDrawings = {
-            new Drawing {
-                Id = "testDrawing1",
-                Title = "testDrawing1",
-                Owner = testUsers[0],
-                Views = new List<View> {
-                    new View {
-                        Id = "testDrawing1_View1",
-                        Name = "testDrawing1_View1",
-                        Structures = new List<Structure> {
-                            new Structure {
-                                Id = "testDrawing1_View1_Struct1",
-                                Name = "testDrawing1_View1_Struct1",
-                                Geometry = new Geometry {
-                                    Points = new List<Point> {
-                                        new Point {x = 1, y = 1},
-                                        new Point {x = 2, y = 2}
-                                    }
-                                },
-                                Fixtures = new List<RiggedFixture> {
-                                    new RiggedFixture {
-                                        Id = "testDrawing1_View1_Struct1_RFixture1",
-                                        Name = "testDrawing1_View1_Struct1_RFixture1",
-                                        Position = new Point {x = 1.5, y = 1.5},
-                                        Fixture = testFixture,
-                                        Mode = testFixture.Modes[0],
-                                        Angle = 0,
-                                        Channel = 1,
-                                        Address = 20,
-                                        Universe = 1,
-                                        Colour = "L202",
-                                        Notes = ""
-                                    }
-                                }
-                            }
-                        },
-                        Labels = new List<Label> {
-                            new Label {
-                                Id = "testDrawing1_View1_Label1",
-                                Position = new Point {x = 1.0, y = 1},
-                                Text = "testDrawing1_View1_Label1"
-                            },
-                            new Label {
-                                Id = "testDrawing1_View1_Label2",
-                                Position = new Point {x = 1.0, y = 1},
-                                Text = "testDrawing1_View1_Label2"
-                            }
-                        }
-                    }
-                }
-            },
-            new Drawing {
-                Id = "testDrawing2",
-                Title = "testDrawing2",
-                Owner = testUsers[0],
-                Views = new List<View> {
-                    new View {
-                        Id = "testDrawing2_View1",
-                        Name = "testDrawing2_View1",
-                        Structures = new List<Structure> {
-                            new Structure {
-                                Id = "testDrawing2_View1_Struct1",
-                                Name = "testDrawing2_View1_Struct1",
-                                Geometry = new Geometry {
-                                    Points = new List<Point> {
-                                        new Point {x = 1, y = 1},
-                                        new Point {x = 2, y = 2}
-                                    }
-                                },
-                                Fixtures = new List<RiggedFixture> {
-                                    new RiggedFixture {
-                                        Id = "testDrawing2_View1_Struct1_RFixture1",
-                                        Name = "testDrawing2_View1_Struct1_RFixture1",
-                                        Position = new Point {x = 1.5, y = 1.5},
-                                        Fixture = testFixture,
-                                        Mode = testFixture.Modes[0],
-                                        Angle = 0,
-                                        Channel = 1,
-                                        Address = 20,
-                                        Universe = 1,
-                                        Colour = "L202",
-                                        Notes = ""
-                                    }
-                                }
-                            }
-                        },
-                        Labels = new List<Label> {
-                            new Label {
-                                Id = "testDrawing2_View1_Label1",
-                                Position = new Point {x = 1.0, y = 1},
-                                Text = "testDrawing1_View1_Label1"
-                            },
-                            new Label {
-                                Id = "testDrawing2_View1_Label2",
-                                Position = new Point {x = 1.0, y = 1},
-                                Text = "testDrawing1_View1_Label2"
-                            }
-                        }
-                    }
-                },
-                UserDrawings = new List<UserDrawing> {
-                    new UserDrawing {
-                        Id = "testUserDrawing_Drawing2_User2",
-                        User = testUsers[1]
-                    }
-                }
-            }
-        };
+    public class DrawingServiceTest : OpenLDUnitTest {
 
         private static Template testTemplate = new Template {
             Id = "testDrawing1_Template",
@@ -281,7 +130,7 @@ namespace openld.Tests {
         }
 
         [Fact]
-        public async Task CreateDrawingFromTemplateAsync_InvalidTemplate() {
+        public async Task CreateDrawingFromTemplateAsync_TemplateNotExists() {
             Drawing newDrawing = new Drawing {
                 Id = "newDrawing1",
                 Title = "newDrawing1"
@@ -301,7 +150,7 @@ namespace openld.Tests {
                 context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
                     .CreateDrawingFromTemplateAsync(testUsers[0].Id, newDrawing, template),
 
-                async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
+                async (act, context) => await (act.Should().ThrowAsync<KeyNotFoundException>()).WithMessage("Template ID not found")
             );
         }
 
@@ -564,6 +413,214 @@ namespace openld.Tests {
                 context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
                     .ShareWithUserAsync(testUsers[1].Email, testDrawings[1].Id),
                 async (act, context) => await (act.Should().ThrowAsync<InvalidOperationException>()).WithMessage("Drawing already shared with user")
+            );
+        }
+
+        [Fact]
+        public async Task UnshareWithUserAsync() {
+            await _fixture.RunWithDatabaseAsync(
+                async context => {
+                    context.AddRange(testUsers);
+                    context.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
+                    .UnshareWithUserAsync(testDrawings[1].UserDrawings[0].Id),
+                context => context.UserDrawings.Where(ud => ud.Drawing.Id == testDrawings[1].Id).ToList()
+                    .Should().NotContain(testDrawings[1].UserDrawings[0])
+            );
+        }
+
+        [Fact]
+        public async Task UnshareWithUserAsync_NotExists() {
+            await _fixture.RunWithDatabaseAsync(
+                async context => {
+                    context.Users.AddRange(testUsers);
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
+                    .UnshareWithUserAsync("doesn't exist"),
+                async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
+            );
+        }
+
+        [Fact]
+        public async Task IsSharedWithAsync_Shared() {
+            await _fixture.RunWithDatabaseAsync<bool>(
+                async context => {
+                    context.Users.AddRange(testUsers);
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
+                    .IsSharedWithAsync(testDrawings[1].Id, testUsers[1].Id),
+                (result, context) => result.Should().Be(true)
+            );
+        }
+
+        [Fact]
+        public async Task IsSharedWithAsync_NotShared() {
+            await _fixture.RunWithDatabaseAsync<bool>(
+                async context => {
+                    context.Users.AddRange(testUsers);
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
+                    .IsSharedWithAsync(testDrawings[0].Id, testUsers[1].Id),
+                (result, context) => result.Should().Be(false)
+            );
+        }
+
+        [Fact]
+        public async Task IsOwnerAsync_IsOwner() {
+            await _fixture.RunWithDatabaseAsync<bool>(
+                async context => {
+                    context.Users.AddRange(testUsers);
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
+                    .IsOwnerAsync(testDrawings[0].Id, testUsers[0].Id),
+                (result, context) => result.Should().Be(true)
+            );
+        }
+
+        [Fact]
+        public async Task IsOwnerAsync_NotOwner() {
+            await _fixture.RunWithDatabaseAsync<bool>(
+                async context => {
+                    context.Users.AddRange(testUsers);
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
+                    .IsOwnerAsync(testDrawings[0].Id, testUsers[1].Id),
+                (result, context) => result.Should().Be(false)
+            );
+        }
+
+        [Fact]
+        public async Task GetOwnedDrawingsAsync() {
+            await _fixture.RunWithDatabaseAsync<List<Drawing>>(
+                async context => {
+                    context.Users.AddRange(testUsers);
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
+                    .GetOwnedDrawingsAsync(testUsers[0].Id),
+                (result, context) => result.Should().BeEquivalentTo(
+                    testDrawings,
+                    options => options.Excluding(d => d.Views)
+                        .Excluding(d => d.UserDrawings)
+                        .Excluding(d => d.Owner)
+                )
+            );
+        }
+
+        [Fact]
+        public async Task GetOwnedDrawingsAsync_NoneOwned() {
+            await _fixture.RunWithDatabaseAsync<List<Drawing>>(
+                async context => {
+                    context.Users.AddRange(testUsers);
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
+                    .GetOwnedDrawingsAsync(testUsers[1].Id),
+                (result, context) => result.Should().BeEmpty()
+            );
+        }
+
+        [Fact]
+        public async Task GetOwnedDrawingsAsync_NotExists() {
+            await _fixture.RunWithDatabaseAsync<List<Drawing>>(
+                async context => {
+                    context.Users.AddRange(testUsers);
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
+                    .GetOwnedDrawingsAsync("doesn't exist"),
+                (result, context) => result.Should().BeEmpty()
+            );
+        }
+
+        [Fact]
+        public async Task GetSharedDrawingsAsync() {
+            await _fixture.RunWithDatabaseAsync<List<Drawing>>(
+                async context => {
+                    context.Users.AddRange(testUsers);
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
+                    .GetSharedDrawingsAsync(testUsers[1].Id),
+                (result, context) => result.Should().AllBeEquivalentTo(
+                    testDrawings[1],
+                    options => options.Excluding(d => d.Views)
+                        .Excluding(d => d.UserDrawings)
+                        .Excluding(d => d.Owner)
+                )
+            );
+        }
+
+        [Fact]
+        public async Task GetSharedDrawingsAsync_NoneShared() {
+            await _fixture.RunWithDatabaseAsync<List<Drawing>>(
+                async context => {
+                    context.Users.AddRange(testUsers);
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
+                    .GetSharedDrawingsAsync(testUsers[0].Id),
+                (result, context) => result.Should().BeEmpty()
+            );
+        }
+
+        [Fact]
+        public async Task GetSharedDrawingsAsync_NotExists() {
+            await _fixture.RunWithDatabaseAsync<List<Drawing>>(
+                async context => {
+                    context.Users.AddRange(testUsers);
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
+                    .GetSharedDrawingsAsync("doesn't exist"),
+                (result, context) => result.Should().BeEmpty()
+            );
+        }
+
+        [Fact]
+        public async Task UpdateLastModifiedAsync() {
+            await _fixture.RunWithDatabaseAsync(
+                async context => {
+                    context.Users.AddRange(testUsers);
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
+                    .UpdateLastModifiedAsync(testDrawings[0]),
+                context => context.Drawings.First(d => d.Id == testDrawings[0].Id).LastModified
+                    .Should().BeCloseTo(DateTime.Now)
+            );
+        }
+
+        [Fact]
+        public async Task UpdateLastModifiedAsync_NotExists() {
+            await _fixture.RunWithDatabaseAsync(
+                async context => {
+                    context.Users.AddRange(testUsers);
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
+                    .UpdateLastModifiedAsync(new Drawing { Id = "doesn't exist" }),
+                async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }
     }

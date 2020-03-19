@@ -92,7 +92,7 @@ namespace openld.Services {
                     .Include(l => l.View)
                     .FirstAsync(l => l.Id == label.Id);
             } catch (InvalidOperationException) {
-                throw new KeyNotFoundException("Structure ID not found");
+                throw new KeyNotFoundException("Label ID not found");
             }
 
             existing.Position = label.Position;

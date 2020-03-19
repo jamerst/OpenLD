@@ -8,22 +8,7 @@ using openld.Models;
 using openld.Services;
 
 namespace openld.Tests {
-    public class UserServiceTest {
-        private readonly TestFixture _fixture = new TestFixture();
-
-        private static User[] testUsers = {
-            new User {
-                Id = "user1",
-                UserName = "user1",
-                Email = "userEmail1"
-            },
-            new User {
-                Id = "user2",
-                UserName = "user2",
-                Email = "userEmail2"
-            }
-        };
-
+    public class UserServiceTest : OpenLDUnitTest {
         [Fact]
         public async Task GetUserDetailsExisting() {
             await _fixture.RunWithDatabaseAsync<User>(

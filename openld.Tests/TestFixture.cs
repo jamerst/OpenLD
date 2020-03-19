@@ -70,7 +70,7 @@ namespace openld.Tests {
         public async Task RunWithDatabaseAsync(
             Func<OpenLDContext, Task> arrange,
             Func<OpenLDContext, Task> act,
-            Action<Func<Task>, OpenLDContext> assert
+            Func<Func<Task>, OpenLDContext, Task> assert
         ) {
             var connection = new SqliteConnection("DataSource=:memory:");
             await connection.OpenAsync();
@@ -88,7 +88,7 @@ namespace openld.Tests {
 
                 using (var context = new OpenLDTestContext(options.Options)) {
                     Func<Task> executeAct = async () => await act(context);
-                    assert(executeAct, context);
+                    await assert(executeAct, context);
                 }
             } finally {
                 await connection.CloseAsync();

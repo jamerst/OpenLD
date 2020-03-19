@@ -10,8 +10,7 @@ using openld.Models;
 using openld.Services;
 
 namespace openld.Tests {
-    public class FixtureServiceTest {
-        private readonly TestFixture _fixture = new TestFixture();
+    public class FixtureServiceTest : OpenLDUnitTest {
 
         private static FixtureType[] testTypes = {
             new FixtureType {Id = "testType1", Name = "testType1"},

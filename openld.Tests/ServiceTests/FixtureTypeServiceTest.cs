@@ -11,8 +11,7 @@ using openld.Services;
 
 namespace openld.Tests
 {
-    public class FixtureTypeServiceTest {
-        private readonly TestFixture _fixture = new TestFixture();
+    public class FixtureTypeServiceTest : OpenLDUnitTest{
 
         [Fact]
         public async Task GetAllFixtureTypes() {
