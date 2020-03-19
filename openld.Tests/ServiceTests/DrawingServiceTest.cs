@@ -7,11 +7,15 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using Xunit;
 
+using openld.Data;
 using openld.Models;
 using openld.Services;
 
 namespace openld.Tests {
     public class DrawingServiceTest : OpenLDUnitTest {
+        private static DrawingService initService(OpenLDContext context) {
+            return new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper);
+        }
 
         private static Template testTemplate = new Template {
             Id = "testDrawing1_Template",
@@ -33,7 +37,7 @@ namespace openld.Tests {
                     context.Users.AddRange(testUsers);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper).CreateDrawingAsync("user1", newDrawing),
+                context => initService(context).CreateDrawingAsync("user1", newDrawing),
                 (result, context) => context.Drawings.Where(d => d.Id == newDrawing.Id).ToList()
                     .Should().HaveCount(1)
                     .And.BeEquivalentTo(newDrawing)
@@ -55,8 +59,7 @@ namespace openld.Tests {
                     context.Users.AddRange(testUsers);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .CreateDrawingAsync("doesn't exist", newDrawing),
+                context => initService(context).CreateDrawingAsync("doesn't exist", newDrawing),
 
                 async (act, context) => await act.Should().ThrowAsync<UnauthorizedAccessException>()
             );
@@ -76,8 +79,7 @@ namespace openld.Tests {
                     context.Templates.Add(testTemplate);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .CreateDrawingFromTemplateAsync(testUsers[1].Id, newDrawing, testTemplate),
+                context => initService(context).CreateDrawingFromTemplateAsync(testUsers[1].Id, newDrawing, testTemplate),
 
                 (result, context) => {
                     var created = context.Drawings
@@ -122,8 +124,7 @@ namespace openld.Tests {
                     context.Templates.Add(testTemplate);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .CreateDrawingFromTemplateAsync("doesn't exist", newDrawing, testTemplate),
+                context => initService(context).CreateDrawingFromTemplateAsync("doesn't exist", newDrawing, testTemplate),
 
                 async (act, context) => await act.Should().ThrowAsync<UnauthorizedAccessException>()
             );
@@ -147,8 +148,7 @@ namespace openld.Tests {
                     context.Templates.Add(testTemplate);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .CreateDrawingFromTemplateAsync(testUsers[0].Id, newDrawing, template),
+                context => initService(context).CreateDrawingFromTemplateAsync(testUsers[0].Id, newDrawing, template),
 
                 async (act, context) => await (act.Should().ThrowAsync<KeyNotFoundException>()).WithMessage("Template ID not found")
             );
@@ -162,8 +162,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .GetDrawingAsync(testDrawings[0].Id),
+                context => initService(context).GetDrawingAsync(testDrawings[0].Id),
                 (result, context) => result.Should().BeEquivalentTo(
                     testDrawings[0],
                     options => options.Excluding(d => d.Owner)
@@ -182,8 +181,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .GetDrawingAsync("doesn't exist"),
+                context => initService(context).GetDrawingAsync("doesn't exist"),
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }
@@ -211,8 +209,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .GetPrintDrawingAsync(testDrawings[0].Id),
+                context => initService(context).GetPrintDrawingAsync(testDrawings[0].Id),
                 (result, context) => result.Should().BeEquivalentTo(
                     expected,
                     options => options.IgnoringCyclicReferences()
@@ -234,8 +231,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .GetPrintDrawingAsync("doesn't exist"),
+                context => initService(context).GetPrintDrawingAsync("doesn't exist"),
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }
@@ -248,8 +244,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .DeleteDrawingAsync(testDrawings[0].Id),
+                context => initService(context).DeleteDrawingAsync(testDrawings[0].Id),
                 context => context.Drawings.Where(d => d.Id == testDrawings[0].Id).ToList()
                     .Should().BeEmpty()
             );
@@ -264,8 +259,7 @@ namespace openld.Tests {
                     context.Templates.Add(testTemplate);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .DeleteDrawingAsync(testDrawings[0].Id),
+                context => initService(context).DeleteDrawingAsync(testDrawings[0].Id),
                 context => context.Templates.Where(t => t.Id == testTemplate.Id).ToList()
                     .Should().BeEmpty()
             );
@@ -279,8 +273,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .DeleteDrawingAsync("doesn't exist"),
+                context => initService(context).DeleteDrawingAsync("doesn't exist"),
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }
@@ -293,8 +286,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .DrawingExistsAsync(testDrawings[0].Id),
+                context => initService(context).DrawingExistsAsync(testDrawings[0].Id),
                 (result, context) => result.Should().Be(true)
             );
         }
@@ -307,8 +299,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .DrawingExistsAsync("doesn't exist"),
+                context => initService(context).DrawingExistsAsync("doesn't exist"),
                 (result, context) => result.Should().Be(false)
             );
         }
@@ -321,8 +312,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .GetSharedUsersAsync(testDrawings[1].Id),
+                context => initService(context).GetSharedUsersAsync(testDrawings[1].Id),
                 (result, context) => result.Should().HaveCount(1)
                     .And.BeEquivalentTo(
                         testDrawings[1].UserDrawings,
@@ -339,8 +329,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .GetSharedUsersAsync(testDrawings[0].Id),
+                context => initService(context).GetSharedUsersAsync(testDrawings[0].Id),
                 (result, context) => result.Should().BeEmpty()
             );
         }
@@ -353,9 +342,10 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .ShareWithUserAsync(testUsers[1].Email, testDrawings[0].Id),
-                context => context.UserDrawings.Where(ud => ud.Drawing.Id == testDrawings[0].Id).Where(ud => ud.User.Id == testUsers[1].Id).ToList()
+                context => initService(context).ShareWithUserAsync(testUsers[1].Email, testDrawings[0].Id),
+                context => context.UserDrawings
+                    .Where(ud => ud.Drawing.Id == testDrawings[0].Id)
+                    .Where(ud => ud.User.Id == testUsers[1].Id).ToList()
                     .Should().HaveCount(1)
             );
         }
@@ -368,8 +358,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .ShareWithUserAsync("doesn't exist", testDrawings[0].Id),
+                context => initService(context).ShareWithUserAsync("doesn't exist", testDrawings[0].Id),
                 async (act, context) => await (act.Should().ThrowAsync<KeyNotFoundException>()).WithMessage("Email not found")
             );
         }
@@ -382,8 +371,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .ShareWithUserAsync(testUsers[1].Email, "doesn't exist"),
+                context => initService(context).ShareWithUserAsync(testUsers[1].Email, "doesn't exist"),
                 async (act, context) => await (act.Should().ThrowAsync<KeyNotFoundException>()).WithMessage("Drawing ID not found")
             );
         }
@@ -396,9 +384,9 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .ShareWithUserAsync(testUsers[0].Email, testDrawings[0].Id),
-                async (act, context) => await (act.Should().ThrowAsync<InvalidOperationException>()).WithMessage("Cannot share with drawing owner")
+                context => initService(context).ShareWithUserAsync(testUsers[0].Email, testDrawings[0].Id),
+                async (act, context) =>
+                    await (act.Should().ThrowAsync<InvalidOperationException>()).WithMessage("Cannot share with drawing owner")
             );
         }
 
@@ -410,9 +398,9 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .ShareWithUserAsync(testUsers[1].Email, testDrawings[1].Id),
-                async (act, context) => await (act.Should().ThrowAsync<InvalidOperationException>()).WithMessage("Drawing already shared with user")
+                context => initService(context).ShareWithUserAsync(testUsers[1].Email, testDrawings[1].Id),
+                async (act, context) =>
+                    await (act.Should().ThrowAsync<InvalidOperationException>()).WithMessage("Drawing already shared with user")
             );
         }
 
@@ -424,8 +412,7 @@ namespace openld.Tests {
                     context.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .UnshareWithUserAsync(testDrawings[1].UserDrawings[0].Id),
+                context => initService(context).UnshareWithUserAsync(testDrawings[1].UserDrawings[0].Id),
                 context => context.UserDrawings.Where(ud => ud.Drawing.Id == testDrawings[1].Id).ToList()
                     .Should().NotContain(testDrawings[1].UserDrawings[0])
             );
@@ -439,8 +426,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .UnshareWithUserAsync("doesn't exist"),
+                context => initService(context).UnshareWithUserAsync("doesn't exist"),
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }
@@ -453,8 +439,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .IsSharedWithAsync(testDrawings[1].Id, testUsers[1].Id),
+                context => initService(context).IsSharedWithAsync(testDrawings[1].Id, testUsers[1].Id),
                 (result, context) => result.Should().Be(true)
             );
         }
@@ -467,8 +452,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .IsSharedWithAsync(testDrawings[0].Id, testUsers[1].Id),
+                context => initService(context).IsSharedWithAsync(testDrawings[0].Id, testUsers[1].Id),
                 (result, context) => result.Should().Be(false)
             );
         }
@@ -481,8 +465,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .IsOwnerAsync(testDrawings[0].Id, testUsers[0].Id),
+                context => initService(context).IsOwnerAsync(testDrawings[0].Id, testUsers[0].Id),
                 (result, context) => result.Should().Be(true)
             );
         }
@@ -495,8 +478,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .IsOwnerAsync(testDrawings[0].Id, testUsers[1].Id),
+                context => initService(context).IsOwnerAsync(testDrawings[0].Id, testUsers[1].Id),
                 (result, context) => result.Should().Be(false)
             );
         }
@@ -509,8 +491,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .GetOwnedDrawingsAsync(testUsers[0].Id),
+                context => initService(context).GetOwnedDrawingsAsync(testUsers[0].Id),
                 (result, context) => result.Should().BeEquivalentTo(
                     testDrawings,
                     options => options.Excluding(d => d.Views)
@@ -528,8 +509,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .GetOwnedDrawingsAsync(testUsers[1].Id),
+                context => initService(context).GetOwnedDrawingsAsync(testUsers[1].Id),
                 (result, context) => result.Should().BeEmpty()
             );
         }
@@ -542,8 +522,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .GetOwnedDrawingsAsync("doesn't exist"),
+                context => initService(context).GetOwnedDrawingsAsync("doesn't exist"),
                 (result, context) => result.Should().BeEmpty()
             );
         }
@@ -556,8 +535,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .GetSharedDrawingsAsync(testUsers[1].Id),
+                context => initService(context).GetSharedDrawingsAsync(testUsers[1].Id),
                 (result, context) => result.Should().AllBeEquivalentTo(
                     testDrawings[1],
                     options => options.Excluding(d => d.Views)
@@ -575,8 +553,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .GetSharedDrawingsAsync(testUsers[0].Id),
+                context => initService(context).GetSharedDrawingsAsync(testUsers[0].Id),
                 (result, context) => result.Should().BeEmpty()
             );
         }
@@ -589,8 +566,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .GetSharedDrawingsAsync("doesn't exist"),
+                context => initService(context).GetSharedDrawingsAsync("doesn't exist"),
                 (result, context) => result.Should().BeEmpty()
             );
         }
@@ -603,8 +579,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .UpdateLastModifiedAsync(testDrawings[0]),
+                context => initService(context).UpdateLastModifiedAsync(testDrawings[0]),
                 context => context.Drawings.First(d => d.Id == testDrawings[0].Id).LastModified
                     .Should().BeCloseTo(DateTime.Now)
             );
@@ -618,8 +593,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper)
-                    .UpdateLastModifiedAsync(new Drawing { Id = "doesn't exist" }),
+                context => initService(context).UpdateLastModifiedAsync(new Drawing { Id = "doesn't exist" }),
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }

@@ -6,12 +6,16 @@ using Microsoft.EntityFrameworkCore;
 using FluentAssertions;
 using Xunit;
 
+using openld.Data;
 using openld.Models;
 using openld.Services;
 
 namespace openld.Tests
 {
-    public class FixtureTypeServiceTest : OpenLDUnitTest{
+    public class FixtureTypeServiceTest : OpenLDUnitTest {
+        private static FixtureTypeService initService(OpenLDContext context) {
+            return new FixtureTypeService(context);
+        }
 
         [Fact]
         public async Task GetAllFixtureTypes() {
@@ -26,7 +30,7 @@ namespace openld.Tests
                     context.FixtureTypes.AddRange(newTypes);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureTypeService(context).GetAllTypesAsync(),
+                context => initService(context).GetAllTypesAsync(),
                 (result, context) => result.Should()
                     .BeOfType<List<FixtureType>>()
                     .And.HaveCount(newTypes.Length)
@@ -43,7 +47,7 @@ namespace openld.Tests
 
             await _fixture.RunWithDatabaseAsync(
                 null,
-                context => new FixtureTypeService(context).CreateTypesAsync(newTypes),
+                context => initService(context).CreateTypesAsync(newTypes),
                 context => context.FixtureTypes.ToList().Should()
                     .HaveCount(newTypes.Length)
                     .And.Contain(t => newTypes.Contains(t.Name))

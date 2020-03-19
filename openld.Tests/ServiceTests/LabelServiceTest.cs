@@ -7,11 +7,16 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using Xunit;
 
+using openld.Data;
 using openld.Models;
 using openld.Services;
 
 namespace openld.Tests {
     public class LabelServiceTest : OpenLDUnitTest {
+        private static LabelService initService(OpenLDContext context) {
+            return new LabelService(context, new ViewService(context), _mapper);
+        }
+
         [Fact]
         public async Task GetLabelAsync() {
             await _fixture.RunWithDatabaseAsync<Label>(
@@ -19,8 +24,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .GetLabelAsync(testDrawings[0].Views[0].Labels[0].Id),
+                context => initService(context).GetLabelAsync(testDrawings[0].Views[0].Labels[0].Id),
                 (result, context) => result.Should().BeEquivalentTo(
                     testDrawings[0].Views[0].Labels[0],
                     options => options.Excluding(l => l.View)
@@ -35,8 +39,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .GetLabelAsync("doesn't exist"),
+                context => initService(context).GetLabelAsync("doesn't exist"),
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }
@@ -46,7 +49,7 @@ namespace openld.Tests {
             Label label = new Label {
                 Id = "newLabel",
                 View = testDrawings[0].Views[0],
-                Position = new Point { x = 1F, y = 1F },
+                Position = new Point { x = 1, y = 1 },
                 Text = "newLabel Text"
             };
 
@@ -55,8 +58,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .AddLabelAsync(label),
+                context => initService(context).AddLabelAsync(label),
                 context => context.Labels.Where(l => l.Id == label.Id).ToList()
                     .Should().HaveCount(1)
                     .And.AllBeEquivalentTo(label)
@@ -68,7 +70,7 @@ namespace openld.Tests {
             Label label = new Label {
                 Id = "newLabel",
                 View = new View { Id = "doesn't exist" },
-                Position = new Point { x = 1F, y = 1F },
+                Position = new Point { x = 1, y = 1 },
                 Text = "newLabel Text"
             };
 
@@ -77,8 +79,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .AddLabelAsync(label),
+                context => initService(context).AddLabelAsync(label),
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }
@@ -90,8 +91,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .GetViewAsync(testDrawings[0].Views[0].Labels[0]),
+                context => initService(context).GetViewAsync(testDrawings[0].Views[0].Labels[0]),
                 (result, context) => result.Should().BeEquivalentTo(
                     testDrawings[0].Views[0],
                     options => options.Excluding(v => v.Drawing)
@@ -108,8 +108,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .GetViewAsync(new Label { Id = "doesn't exist" }),
+                context => initService(context).GetViewAsync(new Label { Id = "doesn't exist" }),
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }
@@ -121,12 +120,15 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .GetDrawingAsync(testDrawings[0].Views[0].Labels[0]),
+                context => initService(context).GetDrawingAsync(testDrawings[0].Views[0].Labels[0]),
                 (result, context) => result.Should().BeEquivalentTo(
                     testDrawings[0],
                     options => options.Excluding(d => d.Owner)
-                        .Excluding(d => d.SelectedMemberPath.EndsWith(".Drawing") || d.SelectedMemberPath.EndsWith(".Labels") || d.SelectedMemberPath.EndsWith(".Structures"))
+                        .Excluding(
+                            d => d.SelectedMemberPath.EndsWith(".Drawing")
+                            || d.SelectedMemberPath.EndsWith(".Labels")
+                            || d.SelectedMemberPath.EndsWith(".Structures")
+                        )
                 )
             );
         }
@@ -138,8 +140,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .GetDrawingAsync(new Label { Id = "doesn't exist" }),
+                context => initService(context).GetDrawingAsync(new Label { Id = "doesn't exist" }),
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }
@@ -156,8 +157,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .UpdatePropsAsync(updated),
+                context => initService(context).UpdatePropsAsync(updated),
                 context => context.Labels.First(l => l.Id == updated.Id).Text
                     .Should().Be(updated.Text)
             );
@@ -175,8 +175,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .UpdatePropsAsync(updated),
+                context => initService(context).UpdatePropsAsync(updated),
                 context => context.Labels.Include(l => l.View).First(l => l.Id == updated.Id).View.Id
                     .Should().Be(testDrawings[0].Views[0].Id)
             );
@@ -186,7 +185,7 @@ namespace openld.Tests {
         public async Task UpdatePropsAsync_PositionNotUpdated() {
             Label updated = new Label {
                 Id = testDrawings[0].Views[0].Labels[0].Id,
-                Position = new Point { x = 2F, y = 2F }
+                Position = new Point { x = 2, y = 2 }
             };
 
             await _fixture.RunWithDatabaseAsync(
@@ -194,8 +193,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .UpdatePropsAsync(updated),
+                context => initService(context).UpdatePropsAsync(updated),
                 context => context.Labels.First(l => l.Id == updated.Id).Position
                     .Should().BeEquivalentTo(testDrawings[0].Views[0].Labels[0].Position)
             );
@@ -213,8 +211,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .UpdatePropsAsync(updated),
+                context => initService(context).UpdatePropsAsync(updated),
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }
@@ -223,7 +220,7 @@ namespace openld.Tests {
         public async Task UpdatePositionAsync() {
             Label updated = new Label {
                 Id = testDrawings[0].Views[0].Labels[0].Id,
-                Position = new Point { x = 2F, y = 2F }
+                Position = new Point { x = 2, y = 2 }
             };
 
             await _fixture.RunWithDatabaseAsync(
@@ -231,8 +228,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .UpdatePositionAsync(updated),
+                context => initService(context).UpdatePositionAsync(updated),
                 context => context.Labels.First(l => l.Id == updated.Id).Position
                     .Should().Be(updated.Position)
             );
@@ -242,7 +238,7 @@ namespace openld.Tests {
         public async Task UpdatePositionAsync_LabelNotExists() {
             Label updated = new Label {
                 Id = "doesn't exist",
-                Position = new Point { x = 2F, y = 2F }
+                Position = new Point { x = 2, y = 2 }
             };
 
             await _fixture.RunWithDatabaseAsync(
@@ -250,8 +246,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .UpdatePositionAsync(updated),
+                context => initService(context).UpdatePositionAsync(updated),
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }
@@ -263,8 +258,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .DeleteAsync(testDrawings[0].Views[0].Labels[0].Id),
+                context => initService(context).DeleteAsync(testDrawings[0].Views[0].Labels[0].Id),
                 context => context.Labels.Where(l => l.Id == testDrawings[0].Views[0].Labels[0].Id).ToList()
                     .Should().BeEmpty()
             );
@@ -277,8 +271,7 @@ namespace openld.Tests {
                     context.Drawings.AddRange(testDrawings);
                     await context.SaveChangesAsync();
                 },
-                context => new LabelService(context, new ViewService(context), _mapper)
-                    .DeleteAsync("doesn't exist"),
+                context => initService(context).DeleteAsync("doesn't exist"),
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }

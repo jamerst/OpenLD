@@ -6,9 +6,9 @@ using openld.Models;
 
 namespace openld.Tests {
     public class OpenLDUnitTest {
-        protected readonly TestFixture _fixture = new TestFixture();
+        protected static readonly TestFixture _fixture = new TestFixture();
 
-        protected readonly IMapper _mapper = new MapperConfiguration(cfg => {
+        protected static readonly IMapper _mapper = new MapperConfiguration(cfg => {
             cfg.AddProfile<LabelProfile>();
             cfg.AddProfile<RiggedFixtureProfile>();
             cfg.AddProfile<StructureProfile>();

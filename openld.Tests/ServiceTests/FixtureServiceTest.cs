@@ -6,11 +6,16 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using Xunit;
 
+using openld.Data;
 using openld.Models;
 using openld.Services;
 
 namespace openld.Tests {
     public class FixtureServiceTest : OpenLDUnitTest {
+
+        private static FixtureService initService(OpenLDContext context) {
+            return new FixtureService(context);
+        }
 
         private static FixtureType[] testTypes = {
             new FixtureType {Id = "testType1", Name = "testType1"},
@@ -69,7 +74,7 @@ namespace openld.Tests {
                     context.Fixtures.AddRange(testFixtures);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).SearchAllFixturesAsync(
+                context => initService(context).SearchAllFixturesAsync(
                     new Utils.SearchParams { name = "", manufacturer = "", type = "" }
                 ),
                 (result, context) => result.Should()
@@ -86,7 +91,7 @@ namespace openld.Tests {
                     context.Fixtures.AddRange(testFixtures);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).SearchAllFixturesAsync(
+                context => initService(context).SearchAllFixturesAsync(
                     new Utils.SearchParams { name = "testfixture1", manufacturer = "", type = "" }
                 ),
                 (result, context) => result.Should()
@@ -104,7 +109,7 @@ namespace openld.Tests {
                     context.Fixtures.AddRange(testFixtures);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).SearchAllFixturesAsync(
+                context => initService(context).SearchAllFixturesAsync(
                     new Utils.SearchParams { name = "doesn't exist", manufacturer = "", type = "" }
                 ),
                 (result, context) => result.Should()
@@ -121,7 +126,7 @@ namespace openld.Tests {
                     context.Fixtures.AddRange(testFixtures);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).SearchAllFixturesAsync(
+                context => initService(context).SearchAllFixturesAsync(
                     new Utils.SearchParams { name = "Testfixture1", manufacturer = "testmanf1", type = "" }
                 ),
                 (result, context) => result.Should()
@@ -139,7 +144,7 @@ namespace openld.Tests {
                     context.Fixtures.AddRange(testFixtures);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).SearchAllFixturesAsync(
+                context => initService(context).SearchAllFixturesAsync(
                     new Utils.SearchParams { name = "", manufacturer = "Testmanf1", type = "" }
                 ),
                 (result, context) => result.Should()
@@ -157,7 +162,7 @@ namespace openld.Tests {
                     context.Fixtures.AddRange(testFixtures);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).SearchAllFixturesAsync(
+                context => initService(context).SearchAllFixturesAsync(
                     new Utils.SearchParams { name = "", manufacturer = "doesn't exist", type = "" }
                 ),
                 (result, context) => result.Should()
@@ -174,7 +179,7 @@ namespace openld.Tests {
                     context.Fixtures.AddRange(testFixtures);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).SearchAllFixturesAsync(
+                context => initService(context).SearchAllFixturesAsync(
                     new Utils.SearchParams { name = "", manufacturer = "", type = "testType1" }
                 ),
                 (result, context) => result.Should()
@@ -192,7 +197,7 @@ namespace openld.Tests {
                     context.Fixtures.AddRange(testFixtures);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).SearchAllFixturesAsync(
+                context => initService(context).SearchAllFixturesAsync(
                     new Utils.SearchParams { name = "testfixture2", manufacturer = "", type = "testType1" }
                 ),
                 (result, context) => result.Should()
@@ -210,7 +215,7 @@ namespace openld.Tests {
                     context.Fixtures.AddRange(testFixtures);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).SearchAllFixturesAsync(
+                context => initService(context).SearchAllFixturesAsync(
                     new Utils.SearchParams { name = "", manufacturer = "", type = "testType2" }
                 ),
                 (result, context) => result.Should()
@@ -227,7 +232,7 @@ namespace openld.Tests {
                     context.Fixtures.AddRange(testFixtures);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).SearchAllFixturesAsync(
+                context => initService(context).SearchAllFixturesAsync(
                     new Utils.SearchParams { name = "Testfixture1", manufacturer = "testmanf1", type = "testType1" }
                 ),
                 (result, context) => result.Should()
@@ -245,7 +250,7 @@ namespace openld.Tests {
                     context.Fixtures.AddRange(testFixtures);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).SearchAllFixturesAsync(
+                context => initService(context).SearchAllFixturesAsync(
                     new Utils.SearchParams { name = "doesn't exist", manufacturer = "doesn't exist", type = "doesn't exist" }
                 ),
                 (result, context) => result.Should()
@@ -276,7 +281,7 @@ namespace openld.Tests {
                     context.Symbols.AddRange(testSymbols);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).CreateFixtureAsync(newFixture),
+                context => initService(context).CreateFixtureAsync(newFixture),
                 context => context.Fixtures
                     .Include(f => f.Image)
                     .Include(f => f.Symbol)
@@ -327,7 +332,7 @@ namespace openld.Tests {
                     context.Symbols.AddRange(testSymbols);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).CreateFixtureAsync(newFixture),
+                context => initService(context).CreateFixtureAsync(newFixture),
                 context => context.Fixtures
                     .Include(f => f.Image)
                     .Include(f => f.Symbol)
@@ -378,7 +383,7 @@ namespace openld.Tests {
                     context.Symbols.AddRange(testSymbols);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).CreateFixtureAsync(newFixture),
+                context => initService(context).CreateFixtureAsync(newFixture),
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }
@@ -423,7 +428,7 @@ namespace openld.Tests {
                     context.Symbols.AddRange(testSymbols);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).CreateFixtureAsync(newFixture),
+                context => initService(context).CreateFixtureAsync(newFixture),
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }
@@ -468,7 +473,7 @@ namespace openld.Tests {
                     context.Symbols.AddRange(testSymbols);
                     await context.SaveChangesAsync();
                 },
-                context => new FixtureService(context).CreateFixtureAsync(newFixture),
+                context => initService(context).CreateFixtureAsync(newFixture),
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }
