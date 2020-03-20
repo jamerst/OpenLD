@@ -44,6 +44,7 @@ namespace openld.Services {
             newView.Height = view.Height;
             newView.Type = view.Type;
             newView.Structures = new List<Structure>();
+            newView.Labels = new List<Label>();
 
             await _context.Views.AddAsync(newView);
             await _context.SaveChangesAsync();

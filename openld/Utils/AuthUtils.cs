@@ -23,10 +23,6 @@ namespace openld.Utils {
             return await _drawingService.IsOwnerAsync(drawingId, userId) || await _drawingService.IsSharedWithAsync(drawingId, userId);
         }
 
-        public async Task<bool> hasAccess(Drawing drawing, string userId) {
-            return await _drawingService.IsOwnerAsync(drawing.Id, userId) || await _drawingService.IsSharedWithAsync(drawing.Id, userId);
-        }
-
         public async Task<bool> hasAccess(View view, string userId) {
             Drawing drawing = await _viewService.GetDrawingAsync(view);
             return await _drawingService.IsOwnerAsync(drawing.Id, userId) || await _drawingService.IsSharedWithAsync(drawing.Id, userId);

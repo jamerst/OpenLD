@@ -124,6 +124,7 @@ namespace openld.Tests {
                 (result, context) => result.Should().BeEquivalentTo(
                     testDrawings[0],
                     options => options.Excluding(d => d.Owner)
+                        .Excluding(d => d.Views)
                         .Excluding(
                             d => d.SelectedMemberPath.EndsWith(".Drawing")
                             || d.SelectedMemberPath.EndsWith(".Labels")

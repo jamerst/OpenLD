@@ -136,7 +136,13 @@ namespace openld.Tests {
                                 Text = "testDrawing1_View1_Label2"
                             }
                         }
-                    }
+                    },
+                     new View {
+                        Id = "testDrawing1_View2",
+                        Name = "testDrawing1_View2",
+                        Structures = new List<Structure>(),
+                        Labels = new List<Label>()
+                     }
                 }
             },
             new Drawing {

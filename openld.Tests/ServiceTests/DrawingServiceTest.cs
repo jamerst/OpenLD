@@ -193,7 +193,8 @@ namespace openld.Tests {
                             Fixture = testFixture,
                             Count = 2
                         }
-                    }
+                    },
+                    new List<UsedFixtureResult> {}
                 },
                 RiggedFixtures = new List<RiggedFixture>(testDrawings[0].Views[0].Structures[0].Fixtures)
             };
