@@ -425,5 +425,127 @@ namespace openld.Tests {
                 async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
             );
         }
+
+        [Fact]
+        public async Task DeleteAsync() {
+            await _fixture.RunWithDatabaseAsync(
+                async context => {
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => initService(context).DeleteAsync(testDrawings[0].Views[0].Structures[0].Id),
+                context => context.Labels.Where(l => l.Id == testDrawings[0].Views[0].Structures[0].Id).ToList()
+                    .Should().BeEmpty()
+            );
+        }
+
+        [Fact]
+        public async Task DeleteAsync_StructureNotExists() {
+            await _fixture.RunWithDatabaseAsync(
+                async context => {
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => initService(context).DeleteAsync("doesn't exist"),
+                async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
+            );
+        }
+
+        [Fact]
+        public async Task CreateTypesAsync() {
+            string[] types = { "newType1", "newType2", "newType3" };
+
+            await _fixture.RunWithDatabaseAsync(
+                null,
+                context => initService(context).CreateTypesAsync(types),
+                context => context.StructureTypes.Select(st => st.Name).ToList()
+                    .Should().BeEquivalentTo(types)
+            );
+        }
+
+        [Fact]
+        public async Task GetAllTypesAsync() {
+            await _fixture.RunWithDatabaseAsync<List<StructureType>>(
+                async context => {
+                    context.StructureTypes.AddRange(testStructureTypes);
+                    await context.SaveChangesAsync();
+                },
+                context => initService(context).GetAllTypesAsync(),
+                (result, context) => result.Should().BeEquivalentTo(testStructureTypes)
+            );
+        }
+
+        [Fact]
+        public async Task GetStructureTypeAsync() {
+            await _fixture.RunWithDatabaseAsync<StructureType>(
+                async context => {
+                    context.StructureTypes.AddRange(testStructureTypes);
+                    await context.SaveChangesAsync();
+                },
+                context => initService(context).GetStructureTypeAsync(testStructureTypes[1].Id),
+                (result, context) => result.Should().BeEquivalentTo(testStructureTypes[1])
+            );
+        }
+
+        [Fact]
+        public async Task GetStructureTypeAsync_NotExists() {
+            await _fixture.RunWithDatabaseAsync(
+                async context => {
+                    context.StructureTypes.AddRange(testStructureTypes);
+                    await context.SaveChangesAsync();
+                },
+                context => initService(context).GetStructureTypeAsync("doesn't exist"),
+                async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
+            );
+        }
+
+        [Fact]
+        public async Task GetStructureTypeByNameAsync() {
+            await _fixture.RunWithDatabaseAsync<StructureType>(
+                async context => {
+                    context.StructureTypes.AddRange(testStructureTypes);
+                    await context.SaveChangesAsync();
+                },
+                context => initService(context).GetStructureTypeByNameAsync("Bar"),
+                (result, context) => result.Should().BeEquivalentTo(testStructureTypes[2])
+            );
+        }
+
+        [Fact]
+        public async Task GetStructureTypeByNameAsync_NotExists() {
+            await _fixture.RunWithDatabaseAsync(
+                async context => {
+                    context.StructureTypes.AddRange(testStructureTypes);
+                    await context.SaveChangesAsync();
+                },
+                context => initService(context).GetStructureTypeByNameAsync("doesn't exist"),
+                async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
+            );
+        }
+
+        [Fact]
+        public async Task UpdateLastModifiedAsync() {
+            await _fixture.RunWithDatabaseAsync(
+                async context => {
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => initService(context).UpdateLastModifiedAsync(testDrawings[0].Views[0].Structures[0]),
+                context => context.Drawings.First(d => d.Id == testDrawings[0].Id).LastModified
+                    .Should().BeCloseTo(DateTime.Now)
+            );
+        }
+
+        [Fact]
+        public async Task UpdateLastModifiedAsync_NotExists() {
+            await _fixture.RunWithDatabaseAsync(
+                async context => {
+                    context.Drawings.AddRange(testDrawings);
+                    await context.SaveChangesAsync();
+                },
+                context => initService(context).UpdateLastModifiedAsync(new Structure { Id = "doesn't exist" }),
+                async (act, context) => await act.Should().ThrowAsync<KeyNotFoundException>()
+            );
+        }
     }
 }

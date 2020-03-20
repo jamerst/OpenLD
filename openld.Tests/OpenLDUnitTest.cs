@@ -196,5 +196,10 @@ namespace openld.Tests {
                 }
             }
         };
+
+        protected static Template testTemplate = new Template {
+            Id = "testDrawing1_Template",
+            Drawing = testDrawings[0]
+        };
     }
 }

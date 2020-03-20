@@ -17,10 +17,7 @@ namespace openld.Tests {
             return new DrawingService(context, new TemplateService(context), new ViewService(context), _mapper);
         }
 
-        private static Template testTemplate = new Template {
-            Id = "testDrawing1_Template",
-            Drawing = testDrawings[0]
-        };
+
 
         [Fact]
         public async Task CreateDrawingAsync() {

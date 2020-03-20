@@ -26,6 +26,10 @@ namespace openld.Services {
                 throw new KeyNotFoundException("Drawing ID not found");
             }
 
+            if (await IsTemplateAsync(drawingId)) {
+                throw new InvalidOperationException("Drawing is already a template");
+            }
+
             Template template = new Template();
             template.Drawing = drawing;
 
