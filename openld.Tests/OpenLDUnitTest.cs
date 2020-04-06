@@ -2,6 +2,7 @@ using System.Collections.Generic;
 
 using AutoMapper;
 
+using openld.Mapping;
 using openld.Models;
 
 namespace openld.Tests {
