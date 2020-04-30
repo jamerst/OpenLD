@@ -10,7 +10,7 @@ services:
       - db
     volumes:
       - openld-data:/openld-data
-      - ${HOME}/.aspnet/certs:/certs/
+      - /certs:/certs
     environment:
         ASPNETCORE_URLS: https://+;http://+
         ASPNETCORE_HTTPS_PORT: 443
