@@ -51,10 +51,7 @@ namespace openld {
                 options => {
                     var OnMessageReceived = options.Events.OnMessageReceived;
                     options.Authority = "https://www.openld.jtattersall.net";
-                    options.TokenValidationParameters.ValidIssuers = new [] {
-                        "https://www.openld.jtattersall.net",
-                        "https://0.0.0.0:5000"
-                    };
+                    options.TokenValidationParameters.ValidateIssuer = false;
 
                     // add logic to allow signalr hubs to be authorized successfully
                     // token cannot be added in request headers, so it is sent as a parameter, so must be copied into context

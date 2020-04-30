@@ -232,6 +232,20 @@ CREATE TABLE public."Fixtures" (
 ALTER TABLE public."Fixtures" OWNER TO openld;
 
 --
+-- Name: Labels; Type: TABLE; Schema: public; Owner: openld
+--
+
+CREATE TABLE public."Labels" (
+    "Id" text NOT NULL,
+    "ViewId" text NOT NULL,
+    "Position" jsonb,
+    "Text" text
+);
+
+
+ALTER TABLE public."Labels" OWNER TO openld;
+
+--
 -- Name: PersistedGrants; Type: TABLE; Schema: public; Owner: openld
 --
 
@@ -379,6 +393,21 @@ CREATE TABLE public."__EFMigrationsHistory" (
 
 ALTER TABLE public."__EFMigrationsHistory" OWNER TO openld;
 
+
+--
+-- Name: AspNetRoleClaims_Id_seq; Type: SEQUENCE SET; Schema: public; Owner: openld
+--
+
+SELECT pg_catalog.setval('public."AspNetRoleClaims_Id_seq"', 1, false);
+
+
+--
+-- Name: AspNetUserClaims_Id_seq; Type: SEQUENCE SET; Schema: public; Owner: openld
+--
+
+SELECT pg_catalog.setval('public."AspNetUserClaims_Id_seq"', 1, false);
+
+
 --
 -- Name: AspNetRoleClaims PK_AspNetRoleClaims; Type: CONSTRAINT; Schema: public; Owner: openld
 --
@@ -473,6 +502,14 @@ ALTER TABLE ONLY public."FixtureTypes"
 
 ALTER TABLE ONLY public."Fixtures"
     ADD CONSTRAINT "PK_Fixtures" PRIMARY KEY ("Id");
+
+
+--
+-- Name: Labels PK_Labels; Type: CONSTRAINT; Schema: public; Owner: openld
+--
+
+ALTER TABLE ONLY public."Labels"
+    ADD CONSTRAINT "PK_Labels" PRIMARY KEY ("Id");
 
 
 --
@@ -637,6 +674,13 @@ CREATE INDEX "IX_Fixtures_SymbolId" ON public."Fixtures" USING btree ("SymbolId"
 --
 
 CREATE INDEX "IX_Fixtures_TypeId" ON public."Fixtures" USING btree ("TypeId");
+
+
+--
+-- Name: IX_Labels_ViewId; Type: INDEX; Schema: public; Owner: openld
+--
+
+CREATE INDEX "IX_Labels_ViewId" ON public."Labels" USING btree ("ViewId");
 
 
 --
@@ -826,6 +870,14 @@ ALTER TABLE ONLY public."Fixtures"
 
 
 --
+-- Name: Labels FK_Labels_Views_ViewId; Type: FK CONSTRAINT; Schema: public; Owner: openld
+--
+
+ALTER TABLE ONLY public."Labels"
+    ADD CONSTRAINT "FK_Labels_Views_ViewId" FOREIGN KEY ("ViewId") REFERENCES public."Views"("Id") ON DELETE CASCADE;
+
+
+--
 -- Name: RiggedFixtures FK_RiggedFixtures_FixtureModes_ModeId; Type: FK CONSTRAINT; Schema: public; Owner: openld
 --
 
@@ -908,4 +960,3 @@ ALTER TABLE ONLY public."Views"
 --
 -- PostgreSQL database dump complete
 --
-
