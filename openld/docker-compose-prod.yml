@@ -2,9 +2,7 @@ version: "3.3"
 
 services:
   web-prod:
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
+    build: "jamerst/openld:latest"
     ports:
       - "80:80"
       - "443:443"

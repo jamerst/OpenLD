@@ -37,6 +37,7 @@ COPY public."AspNetRoleClaims" ("Id", "RoleId", "ClaimType", "ClaimValue") FROM 
 --
 
 COPY public."AspNetUsers" ("Id", "UserName", "NormalizedUserName", "Email", "NormalizedEmail", "EmailConfirmed", "PasswordHash", "SecurityStamp", "ConcurrencyStamp", "PhoneNumber", "PhoneNumberConfirmed", "TwoFactorEnabled", "LockoutEnd", "LockoutEnabled", "AccessFailedCount") FROM stdin;
+e0658ebd-6859-4ba7-81be-24a516493f90	james.tattersall98@gmail.com	JAMES.TATTERSALL98@GMAIL.COM	james.tattersall98@gmail.com	JAMES.TATTERSALL98@GMAIL.COM	f	AQAAAAEAACcQAAAAECKqWi/y7+HhNhJXUB7+BgMfaaQhOBl00BRzfXaBtLh0u4uwCA3ojelwug1OpLzxNw==	XUMMQSENEOHAPGWJGRVNJIHT2O5XKSKJ	50f11f8a-3ab4-48ea-9f08-a3e8bfeb0581	\N	f	f	\N	t	0
 \.
 
 
