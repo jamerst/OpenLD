@@ -2,7 +2,7 @@ version: "3.3"
 
 services:
   web-prod:
-    build: "jamerst/openld:latest"
+    image: "jamerst/openld:latest"
     ports:
       - "80:80"
       - "443:443"
