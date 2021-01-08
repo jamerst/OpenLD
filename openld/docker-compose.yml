@@ -10,7 +10,7 @@ services:
     depends_on:
       - db
     volumes:
-      - ./:/app
+      - ./:/app:z
       - openld-data:/openld-data
   db:
     image: "postgres:12.1"

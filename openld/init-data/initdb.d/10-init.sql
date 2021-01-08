@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 12.1 (Debian 12.1-1.pgdg100+1)
--- Dumped by pg_dump version 12.1 (Debian 12.1-1.pgdg100+1)
+-- Dumped by pg_dump version 12.4
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -166,7 +166,9 @@ CREATE TABLE public."DeviceCodes" (
     "ClientId" character varying(200) NOT NULL,
     "CreationTime" timestamp without time zone NOT NULL,
     "Expiration" timestamp without time zone NOT NULL,
-    "Data" character varying(50000) NOT NULL
+    "Data" character varying(50000) NOT NULL,
+    "Description" character varying(200),
+    "SessionId" character varying(100)
 );
 
 
@@ -194,7 +196,7 @@ CREATE TABLE public."FixtureModes" (
     "Id" text NOT NULL,
     "Name" text,
     "FixtureId" text NOT NULL,
-    "Channels" integer
+    "Channels" integer NOT NULL
 );
 
 
@@ -256,7 +258,10 @@ CREATE TABLE public."PersistedGrants" (
     "ClientId" character varying(200) NOT NULL,
     "CreationTime" timestamp without time zone NOT NULL,
     "Expiration" timestamp without time zone,
-    "Data" character varying(50000) NOT NULL
+    "Data" character varying(50000) NOT NULL,
+    "ConsumedTime" timestamp without time zone,
+    "Description" character varying(200),
+    "SessionId" character varying(100)
 );
 
 

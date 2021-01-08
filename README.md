@@ -24,7 +24,7 @@ OpenLD is a web-application written using the ASP.NET Core back-end framework wi
 ## Running OpenLD
 **Note: A Chromium-based browser is recommended for performance reasons.**
 
-The easiest way to try OpenLD is at https://www.openld.jtattersall.net/.<br>_Please note this runs on a free low-powered Google Cloud Platform instance which noticeably impacts peformance._
+The easiest way to try OpenLD is at https://www.openld.jtattersall.net/.<br>_Please note this runs on a free low-powered Google Cloud Platform instance which noticeably impacts performance._
 
 ### Self Hosting
 
@@ -32,8 +32,8 @@ OpenLD is a dockerised application, so running it yourself is relatively easy. S
 
 Running the production build is slightly more complex due to requiring certificates for HTTPS and IdentityServer4. Generate the following certificates on the host machine to run the system:
 ```
-\certs\openld-https.pfx
-\certs\openld-is4-key.pfx
+/certs/openld-https.pfx
+/certs/openld-is4-key.pfx
 ```
 Generating these is relatively simple using openssl. Certificates should be password-protected, modify `docker-compose-prod.yml` to add the password for the HTTPS certificate, the password for the IS4 certificate is given in `appsettings.json`.
 

@@ -97,6 +97,11 @@ export class Home extends Component {
           <Container>
             <h1 className="display-3">OpenLD</h1>
             <p>OpenLD is a free online tool for creating lighting designs collaboratively.</p>
+            <h2>About</h2>
+            <p>I created OpenLD as my final year project at the University of Warwick. This is the working prototype of the system I created.</p>
+            <p>The system is fully functional, but be warned that there may be some bugs. It isn't in active development currently, but please still report any bugs if you find any.</p>
+            <p>The server this is hosted on is unfortunately very low-power, so this does impact performance noticeably. Alas it is also free, so it will have to do.</p>
+            <p>OpenLD is open source, you can find the source code on <a href="https://github.com/jamerst/OpenLD">my GitHub</a>.</p>
           </Container>
           {this.state.actions}
         </Jumbotron>

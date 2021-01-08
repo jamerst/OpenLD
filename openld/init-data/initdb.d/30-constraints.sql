@@ -302,6 +302,12 @@ CREATE INDEX "IX_PersistedGrants_SubjectId_ClientId_Type" ON public."PersistedGr
 
 
 --
+-- Name: IX_PersistedGrants_SubjectId_SessionId_Type; Type: INDEX; Schema: public; Owner: openld
+--
+
+CREATE INDEX "IX_PersistedGrants_SubjectId_SessionId_Type" ON public."PersistedGrants" USING btree ("SubjectId", "SessionId", "Type");
+
+--
 -- Name: IX_RiggedFixtures_FixtureId; Type: INDEX; Schema: public; Owner: openld
 --
 
