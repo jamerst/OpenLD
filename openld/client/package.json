@@ -25,7 +25,7 @@
     "react-moment": "^0.9.7",
     "react-router-bootstrap": "^0.24.4",
     "react-router-dom": "^5.2.0",
-    "react-scripts": "^3.4.4",
+    "react-scripts": "^5.0.1",
     "reactstrap": "^8.8.1",
     "rimraf": "^2.6.2"
   },
