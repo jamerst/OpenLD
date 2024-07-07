@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">OpenLD</h1>
-<h3 align="center">A collaborative CAD System for creating lighting designs<br>https://www.openld.jtattersall.net/</h3>
+<h3 align="center">A collaborative CAD System for creating lighting designs</h3>
 
 OpenLD lets you create professional-looking lighting designs, straight from your browser. You can share and collaborate on your drawings with others using built-in real-time editing functionality.
 
@@ -24,7 +24,7 @@ OpenLD is a web-application written using the ASP.NET Core back-end framework wi
 ## Running OpenLD
 **Note: A Chromium-based browser is recommended for performance reasons.**
 
-The easiest way to try OpenLD is at https://www.openld.jtattersall.net/.<br>_Please note this runs on a free low-powered Google Cloud Platform instance which noticeably impacts performance._
+_This project is not actively maintained, so the live demo is no longer available._
 
 ### Self Hosting
 
